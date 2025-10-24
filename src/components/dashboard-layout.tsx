@@ -19,6 +19,7 @@ import {
   Truck, // Icona per Fornitori
   Network, // Icona per Operatori Network
   UserRound, // Icona per Elenco Personale
+  FileText, // Icona per Procedure
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -98,6 +99,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           label: "Elenco Personale",
           href: "/anagrafiche/personale",
           icon: <UserRound className="h-4 w-4" />,
+          roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
+        },
+        {
+          label: "Procedure",
+          href: "/anagrafiche/procedure",
+          icon: <FileText className="h-4 w-4" />,
           roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
         },
       ],
