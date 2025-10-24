@@ -18,7 +18,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription, // Import FormDescription
+  FormDescription,
 } from "@/components/ui/form";
 import {
   Dialog,
@@ -30,146 +30,146 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
 
-interface Client {
+interface Supplier {
   id: string;
   ragione_sociale: string;
-  codice_fiscale: string | null;
   partita_iva: string | null;
+  codice_fiscale: string | null;
   indirizzo: string | null;
-  citta: string | null;
   cap: string | null;
+  citta: string | null;
   provincia: string | null;
   telefono: string | null;
   email: string | null;
   pec: string | null;
-  sdi: string | null;
+  tipo_servizio: string | null;
   attivo: boolean;
   note: string | null;
   created_at: string;
   updated_at: string;
 }
 
-interface ClientFormDialogProps {
-  client: Client | null;
+interface SupplierFormDialogProps {
+  supplier: Supplier | null;
   isOpen: boolean;
   onClose: () => void;
-  onClientSaved: () => void;
+  onSupplierSaved: () => void;
 }
 
 const formSchema = z.object({
   ragione_sociale: z.string().min(1, "La ragione sociale è richiesta."),
-  codice_fiscale: z.string().nullable(),
   partita_iva: z.string().nullable(),
+  codice_fiscale: z.string().nullable(),
   indirizzo: z.string().nullable(),
-  citta: z.string().nullable(),
   cap: z.string().nullable(),
+  citta: z.string().nullable(),
   provincia: z.string().nullable(),
   telefono: z.string().nullable(),
   email: z.string().email("Inserisci un indirizzo email valido.").nullable().or(z.literal("")),
   pec: z.string().email("Inserisci un indirizzo PEC valido.").nullable().or(z.literal("")),
-  sdi: z.string().nullable(),
+  tipo_servizio: z.string().nullable(),
   attivo: z.boolean().default(true), // Changed from optional().default(true) to default(true)
   note: z.string().nullable(),
 });
 
-type ClientFormSchema = z.infer<typeof formSchema>; // Explicitly define the type
+type SupplierFormSchema = z.infer<typeof formSchema>;
 
-export function ClientFormDialog({ client, isOpen, onClose, onClientSaved }: ClientFormDialogProps) {
+export function SupplierFormDialog({ supplier, isOpen, onClose, onSupplierSaved }: SupplierFormDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<ClientFormSchema>({ // Use the explicit type here
+  const form = useForm<SupplierFormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       ragione_sociale: "",
-      codice_fiscale: null,
       partita_iva: null,
+      codice_fiscale: null,
       indirizzo: null,
-      citta: null,
       cap: null,
+      citta: null,
       provincia: null,
       telefono: null,
       email: null,
       pec: null,
-      sdi: null,
+      tipo_servizio: null,
       attivo: true, // Ensure this is boolean
       note: null,
     },
   });
 
   useEffect(() => {
-    if (isOpen && client) {
+    if (isOpen && supplier) {
       form.reset({
-        ragione_sociale: client.ragione_sociale || "",
-        codice_fiscale: client.codice_fiscale || null,
-        partita_iva: client.partita_iva || null,
-        indirizzo: client.indirizzo || null,
-        citta: client.citta || null,
-        cap: client.cap || null,
-        provincia: client.provincia || null,
-        telefono: client.telefono || null,
-        email: client.email || null,
-        pec: client.pec || null,
-        sdi: client.sdi || null,
-        attivo: client.attivo,
-        note: client.note || null,
+        ragione_sociale: supplier.ragione_sociale || "",
+        partita_iva: supplier.partita_iva || null,
+        codice_fiscale: supplier.codice_fiscale || null,
+        indirizzo: supplier.indirizzo || null,
+        cap: supplier.cap || null,
+        citta: supplier.citta || null,
+        provincia: supplier.provincia || null,
+        telefono: supplier.telefono || null,
+        email: supplier.email || null,
+        pec: supplier.pec || null,
+        tipo_servizio: supplier.tipo_servizio || null,
+        attivo: supplier.attivo,
+        note: supplier.note || null,
       });
-    } else if (isOpen && !client) {
-      // Reset form for new client
+    } else if (isOpen && !supplier) {
+      // Reset form for new supplier
       form.reset({
         ragione_sociale: "",
-        codice_fiscale: null,
         partita_iva: null,
+        codice_fiscale: null,
         indirizzo: null,
-        citta: null,
         cap: null,
+        citta: null,
         provincia: null,
         telefono: null,
         email: null,
         pec: null,
-        sdi: null,
+        tipo_servizio: null,
         attivo: true,
         note: null,
       });
     }
-  }, [isOpen, client, form]);
+  }, [isOpen, supplier, form]);
 
-  async function onSubmit(values: ClientFormSchema) { // Use the explicit type here
+  async function onSubmit(values: SupplierFormSchema) {
     setIsLoading(true);
     const now = new Date().toISOString();
-    const clientData = {
+    const supplierData = {
       ...values,
-      email: values.email === "" ? null : values.email, // Convert empty string to null for nullable fields
-      pec: values.pec === "" ? null : values.pec,
-      codice_fiscale: values.codice_fiscale === "" ? null : values.codice_fiscale,
       partita_iva: values.partita_iva === "" ? null : values.partita_iva,
+      codice_fiscale: values.codice_fiscale === "" ? null : values.codice_fiscale,
       indirizzo: values.indirizzo === "" ? null : values.indirizzo,
-      citta: values.citta === "" ? null : values.citta,
       cap: values.cap === "" ? null : values.cap,
+      citta: values.citta === "" ? null : values.citta,
       provincia: values.provincia === "" ? null : values.provincia,
       telefono: values.telefono === "" ? null : values.telefono,
-      sdi: values.sdi === "" ? null : values.sdi,
+      email: values.email === "" ? null : values.email,
+      pec: values.pec === "" ? null : values.pec,
+      tipo_servizio: values.tipo_servizio === "" ? null : values.tipo_servizio,
       note: values.note === "" ? null : values.note,
     };
 
     let error;
-    if (client) {
-      // Update existing client
+    if (supplier) {
+      // Update existing supplier
       ({ error } = await supabase
-        .from("clienti")
-        .update({ ...clientData, updated_at: now })
-        .eq("id", client.id));
+        .from("fornitori")
+        .update({ ...supplierData, updated_at: now })
+        .eq("id", supplier.id));
     } else {
-      // Add new client
+      // Add new supplier
       ({ error } = await supabase
-        .from("clienti")
-        .insert({ ...clientData, created_at: now, updated_at: now }));
+        .from("fornitori")
+        .insert({ ...supplierData, created_at: now, updated_at: now }));
     }
 
     if (error) {
-      toast.error("Errore durante il salvataggio del cliente: " + error.message);
+      toast.error("Errore durante il salvataggio del fornitore: " + error.message);
     } else {
-      toast.success("Cliente salvato con successo!");
-      onClientSaved();
+      toast.success("Fornitore salvato con successo!");
+      onSupplierSaved();
     }
     setIsLoading(false);
   }
@@ -178,9 +178,9 @@ export function ClientFormDialog({ client, isOpen, onClose, onClientSaved }: Cli
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>{client ? "Modifica Cliente" : "Nuovo Cliente"}</DialogTitle>
+          <DialogTitle>{supplier ? "Modifica Fornitore" : "Nuovo Fornitore"}</DialogTitle>
           <DialogDescription>
-            {client ? "Apporta modifiche ai dati del cliente." : "Aggiungi un nuovo cliente al sistema."} Clicca su salva quando hai finito.
+            {supplier ? "Apporta modifiche ai dati del fornitore." : "Aggiungi un nuovo fornitore al sistema."} Clicca su salva quando hai finito.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -193,19 +193,6 @@ export function ClientFormDialog({ client, isOpen, onClose, onClientSaved }: Cli
                   <FormLabel>Ragione Sociale</FormLabel>
                   <FormControl>
                     <Input placeholder="Ragione Sociale" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="codice_fiscale"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Codice Fiscale</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Codice Fiscale" {...field} value={field.value ?? ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -226,6 +213,19 @@ export function ClientFormDialog({ client, isOpen, onClose, onClientSaved }: Cli
             />
             <FormField
               control={form.control}
+              name="codice_fiscale"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Codice Fiscale</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Codice Fiscale" {...field} value={field.value ?? ""} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
               name="indirizzo"
               render={({ field }) => (
                 <FormItem className="md:col-span-2">
@@ -239,12 +239,12 @@ export function ClientFormDialog({ client, isOpen, onClose, onClientSaved }: Cli
             />
             <FormField
               control={form.control}
-              name="citta"
+              name="cap"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Città</FormLabel>
+                  <FormLabel>CAP</FormLabel>
                   <FormControl>
-                    <Input placeholder="Città" {...field} value={field.value ?? ""} />
+                    <Input placeholder="CAP" {...field} value={field.value ?? ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -252,12 +252,12 @@ export function ClientFormDialog({ client, isOpen, onClose, onClientSaved }: Cli
             />
             <FormField
               control={form.control}
-              name="cap"
+              name="citta"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>CAP</FormLabel>
+                  <FormLabel>Città</FormLabel>
                   <FormControl>
-                    <Input placeholder="CAP" {...field} value={field.value ?? ""} />
+                    <Input placeholder="Città" {...field} value={field.value ?? ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -317,12 +317,12 @@ export function ClientFormDialog({ client, isOpen, onClose, onClientSaved }: Cli
             />
             <FormField
               control={form.control}
-              name="sdi"
+              name="tipo_servizio"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Codice SDI</FormLabel>
+                  <FormLabel>Tipo Servizio</FormLabel>
                   <FormControl>
-                    <Input placeholder="Codice SDI" {...field} value={field.value ?? ""} />
+                    <Input placeholder="Es. Logistica, Consulenza" {...field} value={field.value ?? ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -334,9 +334,9 @@ export function ClientFormDialog({ client, isOpen, onClose, onClientSaved }: Cli
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm md:col-span-2">
                   <div className="space-y-0.5">
-                    <FormLabel>Cliente Attivo</FormLabel>
+                    <FormLabel>Fornitore Attivo</FormLabel>
                     <FormDescription>
-                      Indica se il cliente è attualmente attivo.
+                      Indica se il fornitore è attualmente attivo.
                     </FormDescription>
                   </div>
                   <FormControl>
@@ -355,7 +355,7 @@ export function ClientFormDialog({ client, isOpen, onClose, onClientSaved }: Cli
                 <FormItem className="md:col-span-2">
                   <FormLabel>Note</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Aggiungi note sul cliente..." {...field} value={field.value ?? ""} />
+                    <Textarea placeholder="Aggiungi note sul fornitore..." {...field} value={field.value ?? ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -366,7 +366,7 @@ export function ClientFormDialog({ client, isOpen, onClose, onClientSaved }: Cli
                 {isLoading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                  "Salva Cliente"
+                  "Salva Fornitore"
                 )}
               </Button>
             </DialogFooter>

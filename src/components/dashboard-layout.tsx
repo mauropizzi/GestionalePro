@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Building2, // Icona per Anagrafiche
   ClipboardList, // Icona per Clienti
+  Truck, // Icona per Fornitori
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -79,7 +80,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           icon: <ClipboardList className="h-4 w-4" />,
           roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
         },
-        // Aggiungi qui altri sub-link per le anagrafiche (es. Fornitori, Prodotti)
+        {
+          label: "Fornitori",
+          href: "/anagrafiche/fornitori",
+          icon: <Truck className="h-4 w-4" />,
+          roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
+        },
+        // Aggiungi qui altri sub-link per le anagrafiche (es. Prodotti)
       ],
     },
     {
