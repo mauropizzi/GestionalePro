@@ -5,9 +5,19 @@ import DashboardLayout from "@/components/dashboard-layout";
 import { useSession } from "@/components/session-context-provider";
 import { ShieldAlert, Palette } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useTheme } from "next-themes";
+import { Label } from "@/components/ui/label"; // Import Label component
 
 export default function AppearanceSettingsPage() {
   const { profile, isLoading } = useSession();
+  const { setTheme, theme } = useTheme(); // Get setTheme and current theme from next-themes
 
   if (isLoading) {
     return null;
@@ -49,10 +59,24 @@ export default function AppearanceSettingsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <CardDescription>
-              Qui potrai configurare le tue preferenze di aspetto. Questa sezione è in fase di sviluppo.
-            </CardDescription>
-            {/* Future appearance settings will go here */}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="theme-select">Tema</Label>
+                <Select value={theme} onValueChange={(value) => setTheme(value)}>
+                  <SelectTrigger id="theme-select" className="w-[180px]">
+                    <SelectValue placeholder="Seleziona tema" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="light">Chiaro</SelectItem>
+                    <SelectItem value="dark">Scuro</SelectItem>
+                    <SelectItem value="system">Sistema</SelectItem>
+                  </SelectContent>
+                </Select>
+                <CardDescription className="mt-2">
+                  Scegli il tema dell'applicazione (chiaro, scuro o basato sulle impostazioni di sistema).
+                </CardDescription>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
