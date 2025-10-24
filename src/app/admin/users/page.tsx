@@ -51,8 +51,8 @@ export default function AdminUsersPage() {
   const { profile: currentUserProfile, isLoading: isSessionLoading } = useSession();
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedUserToEdit, setSelectedUserToEdit] = useState<Profile | null>(null);
 
@@ -107,7 +107,7 @@ export default function AdminUsersPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${currentUserProfile?.id}`, // Placeholder, in realtà si userebbe un token valido
+            // Removed Authorization header as it's not needed for service role key functions
             "apikey": process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
           },
           body: JSON.stringify({ userId }),
@@ -137,7 +137,7 @@ export default function AdminUsersPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${currentUserProfile?.id}`, // Placeholder, in realtà si userebbe un token valido
+            // Removed Authorization header as it's not needed for service role key functions
             "apikey": process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
           },
           body: JSON.stringify({ userId }),
