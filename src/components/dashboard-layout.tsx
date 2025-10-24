@@ -1,0 +1,134 @@
+"use client";
+
+import React from "react";
+import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
+import { useSession } from "@/components/session-context-provider";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import {
+  Home,
+  Users,
+  Settings,
+  LogOut,
+  UserCog,
+  Briefcase,
+  ShieldCheck,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+interface DashboardLayoutProps {
+  children: React.ReactNode;
+}
+
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
+  const { profile, isLoading } = useSession();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error("Errore durante la disconnessione: " + error.message);
+    } else {
+      toast.success("Disconnessione avvenuta con successo!");
+      router.push("/login");
+    }
+  };
+
+  if (isLoading) {
+    return null; // Il SessionContextProvider gestisce già lo stato di caricamento iniziale
+  }
+
+  // Definizione dei link della sidebar in base al ruolo
+  const navLinks = [
+    {
+      label: "Dashboard",
+      href: "/",
+      icon: <Home className="h-4 w-4" />,
+      roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo", "pending_approval"],
+    },
+    {
+      label: "Gestione Utenti",
+      href: "/admin/users",
+      icon: <Users className="h-4 w-4" />,
+      roles: ["super_admin", "amministrazione"],
+    },
+    {
+      label: "Approvazione Registrazioni",
+      href: "/admin/registrations",
+      icon: <UserCog className="h-4 w-4" />,
+      roles: ["super_admin", "amministrazione"],
+    },
+    {
+      label: "Operazioni",
+      href: "/operations",
+      icon: <Briefcase className="h-4 w-4" />,
+      roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
+    },
+    {
+      label: "Impostazioni",
+      href: "/settings",
+      icon: <Settings className="h-4 w-4" />,
+      roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo", "pending_approval"],
+    },
+  ];
+
+  const filteredNavLinks = navLinks.filter((link) =>
+    profile?.role && link.roles.includes(profile.role)
+  );
+
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar className="hidden md:flex">
+        <SidebarBody className="flex flex-col justify-between">
+          <div className="flex flex-col gap-2">
+            <div className="p-4 text-lg font-bold text-sidebar-foreground">
+              Gestione Accessi
+            </div>
+            {profile && (
+              <div className="p-4 text-sm text-sidebar-foreground border-b border-sidebar-border">
+                <p>Benvenuto, {profile.first_name || "Utente"}!</p>
+                <p className="text-xs text-muted-foreground">Ruolo: {profile.role}</p>
+                {profile.registration_status === 'pending' && (
+                  <p className="text-xs text-destructive">Stato: In attesa di approvazione</p>
+                )}
+              </div>
+            )}
+            {filteredNavLinks.map((link, idx) => (
+              <SidebarLink key={idx} href={link.href} className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+                {link.icon}
+                {link.label}
+              </SidebarLink>
+            ))}
+          </div>
+          <div className="p-4">
+            <Button
+              onClick={handleLogout}
+              className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              variant="ghost"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Esci
+            </Button>
+          </div>
+        </SidebarBody>
+      </Sidebar>
+      <main className="flex-1 p-8 bg-background text-foreground">
+        {profile?.registration_status === 'pending' && profile.role !== 'super_admin' ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <ShieldCheck className="h-16 w-16 text-yellow-500 mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Registrazione in Attesa di Approvazione</h2>
+            <p className="text-muted-foreground">Il tuo account è stato creato e ora è in attesa di approvazione da parte di un amministratore.</p>
+            <p className="text-muted-foreground">Riceverai una notifica quando il tuo account sarà attivo.</p>
+            <Button onClick={handleLogout} className="mt-6" variant="outline">
+              Esci
+            </Button>
+          </div>
+        ) : (
+          children
+        )}
+      </main>
+    </div>
+  );
+}
