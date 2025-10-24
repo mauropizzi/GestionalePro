@@ -64,8 +64,7 @@ export default function LoginPage() {
                 button_label: "Accedi",
                 social_provider_text: "Accedi con",
                 link_text: "Hai già un account? Accedi",
-                // forgotten_password_text rimosso, è gestito dalla sezione forgotten_password
-                confirmation_text: "Controlla la tua email per il link di accesso.",
+                // confirmation_text rimosso
               },
               sign_up: {
                 email_label: "Indirizzo Email",
