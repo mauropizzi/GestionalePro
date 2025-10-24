@@ -14,7 +14,6 @@ export default function LoginPage() {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === "SIGNED_IN" && session) {
-          // Reindirizza alla dashboard dopo il login
           router.push("/");
           toast.success("Accesso effettuato con successo!");
         } else if (event === "SIGNED_OUT") {
@@ -29,7 +28,6 @@ export default function LoginPage() {
       }
     );
 
-    // Cleanup function
     return () => {
       authListener.subscription.unsubscribe();
     };
@@ -43,7 +41,7 @@ export default function LoginPage() {
         </h2>
         <Auth
           supabaseClient={supabase}
-          providers={[]} // Puoi aggiungere provider come 'google', 'github' qui
+          providers={[]}
           appearance={{
             theme: ThemeSupa,
             variables: {
@@ -55,7 +53,7 @@ export default function LoginPage() {
               },
             },
           }}
-          theme="light" // O "dark" se preferisci
+          theme="light"
           localization={{
             variables: {
               sign_in: {
@@ -64,9 +62,9 @@ export default function LoginPage() {
                 email_input_placeholder: "La tua email",
                 password_input_placeholder: "La tua password",
                 button_label: "Accedi",
-                social_auth_text: "Accedi con",
+                social_provider_text: "Accedi con",
                 link_text: "Hai già un account? Accedi",
-                forgotten_password_text: "Password dimenticata?",
+                // forgotten_password_text rimosso, è gestito dalla sezione forgotten_password
                 confirmation_text: "Controlla la tua email per il link di accesso.",
               },
               sign_up: {
@@ -75,13 +73,13 @@ export default function LoginPage() {
                 email_input_placeholder: "La tua email",
                 password_input_placeholder: "Crea una password",
                 button_label: "Registrati",
-                social_auth_text: "Registrati con",
+                social_provider_text: "Registrati con",
                 link_text: "Non hai un account? Registrati",
                 confirmation_text: "Controlla la tua email per il link di conferma.",
               },
               forgotten_password: {
                 email_label: "Indirizzo Email",
-                password_reset_button_label: "Invia istruzioni per il reset",
+                button_label: "Invia istruzioni per il reset",
                 link_text: "Password dimenticata?",
                 email_input_placeholder: "La tua email",
                 confirmation_text: "Controlla la tua email per il link di reset della password.",
@@ -101,7 +99,6 @@ export default function LoginPage() {
               verify_otp: {
                 email_input_placeholder: "Il tuo codice OTP",
                 button_label: "Verifica OTP",
-                link_text: "Hai ricevuto un codice OTP?",
               },
             },
           }}
