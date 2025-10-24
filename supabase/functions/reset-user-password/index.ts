@@ -40,21 +40,18 @@ serve(async (req: Request) => {
 
     const userEmail = userData.user.email;
 
-    // Genera un link di reset password usando l'email
-    const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'password_reset',
-      email: userEmail, // Use email instead of user_id
-    });
+    // Send password reset email directly to the user
+    const { error } = await supabaseAdmin.auth.admin.resetPasswordForEmail(userEmail);
 
     if (error) {
-      console.error('Error generating password reset link:', error);
+      console.error('Error sending password reset email:', error);
       return new Response(JSON.stringify({ error: error.message }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
     }
 
-    return new Response(JSON.stringify({ message: 'Password reset link generated successfully', data }), {
+    return new Response(JSON.stringify({ message: 'Password reset email sent successfully' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
