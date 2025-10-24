@@ -70,12 +70,25 @@ const formSchema = z.object({
   client_id: z.string().uuid("Seleziona un cliente valido.").nullable(),
   tipo_servizio: z.string().min(1, "Il tipo di servizio è richiesto."),
   importo: z.preprocess(
-    (val) => (val === "" ? 0 : Number(val)), // Restituisce 0 per stringa vuota
-    z.number().min(0, "L'importo deve essere un numero positivo.")
+    (val) => {
+      const processedVal = (typeof val === 'string' && val.trim() === '') || val === null || val === undefined
+        ? 0
+        : Number(val);
+      return processedVal;
+    },
+    z.number({ invalid_type_error: "L'importo deve essere un numero." })
+      .min(0, "L'importo non può essere negativo.")
   ),
   supplier_rate: z.preprocess(
-    (val) => (val === "" ? null : Number(val)), // Restituisce null per stringa vuota
-    z.number().min(0, "La tariffa fornitore deve essere un numero positivo.").nullable()
+    (val) => {
+      const processedVal = (typeof val === 'string' && val.trim() === '') || val === null || val === undefined
+        ? null
+        : Number(val);
+      return processedVal;
+    },
+    z.number({ invalid_type_error: "La tariffa fornitore deve essere un numero." })
+      .min(0, "La tariffa fornitore non può essere negativa.")
+      .nullable()
   ),
   unita_misura: z.string().nullable(),
   punto_servizio_id: z.string().uuid("Seleziona un punto di servizio valido.").nullable(),
@@ -106,20 +119,22 @@ export default function EditTariffaPage() {
   const params = useParams();
   const tariffaId = params.id as string;
 
+  const defaultValues: TariffaFormSchema = {
+    client_id: null,
+    tipo_servizio: "",
+    importo: 0, // Modificato da null a 0
+    supplier_rate: null,
+    unita_misura: null,
+    punto_servizio_id: null,
+    fornitore_id: null,
+    data_inizio_validita: null,
+    data_fine_validita: null,
+    note: null,
+  };
+
   const form = useForm<TariffaFormSchema>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      client_id: null,
-      tipo_servizio: "",
-      importo: 0, // Modificato da null a 0
-      supplier_rate: null,
-      unita_misura: null,
-      punto_servizio_id: null,
-      fornitore_id: null,
-      data_inizio_validita: null,
-      data_fine_validita: null,
-      note: null,
-    },
+    defaultValues: defaultValues,
   });
 
   useEffect(() => {
