@@ -119,7 +119,14 @@ export default function AdminUsersPage() {
         throw new Error(data.error || "Errore nel reset della password");
       }
 
-      toast.success("Link per il reset della password inviato all'utente.");
+      const { actionLink } = data;
+      if (actionLink) {
+        // Open the generated link in a new tab
+        window.open(actionLink, '_blank');
+        toast.success("Link per il reset della password generato. Si è aperto in una nuova scheda.");
+      } else {
+        toast.error("Errore: Link per il reset della password non ricevuto.");
+      }
     } catch (error: any) {
       toast.error("Errore nel reset della password: " + error.message);
     } finally {

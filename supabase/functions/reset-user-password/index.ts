@@ -40,18 +40,32 @@ serve(async (req: Request) => {
 
     const userEmail = userData.user.email;
 
-    // Send password reset email directly to the user
-    const { error } = await supabaseAdmin.auth.admin.resetPasswordForEmail(userEmail);
+    // Generate a password reset link
+    const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'password_reset',
+      email: userEmail,
+      // You can add a redirectTo URL here if you want the link to go to a specific page after reset
+      // redirectTo: 'http://localhost:3000/update-password' // Example
+    });
 
     if (error) {
-      console.error('Error sending password reset email:', error);
+      console.error('Error generating password reset link:', error);
       return new Response(JSON.stringify({ error: error.message }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
     }
 
-    return new Response(JSON.stringify({ message: 'Password reset email sent successfully' }), {
+    // Return the action link to the client
+    const actionLink = data?.properties?.action_link;
+    if (!actionLink) {
+      return new Response(JSON.stringify({ error: 'Failed to generate action link.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
+    return new Response(JSON.stringify({ message: 'Password reset link generated successfully', actionLink }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
