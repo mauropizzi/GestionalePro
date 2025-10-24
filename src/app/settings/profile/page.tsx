@@ -1,0 +1,157 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import DashboardLayout from "@/components/dashboard-layout";
+import { useSession } from "@/components/session-context-provider";
+import { ShieldAlert, User, Loader2 } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+const formSchema = z.object({
+  first_name: z.string().min(1, "Il nome è richiesto."),
+  last_name: z.string().min(1, "Il cognome è richiesto."),
+});
+
+export default function ProfileSettingsPage() {
+  const { profile, isLoading, user } = useSession();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      first_name: "",
+      last_name: "",
+    },
+  });
+
+  useEffect(() => {
+    if (profile) {
+      form.reset({
+        first_name: profile.first_name || "",
+        last_name: profile.last_name || "",
+      });
+    }
+  }, [profile, form]);
+
+  const hasAccess =
+    profile?.role === "super_admin" ||
+    profile?.role === "amministrazione" ||
+    profile?.role === "responsabile_operativo" ||
+    profile?.role === "operativo" ||
+    profile?.role === "pending_approval";
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user) {
+      toast.error("Utente non autenticato.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        first_name: values.first_name,
+        last_name: values.last_name,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+
+    if (error) {
+      toast.error("Errore durante l'aggiornamento del profilo: " + error.message);
+    } else {
+      toast.success("Profilo aggiornato con successo!");
+      // Potresti voler ricaricare la sessione o aggiornare lo stato del profilo qui
+    }
+    setIsSubmitting(false);
+  }
+
+  if (isLoading) {
+    return null;
+  }
+
+  if (!hasAccess) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center h-full text-center">
+          <ShieldAlert className="h-16 w-16 text-red-500 mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Accesso Negato</h2>
+          <p className="text-muted-foreground">Non hai i permessi necessari per visualizzare questa pagina.</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="container mx-auto py-8">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-4xl font-bold">Informazioni Profilo</h1>
+        </div>
+        <p className="text-lg text-muted-foreground mb-8">
+          Aggiorna il tuo nome, cognome e altre informazioni personali.
+        </p>
+
+        <Card className="max-w-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5 text-muted-foreground" /> Modifica Profilo
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="first_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Il tuo nome" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="last_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cognome</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Il tuo cognome" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    "Salva modifiche"
+                  )}
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
+  );
+}
