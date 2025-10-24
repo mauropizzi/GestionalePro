@@ -102,13 +102,12 @@ export default function AdminUsersPage() {
     setIsActionLoading(true);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/reset-user-password`,
+        "https://mlkahaedxpwkhheqwsjc.supabase.co/functions/v1/reset-user-password",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            // Removed Authorization header as it's not needed for service role key functions
-            "apikey": process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2FoYWVkeHB3a2hoZXF3c2pjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNzgyNTksImV4cCI6MjA3Njg1NDI1OX0._QR-tTUw-NPhjCv9boDDQAsewgyDzMhwiXNIlxIBCjQ",
           },
           body: JSON.stringify({ userId }),
         }
@@ -132,13 +131,12 @@ export default function AdminUsersPage() {
     setIsActionLoading(true);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/delete-user`,
+        "https://mlkahaedxpwkhheqwsjc.supabase.co/functions/v1/delete-user",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            // Removed Authorization header as it's not needed for service role key functions
-            "apikey": process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2FoYWVkeHB3a2hoZXF3c2pjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNzgyNTksImV4cCI6MjA3Njg1NDI1OX0._QR-tTUw-NPhjCv9boDDQAsewgyDzMhwiXNIlxIBCjQ",
           },
           body: JSON.stringify({ userId }),
         }
