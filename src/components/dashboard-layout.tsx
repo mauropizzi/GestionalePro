@@ -20,6 +20,7 @@ import {
   Network, // Icona per Operatori Network
   UserRound, // Icona per Elenco Personale
   FileText, // Icona per Procedure
+  MapPin, // Icona per Punti Servizio
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -105,6 +106,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           label: "Procedure",
           href: "/anagrafiche/procedure",
           icon: <FileText className="h-4 w-4" />,
+          roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
+        },
+        {
+          label: "Punti Servizio",
+          href: "/anagrafiche/punti-servizio",
+          icon: <MapPin className="h-4 w-4" />,
           roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
         },
       ],
