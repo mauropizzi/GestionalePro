@@ -3,7 +3,7 @@
 import React from "react";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useSession } from "@/components/session-context-provider";
-import { ShieldAlert } from "lucide-react";
+import { ShieldAlert, Settings } from "lucide-react"; // Aggiunto Settings per coerenza
 
 export default function SettingsPage() {
   const { profile, isLoading } = useSession();
@@ -36,9 +36,10 @@ export default function SettingsPage() {
   return (
     <DashboardLayout>
       <div className="flex flex-col items-center justify-center h-full text-center">
-        <h1 className="text-4xl font-bold mb-4">Impostazioni</h1>
+        <Settings className="h-16 w-16 text-gray-500 mb-4" />
+        <h1 className="text-4xl font-bold mb-4">Impostazioni Account</h1>
         <p className="text-lg text-muted-foreground">
-          Qui potrai gestire le impostazioni del tuo account e dell'applicazione.
+          Qui potrai gestire le impostazioni del tuo profilo, le preferenze dell'applicazione e la sicurezza.
         </p>
         <p className="text-sm text-muted-foreground mt-4">
           (Questa pagina è in fase di sviluppo. Le funzionalità verranno aggiunte a breve.)
