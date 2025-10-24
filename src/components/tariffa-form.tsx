@@ -49,19 +49,13 @@ interface Fornitore {
 export const tariffaFormSchema = z.object({
   client_id: z.string().uuid("Seleziona un cliente valido.").nullable(),
   tipo_servizio: z.string().min(1, "Il tipo di servizio è richiesto."),
-  importo: z.union([z.number(), z.string().transform((val) => (val === "" ? 0 : Number(val)))])
-    .pipe(
-      z.number({ invalid_type_error: "L'importo deve essere un numero." })
-        .min(0, "L'importo non può essere negativo.")
-    )
-    .default(0), // Default to 0 if empty/null/undefined after transformation
-  supplier_rate: z.union([z.number(), z.string().transform((val) => (val === "" ? null : Number(val))), z.literal(null)])
-    .pipe(
-      z.number({ invalid_type_error: "La tariffa fornitore deve essere un numero." })
-        .min(0, "La tariffa fornitore non può essere negativa.")
-        .nullable()
-    )
-    .default(null), // Default to null if empty/null/undefined after transformation
+  importo: z.coerce.number({ invalid_type_error: "L'importo deve essere un numero." })
+    .min(0, "L'importo non può essere negativo.")
+    .default(0),
+  supplier_rate: z.coerce.number({ invalid_type_error: "La tariffa fornitore deve essere un numero." })
+    .min(0, "La tariffa fornitore non può essere negativa.")
+    .nullable()
+    .default(null),
   unita_misura: z.string().nullable(),
   punto_servizio_id: z.string().uuid("Seleziona un punto di servizio valido.").nullable(),
   fornitore_id: z.string().uuid("Seleziona un fornitore valido.").nullable(),
@@ -79,8 +73,6 @@ export const tariffaFormSchema = z.object({
 });
 
 export type TariffaFormSchema = z.infer<typeof tariffaFormSchema>;
-// Define the input type for the form, which zodResolver uses for TTransformedValues
-export type TariffaFormInput = z.input<typeof tariffaFormSchema>;
 
 interface TariffaFormProps {
   defaultValues?: TariffaFormSchema;
@@ -115,8 +107,7 @@ export function TariffaForm({
     note: null,
   };
 
-  // Explicitly define TFieldValues and TTransformedValues
-  const form = useForm<TariffaFormSchema, any, TariffaFormInput>({
+  const form = useForm<TariffaFormSchema>({
     resolver: zodResolver(tariffaFormSchema),
     defaultValues: fallbackDefaultValues, // Always initialize with a fully defined fallback
   });
@@ -128,7 +119,7 @@ export function TariffaForm({
       // If propDefaultValues become undefined (e.g., when navigating from edit to new), reset to fallback
       form.reset(fallbackDefaultValues);
     }
-  }, [propDefaultValues, form, fallbackDefaultValues]); // Added fallbackDefaultValues to dependency array
+  }, [propDefaultValues, form, fallbackDefaultValues]);
 
   return (
     <Form {...form}>
@@ -166,7 +157,17 @@ export function TariffaForm({
             <FormItem>
               <FormLabel>Importo (€)</FormLabel>
               <FormControl>
-                <Input type="number" step="0.01" placeholder="0.00" {...field} value={field.value ?? ""} />
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  {...field}
+                  value={field.value === null ? "" : field.value}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    field.onChange(value === "" ? 0 : Number(value));
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -179,7 +180,17 @@ export function TariffaForm({
             <FormItem>
               <FormLabel>Tariffa Fornitore (€)</FormLabel>
               <FormControl>
-                <Input type="number" step="0.01" placeholder="0.00" {...field} value={field.value ?? ""} />
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  {...field}
+                  value={field.value === null ? "" : field.value}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    field.onChange(value === "" ? null : Number(value));
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
