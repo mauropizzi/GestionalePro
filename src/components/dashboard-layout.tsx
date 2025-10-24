@@ -14,6 +14,8 @@ import {
   UserCog,
   Briefcase,
   ShieldCheck,
+  Building2, // Icona per Anagrafiche
+  ClipboardList, // Icona per Clienti
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -67,6 +69,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
     },
     {
+      label: "Anagrafiche",
+      icon: <Building2 className="h-4 w-4" />,
+      roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
+      subLinks: [
+        {
+          label: "Clienti",
+          href: "/anagrafiche/clienti",
+          icon: <ClipboardList className="h-4 w-4" />,
+          roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
+        },
+        // Aggiungi qui altri sub-link per le anagrafiche (es. Fornitori, Prodotti)
+      ],
+    },
+    {
       label: "Impostazioni",
       href: "/settings",
       icon: <Settings className="h-4 w-4" />,
@@ -96,10 +112,24 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </div>
             )}
             {filteredNavLinks.map((link, idx) => (
-              <SidebarLink key={idx} href={link.href} className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
-                {link.icon}
-                {link.label}
-              </SidebarLink>
+              link.subLinks ? (
+                <div key={idx} className="flex flex-col">
+                  <SidebarLink href="#" className="text-sidebar-foreground font-semibold">
+                    {link.icon} {link.label}
+                  </SidebarLink>
+                  <div className="ml-6 flex flex-col gap-1">
+                    {link.subLinks.filter(subLink => profile?.role && subLink.roles.includes(profile.role)).map((subLink, subIdx) => (
+                      <SidebarLink key={subIdx} href={subLink.href} className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+                        {subLink.icon} {subLink.label}
+                      </SidebarLink>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <SidebarLink key={idx} href={link.href} className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+                  {link.icon} {link.label}
+                </SidebarLink>
+              )
             ))}
           </div>
           <div className="p-4">
