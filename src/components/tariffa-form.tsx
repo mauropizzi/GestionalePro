@@ -49,27 +49,13 @@ interface Fornitore {
 export const tariffaFormSchema = z.object({
   client_id: z.string().uuid("Seleziona un cliente valido.").nullable(),
   tipo_servizio: z.string().min(1, "Il tipo di servizio è richiesto."),
-  importo: z.preprocess(
-    (val) => {
-      const processedVal = (typeof val === 'string' && val.trim() === '') || val === null || val === undefined
-        ? 0
-        : Number(val);
-      return processedVal;
-    },
-    z.number({ invalid_type_error: "L'importo deve essere un numero." })
-      .min(0, "L'importo non può essere negativo.")
-  ),
-  supplier_rate: z.preprocess(
-    (val) => {
-      const processedVal = (typeof val === 'string' && val.trim() === '') || val === null || val === undefined
-        ? null
-        : Number(val);
-      return processedVal;
-    },
-    z.number({ invalid_type_error: "La tariffa fornitore deve essere un numero." })
-      .min(0, "La tariffa fornitore non può essere negativa.")
-      .nullable()
-  ),
+  importo: z.coerce.number({ invalid_type_error: "L'importo deve essere un numero." })
+    .min(0, "L'importo non può essere negativo.")
+    .default(0), // Coerce to number, default to 0 if empty/null/undefined
+  supplier_rate: z.coerce.number({ invalid_type_error: "La tariffa fornitore deve essere un numero." })
+    .min(0, "La tariffa fornitore non può essere negativa.")
+    .nullable()
+    .default(null), // Coerce to number, allow null, default to null if empty/null/undefined
   unita_misura: z.string().nullable(),
   punto_servizio_id: z.string().uuid("Seleziona un punto di servizio valido.").nullable(),
   fornitore_id: z.string().uuid("Seleziona un fornitore valido.").nullable(),
@@ -107,16 +93,33 @@ export function TariffaForm({
   fornitori,
   buttonText,
 }: TariffaFormProps) {
+  // Define a fallback for defaultValues to ensure useForm always gets a complete object
+  const fallbackDefaultValues: TariffaFormSchema = {
+    client_id: null,
+    tipo_servizio: "",
+    importo: 0,
+    supplier_rate: null,
+    unita_misura: null,
+    punto_servizio_id: null,
+    fornitore_id: null,
+    data_inizio_validita: null,
+    data_fine_validita: null,
+    note: null,
+  };
+
   const form = useForm<TariffaFormSchema>({
     resolver: zodResolver(tariffaFormSchema),
-    defaultValues: defaultValues,
+    defaultValues: defaultValues ?? fallbackDefaultValues, // Use nullish coalescing for initial defaultValues
   });
 
   React.useEffect(() => {
     if (defaultValues) {
       form.reset(defaultValues);
+    } else {
+      // If defaultValues become undefined (e.g., when navigating from edit to new), reset to fallback
+      form.reset(fallbackDefaultValues);
     }
-  }, [defaultValues, form]);
+  }, [defaultValues, form, fallbackDefaultValues]); // Added fallbackDefaultValues to dependency array
 
   return (
     <Form {...form}>
