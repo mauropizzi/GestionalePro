@@ -40,9 +40,9 @@ serve(async (req: Request) => {
 
     const userEmail = userData.user.email;
 
-    // Generate a password reset link
+    // Generate a password recovery link using the correct type 'recovery'
     const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'password_reset',
+      type: 'recovery', // Changed from 'password_reset' to 'recovery'
       email: userEmail,
       // You can add a redirectTo URL here if you want the link to go to a specific page after reset
       // redirectTo: 'http://localhost:3000/update-password' // Example
