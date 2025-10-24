@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useSession } from "@/components/session-context-provider";
-import { ShieldAlert, Search, Loader2, Trash, KeyRound } from "lucide-react";
+import { ShieldAlert, Search, Loader2, Trash, KeyRound, Edit } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -35,6 +35,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { USER_ROLES } from "@/lib/constants";
+import { EditUserDialog } from "@/components/edit-user-dialog"; // Importa il nuovo componente
 
 interface Profile {
   id: string;
@@ -52,6 +53,8 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedUserToEdit, setSelectedUserToEdit] = useState<Profile | null>(null);
 
   const hasAccess =
     currentUserProfile?.role === "super_admin" ||
@@ -75,12 +78,6 @@ export default function AdminUsersPage() {
       return;
     }
 
-    // Recupera le email dagli utenti auth.users (richiede service_role per tutti gli utenti)
-    // Per ora, useremo solo i dati del profilo. Se le email sono necessarie,
-    // dovremmo usare una funzione Edge per recuperarle in modo sicuro.
-    // Per semplicità, assumeremo che l'email sia disponibile o non strettamente necessaria per questa vista.
-    // In un'applicazione reale, si userebbe una funzione Edge per ottenere i dettagli completi degli utenti.
-
     setUsers(profilesData || []);
     setLoading(false);
   };
@@ -89,7 +86,7 @@ export default function AdminUsersPage() {
     setIsActionLoading(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ role: newRole })
+      .update({ role: newRole, updated_at: new Date().toISOString() })
       .eq("id", userId);
 
     if (error) {
@@ -124,8 +121,6 @@ export default function AdminUsersPage() {
       }
 
       toast.success("Link per il reset della password inviato all'utente.");
-      // Il link di reset viene inviato all'email dell'utente.
-      // data.data.properties.action_link contiene il link, ma non dovrebbe essere esposto all'admin.
     } catch (error: any) {
       toast.error("Errore nel reset della password: " + error.message);
     } finally {
@@ -162,6 +157,15 @@ export default function AdminUsersPage() {
     } finally {
       setIsActionLoading(false);
     }
+  };
+
+  const handleEditClick = (user: Profile) => {
+    setSelectedUserToEdit(user);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUserUpdated = () => {
+    fetchUsers(); // Ricarica gli utenti dopo la modifica
   };
 
   const filteredUsers = users.filter((user) =>
@@ -260,6 +264,15 @@ export default function AdminUsersPage() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => handleEditClick(user)}
+                          disabled={isActionLoading}
+                          title="Modifica utente"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => handlePasswordReset(user.id)}
                           disabled={isActionLoading}
                           title="Invia link reset password"
@@ -301,6 +314,14 @@ export default function AdminUsersPage() {
           </Table>
         </div>
       </div>
+      {selectedUserToEdit && (
+        <EditUserDialog
+          user={selectedUserToEdit}
+          isOpen={isEditDialogOpen}
+          onClose={() => setIsEditDialogOpen(false)}
+          onUserUpdated={handleUserUpdated}
+        />
+      )}
     </DashboardLayout>
   );
 }
