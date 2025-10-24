@@ -49,12 +49,27 @@ interface Fornitore {
 export const tariffaFormSchema = z.object({
   client_id: z.string().uuid("Seleziona un cliente valido.").nullable(),
   tipo_servizio: z.string().min(1, "Il tipo di servizio è richiesto."),
-  importo: z.coerce.number({ invalid_type_error: "L'importo deve essere un numero." })
-    .min(0, "L'importo non può essere negativo.")
+  importo: z.union([z.number(), z.string()])
+    .transform((val) => {
+      if (typeof val === 'string' && val === '') return 0;
+      return Number(val);
+    })
+    .pipe(
+      z.number({ invalid_type_error: "L'importo deve essere un numero." })
+        .min(0, "L'importo non può essere negativo.")
+    )
     .default(0),
-  supplier_rate: z.coerce.number({ invalid_type_error: "La tariffa fornitore deve essere un numero." })
-    .min(0, "La tariffa fornitore non può essere negativa.")
-    .nullable()
+  supplier_rate: z.union([z.number(), z.string(), z.literal(null)])
+    .transform((val) => {
+      if (typeof val === 'string' && val === '') return null;
+      if (val === null) return null;
+      return Number(val);
+    })
+    .pipe(
+      z.number({ invalid_type_error: "La tariffa fornitore deve essere un numero." })
+        .min(0, "La tariffa fornitore non può essere negativa.")
+        .nullable()
+    )
     .default(null),
   unita_misura: z.string().nullable(),
   punto_servizio_id: z.string().uuid("Seleziona un punto di servizio valido.").nullable(),
@@ -73,6 +88,8 @@ export const tariffaFormSchema = z.object({
 });
 
 export type TariffaFormSchema = z.infer<typeof tariffaFormSchema>;
+// Define the input type for the form, which zodResolver uses for TTransformedValues
+export type TariffaFormInput = z.input<typeof tariffaFormSchema>;
 
 interface TariffaFormProps {
   defaultValues?: TariffaFormSchema;
@@ -85,7 +102,7 @@ interface TariffaFormProps {
 }
 
 export function TariffaForm({
-  defaultValues: propDefaultValues, // Renamed to avoid conflict with internal defaultValues
+  defaultValues: propDefaultValues,
   onSubmit,
   isLoading,
   clients,
@@ -93,7 +110,6 @@ export function TariffaForm({
   fornitori,
   buttonText,
 }: TariffaFormProps) {
-  // Define a fallback for defaultValues to ensure useForm always gets a complete object
   const fallbackDefaultValues: TariffaFormSchema = {
     client_id: null,
     tipo_servizio: "",
@@ -107,16 +123,16 @@ export function TariffaForm({
     note: null,
   };
 
-  const form = useForm<TariffaFormSchema>({
+  // Explicitly define TFieldValues (output), TContext, and TTransformedValues (input)
+  const form = useForm<TariffaFormSchema, any, TariffaFormInput>({
     resolver: zodResolver(tariffaFormSchema),
-    defaultValues: fallbackDefaultValues, // Always initialize with a fully defined fallback
+    defaultValues: fallbackDefaultValues,
   });
 
   React.useEffect(() => {
     if (propDefaultValues) {
       form.reset(propDefaultValues);
     } else {
-      // If propDefaultValues become undefined (e.g., when navigating from edit to new), reset to fallback
       form.reset(fallbackDefaultValues);
     }
   }, [propDefaultValues, form, fallbackDefaultValues]);
@@ -162,11 +178,6 @@ export function TariffaForm({
                   step="0.01"
                   placeholder="0.00"
                   {...field}
-                  value={field.value === null ? "" : field.value}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    field.onChange(value === "" ? 0 : Number(value));
-                  }}
                 />
               </FormControl>
               <FormMessage />
@@ -185,11 +196,6 @@ export function TariffaForm({
                   step="0.01"
                   placeholder="0.00"
                   {...field}
-                  value={field.value === null ? "" : field.value}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    field.onChange(value === "" ? null : Number(value));
-                  }}
                 />
               </FormControl>
               <FormMessage />
