@@ -27,9 +27,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { SupplierFormDialog } from "@/components/supplier-form-dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import Link from "next/link"; // Import Link for navigation
 
 interface Supplier {
   id: string;
@@ -56,8 +56,6 @@ export default function FornitoriPage() {
   const [loading, setLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
-  const [selectedSupplierToEdit, setSelectedSupplierToEdit] = useState<Supplier | null>(null);
 
   const hasAccess =
     currentUserProfile?.role === "super_admin" ||
@@ -118,21 +116,6 @@ export default function FornitoriPage() {
     setIsActionLoading(false);
   };
 
-  const handleAddSupplierClick = () => {
-    setSelectedSupplierToEdit(null);
-    setIsFormDialogOpen(true);
-  };
-
-  const handleEditSupplierClick = (supplier: Supplier) => {
-    setSelectedSupplierToEdit(supplier);
-    setIsFormDialogOpen(true);
-  };
-
-  const handleSupplierSaved = () => {
-    fetchSuppliers();
-    setIsFormDialogOpen(false);
-  };
-
   const filteredSuppliers = suppliers.filter((supplier) =>
     supplier.ragione_sociale?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     supplier.codice_fiscale?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -162,8 +145,10 @@ export default function FornitoriPage() {
       <div className="container mx-auto py-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-4xl font-bold">Gestione Fornitori</h1>
-          <Button onClick={handleAddSupplierClick} disabled={isActionLoading}>
-            <PlusCircle className="h-4 w-4 mr-2" /> Nuovo Fornitore
+          <Button asChild disabled={isActionLoading}>
+            <Link href="/anagrafiche/fornitori/new">
+              <PlusCircle className="h-4 w-4 mr-2" /> Nuovo Fornitore
+            </Link>
           </Button>
         </div>
         <p className="text-lg text-muted-foreground mb-8">
@@ -228,11 +213,13 @@ export default function FornitoriPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleEditSupplierClick(supplier)}
+                          asChild
                           disabled={isActionLoading}
                           title="Modifica fornitore"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Link href={`/anagrafiche/fornitori/${supplier.id}/edit`}>
+                            <Edit className="h-4 w-4" />
+                          </Link>
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
@@ -269,12 +256,6 @@ export default function FornitoriPage() {
           </Table>
         </div>
       </div>
-      <SupplierFormDialog
-        supplier={selectedSupplierToEdit}
-        isOpen={isFormDialogOpen}
-        onClose={() => setIsFormDialogOpen(false)}
-        onSupplierSaved={handleSupplierSaved}
-      />
     </DashboardLayout>
   );
 }

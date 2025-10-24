@@ -27,9 +27,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ClientFormDialog } from "@/components/client-form-dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import Link from "next/link"; // Import Link for navigation
 
 interface Client {
   id: string;
@@ -56,8 +56,6 @@ export default function ClientiPage() {
   const [loading, setLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
-  const [selectedClientToEdit, setSelectedClientToEdit] = useState<Client | null>(null);
 
   const hasAccess =
     currentUserProfile?.role === "super_admin" ||
@@ -118,21 +116,6 @@ export default function ClientiPage() {
     setIsActionLoading(false);
   };
 
-  const handleAddClientClick = () => {
-    setSelectedClientToEdit(null);
-    setIsFormDialogOpen(true);
-  };
-
-  const handleEditClientClick = (client: Client) => {
-    setSelectedClientToEdit(client);
-    setIsFormDialogOpen(true);
-  };
-
-  const handleClientSaved = () => {
-    fetchClients();
-    setIsFormDialogOpen(false);
-  };
-
   const filteredClients = clients.filter((client) =>
     client.ragione_sociale?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.codice_fiscale?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -161,8 +144,10 @@ export default function ClientiPage() {
       <div className="container mx-auto py-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-4xl font-bold">Gestione Clienti</h1>
-          <Button onClick={handleAddClientClick} disabled={isActionLoading}>
-            <PlusCircle className="h-4 w-4 mr-2" /> Nuovo Cliente
+          <Button asChild disabled={isActionLoading}>
+            <Link href="/anagrafiche/clienti/new">
+              <PlusCircle className="h-4 w-4 mr-2" /> Nuovo Cliente
+            </Link>
           </Button>
         </div>
         <p className="text-lg text-muted-foreground mb-8">
@@ -227,11 +212,13 @@ export default function ClientiPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleEditClientClick(client)}
+                          asChild
                           disabled={isActionLoading}
                           title="Modifica cliente"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Link href={`/anagrafiche/clienti/${client.id}/edit`}>
+                            <Edit className="h-4 w-4" />
+                          </Link>
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
@@ -268,12 +255,6 @@ export default function ClientiPage() {
           </Table>
         </div>
       </div>
-      <ClientFormDialog
-        client={selectedClientToEdit}
-        isOpen={isFormDialogOpen}
-        onClose={() => setIsFormDialogOpen(false)}
-        onClientSaved={handleClientSaved}
-      />
     </DashboardLayout>
   );
 }
