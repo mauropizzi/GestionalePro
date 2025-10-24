@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useSession } from "@/components/session-context-provider";
-import { ShieldAlert, Search, Loader2, Trash, KeyRound, Edit } from "lucide-react";
+import { ShieldAlert, Search, Loader2, Trash, Edit } from "lucide-react"; // Rimosso KeyRound
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -36,7 +36,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { USER_ROLES } from "@/lib/constants";
 import { EditUserDialog } from "@/components/edit-user-dialog";
-import { PasswordResetLinkToast } from "@/components/password-reset-link-toast"; // Import the new toast component
 
 interface Profile {
   id: string;
@@ -99,42 +98,7 @@ export default function AdminUsersPage() {
     setIsActionLoading(false);
   };
 
-  const handlePasswordReset = async (userId: string) => {
-    setIsActionLoading(true);
-    try {
-      const response = await fetch(
-        "https://mlkahaedxpwkhheqwsjc.supabase.co/functions/v1/reset-user-password",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2FoYWVkeHB3a2hoZXF3c2pjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNzgyNTksImV4cCI6MjA3Njg1NDI1OX0._QR-tTUw-NPhjCv9boDDQAsewgyDzMhwiXNIlxIBCjQ",
-          },
-          body: JSON.stringify({ userId }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Errore nel reset della password");
-      }
-
-      const { actionLink } = data;
-      if (actionLink) {
-        // Display the link in a custom toast instead of opening it
-        toast.custom((t) => (
-          <PasswordResetLinkToast actionLink={actionLink} toastId={t} />
-        ), { duration: 10000 }); // Keep toast visible for 10 seconds
-      } else {
-        toast.error("Errore: Link per il reset della password non ricevuto.");
-      }
-    } catch (error: any) {
-      toast.error("Errore nel reset della password: " + error.message);
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
+  // Rimosso handlePasswordReset e l'import di PasswordResetLinkToast
 
   const handleDeleteUser = async (userId: string) => {
     setIsActionLoading(true);
@@ -145,7 +109,7 @@ export default function AdminUsersPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2FoYWVkeHB3a2hoZXF3c2pjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNzgyNTksImV4cCI6MjA3Njg1NDI1OX0._QR-tTUw-NPhjCv9boDDQAsewgyDzMhwiXNIlxIBCjQ",
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2FoYWVkeHB3a2hoZXF3c2pjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNzgyNTU5LCJleHAiOjIwNzY4NTQyNTl9._QR-tTUw-NPhCcv9boDDQAsewgyDzMhwiXNIlxIBCjQ",
           },
           body: JSON.stringify({ userId }),
         }
@@ -277,15 +241,7 @@ export default function AdminUsersPage() {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePasswordReset(user.id)}
-                          disabled={isActionLoading}
-                          title="Invia link reset password"
-                        >
-                          <KeyRound className="h-4 w-4" />
-                        </Button>
+                        {/* Rimosso il pulsante per il reset della password */}
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button
