@@ -54,8 +54,8 @@ export function SessionContextProvider({ children }: { children: ReactNode }) {
             .single();
 
           if (error) {
-            console.error("Errore nel recupero del profilo:", error);
-            toast.error("Errore nel recupero del profilo utente.");
+            console.error("Errore nel recupero del profilo:", error.message); // Logga il messaggio di errore specifico
+            toast.error("Errore nel recupero del profilo utente: " + error.message); // Mostra il messaggio di errore nel toast
             setProfile(null);
           } else {
             setProfile(data as Profile);
@@ -79,8 +79,8 @@ export function SessionContextProvider({ children }: { children: ReactNode }) {
           .single()
           .then(({ data, error }) => {
             if (error) {
-              console.error("Errore nel recupero del profilo iniziale:", error);
-              toast.error("Errore nel recupero del profilo utente.");
+              console.error("Errore nel recupero del profilo iniziale:", error.message); // Logga il messaggio di errore specifico
+              toast.error("Errore nel recupero del profilo utente: " + error.message); // Mostra il messaggio di errore nel toast
               setProfile(null);
             } else {
               setProfile(data as Profile);
