@@ -3,12 +3,15 @@
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { CustomSignUpForm } from "@/components/custom-signup-form"; // Importa il nuovo componente
 
 export default function LoginPage() {
   const router = useRouter();
+  const [showCustomSignUp, setShowCustomSignUp] = useState(false); // Stato per mostrare il modulo di registrazione personalizzato
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -37,70 +40,75 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-screen bg-background">
       <div className="w-full max-w-md p-8 space-y-6 bg-card rounded-lg shadow-lg">
         <h2 className="text-2xl font-bold text-center text-foreground">
-          Accedi o Registrati
+          {showCustomSignUp ? "Registrati" : "Accedi"}
         </h2>
-        <Auth
-          supabaseClient={supabase}
-          providers={[]}
-          appearance={{
-            theme: ThemeSupa,
-            variables: {
-              default: {
-                colors: {
-                  brand: "hsl(var(--primary))",
-                  brandAccent: "hsl(var(--primary-foreground))",
+
+        {showCustomSignUp ? (
+          <CustomSignUpForm />
+        ) : (
+          <Auth
+            supabaseClient={supabase}
+            providers={[]}
+            appearance={{
+              theme: ThemeSupa,
+              variables: {
+                default: {
+                  colors: {
+                    brand: "hsl(var(--primary))",
+                    brandAccent: "hsl(var(--primary-foreground))",
+                  },
                 },
               },
-            },
-          }}
-          theme="light"
-          localization={{
-            variables: {
-              sign_in: {
-                email_label: "Indirizzo Email",
-                password_label: "Password",
-                email_input_placeholder: "La tua email",
-                password_input_placeholder: "La tua password",
-                button_label: "Accedi",
-                social_provider_text: "Accedi con",
-                link_text: "Hai già un account? Accedi",
+            }}
+            theme="light"
+            localization={{
+              variables: {
+                sign_in: {
+                  email_label: "Indirizzo Email",
+                  password_label: "Password",
+                  email_input_placeholder: "La tua email",
+                  password_input_placeholder: "La tua password",
+                  button_label: "Accedi",
+                  social_provider_text: "Accedi con",
+                  link_text: "Hai già un account? Accedi",
+                },
+                forgotten_password: {
+                  email_label: "Indirizzo Email",
+                  button_label: "Invia istruzioni per il reset",
+                  link_text: "Password dimenticata?",
+                  email_input_placeholder: "La tua email",
+                  confirmation_text: "Controlla la tua email per il link di reset della password.",
+                },
+                update_password: {
+                  password_label: "Nuova Password",
+                  password_input_placeholder: "La tua nuova password",
+                  button_label: "Aggiorna Password",
+                  confirmation_text: "La tua password è stata aggiornata.",
+                },
+                magic_link: {
+                  email_input_placeholder: "La tua email",
+                  button_label: "Invia Magic Link",
+                  link_text: "Invia un Magic Link",
+                  confirmation_text: "Controlla la tua email per il Magic Link.",
+                },
+                verify_otp: {
+                  email_input_placeholder: "Il tuo codice OTP",
+                  button_label: "Verifica OTP",
+                },
               },
-              sign_up: {
-                email_label: "Indirizzo Email",
-                password_label: "Password",
-                email_input_placeholder: "La tua email",
-                password_input_placeholder: "Crea una password",
-                button_label: "Registrati",
-                social_provider_text: "Registrati con",
-                link_text: "Non hai un account? Registrati",
-                confirmation_text: "Controlla la tua email per il link di conferma.",
-              },
-              forgotten_password: {
-                email_label: "Indirizzo Email",
-                button_label: "Invia istruzioni per il reset",
-                link_text: "Password dimenticata?",
-                email_input_placeholder: "La tua email",
-                confirmation_text: "Controlla la tua email per il link di reset della password.",
-              },
-              update_password: {
-                password_label: "Nuova Password",
-                password_input_placeholder: "La tua nuova password",
-                button_label: "Aggiorna Password",
-                confirmation_text: "La tua password è stata aggiornata.",
-              },
-              magic_link: {
-                email_input_placeholder: "La tua email",
-                button_label: "Invia Magic Link",
-                link_text: "Invia un Magic Link",
-                confirmation_text: "Controlla la tua email per il Magic Link.",
-              },
-              verify_otp: {
-                email_input_placeholder: "Il tuo codice OTP",
-                button_label: "Verifica OTP",
-              },
-            },
-          }}
-        />
+            }}
+          />
+        )}
+
+        <Button
+          variant="link"
+          className="w-full text-sm text-muted-foreground"
+          onClick={() => setShowCustomSignUp(!showCustomSignUp)}
+        >
+          {showCustomSignUp
+            ? "Hai già un account? Accedi"
+            : "Non hai un account? Registrati"}
+        </Button>
       </div>
     </div>
   );
