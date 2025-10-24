@@ -17,6 +17,7 @@ import {
   Building2, // Icona per Anagrafiche
   ClipboardList, // Icona per Clienti
   Truck, // Icona per Fornitori
+  Network, // Icona per Operatori Network
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -86,7 +87,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           icon: <Truck className="h-4 w-4" />,
           roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
         },
-        // Aggiungi qui altri sub-link per le anagrafiche (es. Prodotti)
+        {
+          label: "Operatori Network",
+          href: "/anagrafiche/operatori-network",
+          icon: <Network className="h-4 w-4" />,
+          roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
+        },
       ],
     },
     {
