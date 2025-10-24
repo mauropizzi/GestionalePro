@@ -49,13 +49,19 @@ interface Fornitore {
 export const tariffaFormSchema = z.object({
   client_id: z.string().uuid("Seleziona un cliente valido.").nullable(),
   tipo_servizio: z.string().min(1, "Il tipo di servizio è richiesto."),
-  importo: z.coerce.number({ invalid_type_error: "L'importo deve essere un numero." })
-    .min(0, "L'importo non può essere negativo.")
-    .default(0), // Coerce to number, default to 0 if empty/null/undefined
-  supplier_rate: z.coerce.number({ invalid_type_error: "La tariffa fornitore deve essere un numero." })
-    .min(0, "La tariffa fornitore non può essere negativa.")
-    .nullable()
-    .default(null), // Coerce to number, allow null, default to null if empty/null/undefined
+  importo: z.union([z.number(), z.string().transform((val) => (val === "" ? 0 : Number(val)))])
+    .pipe(
+      z.number({ invalid_type_error: "L'importo deve essere un numero." })
+        .min(0, "L'importo non può essere negativo.")
+    )
+    .default(0), // Default to 0 if empty/null/undefined after transformation
+  supplier_rate: z.union([z.number(), z.string().transform((val) => (val === "" ? null : Number(val))), z.literal(null)])
+    .pipe(
+      z.number({ invalid_type_error: "La tariffa fornitore deve essere un numero." })
+        .min(0, "La tariffa fornitore non può essere negativa.")
+        .nullable()
+    )
+    .default(null), // Default to null if empty/null/undefined after transformation
   unita_misura: z.string().nullable(),
   punto_servizio_id: z.string().uuid("Seleziona un punto di servizio valido.").nullable(),
   fornitore_id: z.string().uuid("Seleziona un fornitore valido.").nullable(),
@@ -73,6 +79,8 @@ export const tariffaFormSchema = z.object({
 });
 
 export type TariffaFormSchema = z.infer<typeof tariffaFormSchema>;
+// Define the input type for the form, which zodResolver uses for TTransformedValues
+export type TariffaFormInput = z.input<typeof tariffaFormSchema>;
 
 interface TariffaFormProps {
   defaultValues?: TariffaFormSchema;
@@ -85,7 +93,7 @@ interface TariffaFormProps {
 }
 
 export function TariffaForm({
-  defaultValues,
+  defaultValues: propDefaultValues, // Renamed to avoid conflict with internal defaultValues
   onSubmit,
   isLoading,
   clients,
@@ -107,19 +115,20 @@ export function TariffaForm({
     note: null,
   };
 
-  const form = useForm<TariffaFormSchema>({
+  // Explicitly define TFieldValues and TTransformedValues
+  const form = useForm<TariffaFormSchema, any, TariffaFormInput>({
     resolver: zodResolver(tariffaFormSchema),
-    defaultValues: defaultValues ?? fallbackDefaultValues, // Use nullish coalescing for initial defaultValues
+    defaultValues: fallbackDefaultValues, // Always initialize with a fully defined fallback
   });
 
   React.useEffect(() => {
-    if (defaultValues) {
-      form.reset(defaultValues);
+    if (propDefaultValues) {
+      form.reset(propDefaultValues);
     } else {
-      // If defaultValues become undefined (e.g., when navigating from edit to new), reset to fallback
+      // If propDefaultValues become undefined (e.g., when navigating from edit to new), reset to fallback
       form.reset(fallbackDefaultValues);
     }
-  }, [defaultValues, form, fallbackDefaultValues]); // Added fallbackDefaultValues to dependency array
+  }, [propDefaultValues, form, fallbackDefaultValues]); // Added fallbackDefaultValues to dependency array
 
   return (
     <Form {...form}>
