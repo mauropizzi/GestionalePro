@@ -64,7 +64,6 @@ export default function LoginPage() {
                 button_label: "Accedi",
                 social_provider_text: "Accedi con",
                 link_text: "Hai già un account? Accedi",
-                // confirmation_text rimosso
               },
               sign_up: {
                 email_label: "Indirizzo Email",
