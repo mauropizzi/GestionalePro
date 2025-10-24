@@ -35,7 +35,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { USER_ROLES } from "@/lib/constants";
-import { EditUserDialog } from "@/components/edit-user-dialog"; // Importa il nuovo componente
+import { EditUserDialog } from "@/components/edit-user-dialog";
+import { PasswordResetLinkToast } from "@/components/password-reset-link-toast"; // Import the new toast component
 
 interface Profile {
   id: string;
@@ -44,7 +45,7 @@ interface Profile {
   avatar_url: string | null;
   role: string;
   registration_status: string;
-  email?: string; // Aggiunto per comodità, anche se non direttamente nel profilo
+  email?: string;
 }
 
 export default function AdminUsersPage() {
@@ -93,7 +94,7 @@ export default function AdminUsersPage() {
       toast.error("Errore nell'aggiornamento del ruolo: " + error.message);
     } else {
       toast.success("Ruolo utente aggiornato con successo!");
-      fetchUsers(); // Ricarica gli utenti per mostrare il ruolo aggiornato
+      fetchUsers();
     }
     setIsActionLoading(false);
   };
@@ -121,9 +122,10 @@ export default function AdminUsersPage() {
 
       const { actionLink } = data;
       if (actionLink) {
-        // Open the generated link in a new tab
-        window.open(actionLink, '_blank');
-        toast.success("Link per il reset della password generato. Si è aperto in una nuova scheda.");
+        // Display the link in a custom toast instead of opening it
+        toast.custom((t) => (
+          <PasswordResetLinkToast actionLink={actionLink} toastId={t} />
+        ), { duration: 10000 }); // Keep toast visible for 10 seconds
       } else {
         toast.error("Errore: Link per il reset della password non ricevuto.");
       }
@@ -156,7 +158,7 @@ export default function AdminUsersPage() {
       }
 
       toast.success("Utente eliminato con successo!");
-      fetchUsers(); // Ricarica gli utenti
+      fetchUsers();
     } catch (error: any) {
       toast.error("Errore nell'eliminazione dell'utente: " + error.message);
     } finally {
@@ -170,7 +172,7 @@ export default function AdminUsersPage() {
   };
 
   const handleUserUpdated = () => {
-    fetchUsers(); // Ricarica gli utenti dopo la modifica
+    fetchUsers();
   };
 
   const filteredUsers = users.filter((user) =>
@@ -180,7 +182,7 @@ export default function AdminUsersPage() {
   );
 
   if (isSessionLoading) {
-    return null; // Il layout gestisce già lo stato di caricamento
+    return null;
   }
 
   if (!hasAccess) {
@@ -241,7 +243,7 @@ export default function AdminUsersPage() {
                       <Select
                         value={user.role}
                         onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
-                        disabled={isActionLoading || user.id === currentUserProfile?.id} // Non permettere di cambiare il proprio ruolo
+                        disabled={isActionLoading || user.id === currentUserProfile?.id}
                       >
                         <SelectTrigger className="w-[180px]">
                           <SelectValue placeholder="Seleziona Ruolo" />
@@ -289,7 +291,7 @@ export default function AdminUsersPage() {
                             <Button
                               variant="destructive"
                               size="sm"
-                              disabled={isActionLoading || user.id === currentUserProfile?.id} // Non permettere di eliminare se stessi
+                              disabled={isActionLoading || user.id === currentUserProfile?.id}
                               title="Elimina utente"
                             >
                               <Trash className="h-4 w-4" />
