@@ -21,6 +21,7 @@ import {
   UserRound, // Icona per Elenco Personale
   FileText, // Icona per Procedure
   MapPin, // Icona per Punti Servizio
+  Euro, // Icona per Tariffe
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -112,6 +113,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           label: "Punti Servizio",
           href: "/anagrafiche/punti-servizio",
           icon: <MapPin className="h-4 w-4" />,
+          roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
+        },
+        {
+          label: "Tariffe",
+          href: "/anagrafiche/tariffe",
+          icon: <Euro className="h-4 w-4" />,
           roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
         },
       ],
