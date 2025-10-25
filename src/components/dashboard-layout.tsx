@@ -21,8 +21,6 @@ import {
   UserRound, // Icona per Elenco Personale
   FileText, // Icona per Procedure
   MapPin, // Icona per Punti Servizio
-  Tag, // Icona per Tariffe
-  Upload, // Icona per Importa/Esporta
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -116,18 +114,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           icon: <MapPin className="h-4 w-4" />,
           roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
         },
-        {
-          label: "Tariffe",
-          href: "/anagrafiche/tariffe",
-          icon: <Tag className="h-4 w-4" />,
-          roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
-        },
-        {
-          label: "Importa/Esporta",
-          href: "/anagrafiche/import-export",
-          icon: <Upload className="h-4 w-4" />,
-          roles: ["super_admin", "amministrazione"], // Solo admin per import/export
-        },
       ],
     },
     {
@@ -196,7 +182,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {profile?.registration_status === 'pending' && profile.role !== 'super_admin' ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <ShieldCheck className="h-16 w-16 text-yellow-500 mb-4" />
-            <h2 className="2xl font-bold mb-2">Registrazione in Attesa di Approvazione</h2>
+            <h2 className="text-2xl font-bold mb-2">Registrazione in Attesa di Approvazione</h2>
             <p className="text-muted-foreground">Il tuo account è stato creato e ora è in attesa di approvazione da parte di un amministratore.</p>
             <p className="text-muted-foreground">Riceverai una notifica quando il tuo account sarà attivo.</p>
             <Button onClick={handleLogout} className="mt-6" variant="outline">
