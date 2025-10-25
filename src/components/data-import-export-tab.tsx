@@ -52,9 +52,8 @@ export function DataImportExportTab({ entityName, tableName, uniqueKey, columns 
           const workbook = XLSX.read(data, { type: "array" });
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
-          const json: any[] = XLSX.utils.sheet_to_json(worksheet);
-          const typedJson: RowData[] = json.map(item => ({ ...item }));
-          resolve(typedJson);
+          const json: RowData[] = XLSX.utils.sheet_to_json(worksheet);
+          resolve(json);
         } catch (error) {
           reject(new Error("Errore durante la lettura del file Excel. Assicurati che sia un formato valido."));
         }
@@ -81,10 +80,10 @@ export function DataImportExportTab({ entityName, tableName, uniqueKey, columns 
 
     setLoading(true);
     try {
-      const excelData: RowData[] = await parseExcel(file);
+      const excelData = await parseExcel(file);
       const dbData = await fetchExistingData();
 
-      const processedData: RowData[] = excelData.map(row => {
+      const processedData = excelData.map(row => {
         const isDuplicate = dbData.some(dbRow => dbRow[uniqueKey] === row[uniqueKey]);
         return {
           ...row,
