@@ -5,7 +5,7 @@ import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import { useSession } from "@/components/session-context-provider";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation"; // Importa usePathname
 import {
   Home,
   Users,
@@ -34,6 +34,7 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { profile, isLoading } = useSession();
   const router = useRouter();
+  const pathname = usePathname(); // Ottieni il percorso corrente
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -169,14 +170,28 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   </SidebarLink>
                   <div className="ml-4 flex flex-col gap-0.5">
                     {link.subLinks.filter(subLink => profile?.role && subLink.roles.includes(profile.role)).map((subLink, subIdx) => (
-                      <SidebarLink key={subIdx} href={subLink.href} className="text-sidebar-foreground text-xs hover:bg-blue-accent hover:text-blue-accent-foreground">
+                      <SidebarLink
+                        key={subIdx}
+                        href={subLink.href}
+                        className={cn(
+                          "text-sidebar-foreground text-xs hover:bg-blue-accent hover:text-blue-accent-foreground",
+                          pathname === subLink.href && "bg-blue-accent text-blue-accent-foreground" // Stile per link attivo
+                        )}
+                      >
                         {subLink.icon} {subLink.label}
                       </SidebarLink>
                     ))}
                   </div>
                 </div>
               ) : (
-                <SidebarLink key={idx} href={link.href} className="text-sidebar-foreground text-sm hover:bg-blue-accent hover:text-blue-accent-foreground">
+                <SidebarLink
+                  key={idx}
+                  href={link.href}
+                  className={cn(
+                    "text-sidebar-foreground text-sm hover:bg-blue-accent hover:text-blue-accent-foreground",
+                    pathname === link.href && "bg-blue-accent text-blue-accent-foreground" // Stile per link attivo
+                  )}
+                >
                   {link.icon} {link.label}
                 </SidebarLink>
               )
