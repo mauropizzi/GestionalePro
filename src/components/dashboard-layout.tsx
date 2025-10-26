@@ -22,6 +22,7 @@ import {
   FileText, // Icona per Procedure
   MapPin, // Icona per Punti Servizio
   Euro, // Icona per Tariffe
+  FileStack, // Icona per Richieste di Servizio
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -73,6 +74,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       href: "/operations",
       icon: <Briefcase className="h-4 w-4" />,
       roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
+      subLinks: [
+        {
+          label: "Richieste di Servizio",
+          href: "/richieste-servizio",
+          icon: <FileStack className="h-4 w-4" />,
+          roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
+        },
+      ],
     },
     {
       label: "Anagrafiche",
