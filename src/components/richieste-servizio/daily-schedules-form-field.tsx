@@ -18,9 +18,9 @@ export function DailySchedulesFormField() {
   const form = useFormContext<RichiestaServizioFormSchema>();
 
   return (
-    <div className="md:col-span-2 mt-4">
+    <div className="md:col-span-2 mt-2">
       <h3 className="text-xl font-semibold mb-2">Orari Giornalieri</h3>
-      <p className="text-sm text-muted-foreground mb-2">
+      <p className="text-sm text-muted-foreground mb-1">
         Definisci gli orari di servizio per ogni giorno della settimana e per i giorni festivi.
       </p>
       {daysOfWeek.map((day, index) => (
@@ -29,11 +29,11 @@ export function DailySchedulesFormField() {
           control={form.control}
           name={`daily_schedules.${index}`}
           render={({ field }) => (
-            <FormItem className="flex flex-col space-y-1 mb-2 p-2 border rounded-md">
+            <FormItem className="flex flex-col space-y-0.5 mb-1 p-1 border rounded-md">
               <div className="flex items-center justify-between">
                 <FormLabel className="text-base">{day}</FormLabel>
-                <div className="flex items-center space-x-3">
-                  <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1">
                     <Switch
                       checked={field.value.attivo}
                       onCheckedChange={(checked) => {
@@ -50,7 +50,7 @@ export function DailySchedulesFormField() {
                     <Label htmlFor={`attivo-${day}`}>Attivo</Label>
                   </div>
                   {field.value.attivo && (
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
                       <Switch
                         checked={field.value.h24}
                         onCheckedChange={(checked) => {
@@ -69,7 +69,7 @@ export function DailySchedulesFormField() {
                 </div>
               </div>
               {field.value.attivo && !field.value.h24 && (
-                <div className="grid grid-cols-2 gap-2 mt-1">
+                <div className="grid grid-cols-2 gap-1 mt-0.5">
                   <FormItem>
                     <FormLabel>Ora Inizio</FormLabel>
                     <FormControl>

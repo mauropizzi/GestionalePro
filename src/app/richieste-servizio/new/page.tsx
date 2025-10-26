@@ -171,8 +171,8 @@ export default function NewRichiestaServizioPage() {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-8">
-        <div className="flex items-center gap-4 mb-6">
+      <div className="container mx-auto py-4">
+        <div className="flex items-center gap-4 mb-4">
           <Button variant="outline" size="icon" asChild>
             <Link href="/richieste-servizio">
               <ArrowLeft className="h-4 w-4" />
@@ -180,7 +180,7 @@ export default function NewRichiestaServizioPage() {
           </Button>
           <h1 className="text-4xl font-bold">Nuova Richiesta di Servizio</h1>
         </div>
-        <p className="text-lg text-muted-foreground mb-8">
+        <p className="text-lg text-muted-foreground mb-6">
           Crea una nuova richiesta di servizio per un cliente.
         </p>
 
@@ -220,7 +220,7 @@ export default function NewRichiestaServizioPage() {
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Seleziona un punto servizio (opzionale)" />
-                      </SelectTrigger>
+                    </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {puntiServizio.map((punto) => (

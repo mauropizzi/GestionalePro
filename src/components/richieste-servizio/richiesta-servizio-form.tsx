@@ -48,7 +48,7 @@ export function RichiestaServizioForm({
 }: RichiestaServizioFormProps) {
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2 max-w-3xl mx-auto">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-2 py-1 max-w-3xl mx-auto">
         <FormField
           control={form.control}
           name="client_id"
