@@ -1,3 +1,5 @@
+import { ServiceType } from "@/lib/richieste-servizio-utils";
+
 export interface Client {
   id: string;
   ragione_sociale: string;
@@ -29,7 +31,7 @@ export interface RichiestaServizio {
   id: string;
   client_id: string | null;
   punto_servizio_id: string | null;
-  tipo_servizio: string;
+  tipo_servizio: ServiceType; // Aggiornato per usare ServiceType
   data_inizio_servizio: string;
   data_fine_servizio: string;
   numero_agenti: number;

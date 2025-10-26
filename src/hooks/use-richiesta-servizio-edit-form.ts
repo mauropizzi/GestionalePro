@@ -12,6 +12,7 @@ import {
   richiestaServizioFormSchema,
   calculateTotalHours,
   defaultDailySchedules,
+  ServiceType, // Importa ServiceType
 } from "@/lib/richieste-servizio-utils";
 import { Client, PuntoServizio, RichiestaServizio, DailySchedule } from "@/types/richieste-servizio";
 
@@ -28,7 +29,7 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
     defaultValues: {
       client_id: "",
       punto_servizio_id: null,
-      tipo_servizio: "ORE",
+      tipo_servizio: "PIANTONAMENTO_ARMATO", // Impostato come valore predefinito
       data_inizio_servizio: new Date(),
       ora_inizio_servizio: "09:00",
       data_fine_servizio: new Date(),
@@ -110,7 +111,7 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
         form.reset({
           client_id: richiestaData.client_id || "",
           punto_servizio_id: richiestaData.punto_servizio_id || null,
-          tipo_servizio: richiestaData.tipo_servizio as "ORE",
+          tipo_servizio: richiestaData.tipo_servizio as ServiceType, // Cast a ServiceType
           data_inizio_servizio: parseISO(richiestaData.data_inizio_servizio),
           ora_inizio_servizio: format(parseISO(richiestaData.data_inizio_servizio), "HH:mm"),
           data_fine_servizio: parseISO(richiestaData.data_fine_servizio),

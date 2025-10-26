@@ -5,6 +5,9 @@ import { DailySchedule } from "@/types/richieste-servizio";
 
 export const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
+export const SERVICE_TYPES = ["PIANTONAMENTO_ARMATO", "SERVIZIO_FIDUCIARIO"] as const;
+export type ServiceType = (typeof SERVICE_TYPES)[number];
+
 export const dailyScheduleSchema = z.object({
   id: z.string().optional(),
   giorno_settimana: z.string(),
@@ -41,7 +44,7 @@ export const dailyScheduleSchema = z.object({
 export const richiestaServizioFormSchema = z.object({
   client_id: z.string().uuid("Seleziona un cliente valido."),
   punto_servizio_id: z.string().uuid("Seleziona un punto servizio valido.").nullable(),
-  tipo_servizio: z.literal("ORE"),
+  tipo_servizio: z.enum(SERVICE_TYPES, { required_error: "Il tipo di servizio è richiesto." }), // Aggiornato a enum
   data_inizio_servizio: z.date({ required_error: "La data di inizio servizio è richiesta." }),
   ora_inizio_servizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
   data_fine_servizio: z.date({ required_error: "La data di fine servizio è richiesta." }),

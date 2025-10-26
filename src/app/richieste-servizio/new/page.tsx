@@ -42,6 +42,7 @@ import {
   calculateTotalHours,
   defaultDailySchedules,
   daysOfWeek,
+  SERVICE_TYPES, // Importa SERVICE_TYPES
 } from "@/lib/richieste-servizio-utils";
 import { DailySchedulesFormField } from "@/components/richieste-servizio/daily-schedules-form-field";
 
@@ -67,7 +68,7 @@ export default function NewRichiestaServizioPage() {
     defaultValues: {
       client_id: "",
       punto_servizio_id: null,
-      tipo_servizio: "ORE",
+      tipo_servizio: "PIANTONAMENTO_ARMATO", // Impostato come valore predefinito
       data_inizio_servizio: new Date(),
       ora_inizio_servizio: "09:00",
       data_fine_servizio: new Date(),
@@ -242,18 +243,26 @@ export default function NewRichiestaServizioPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tipo di Servizio</FormLabel>
-                    <FormControl>
-                      <Input {...field} readOnly className="bg-muted" />
-                    </FormControl>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleziona il tipo di servizio" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="PIANTONAMENTO_ARMATO">Piantonamento Armato</SelectItem>
+                        <SelectItem value="SERVIZIO_FIDUCIARIO">Servizio Fiduciario</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormDescription className="text-xs">
-                      Attualmente è supportato solo il tipo "ORE".
+                      Seleziona la tipologia di servizio richiesta.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* Campi specifici per tipo_servizio "ORE" */}
+              {/* Campi specifici per tipo_servizio "ORE" (ora applicabili a entrambi i tipi) */}
               <>
                 <FormField
                   control={form.control}

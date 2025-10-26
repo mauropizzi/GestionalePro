@@ -28,7 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Client, PuntoServizio } from "@/types/richieste-servizio";
-import { RichiestaServizioFormSchema } from "@/lib/richieste-servizio-utils";
+import { RichiestaServizioFormSchema, SERVICE_TYPES } from "@/lib/richieste-servizio-utils"; // Importa SERVICE_TYPES
 import { DailySchedulesFormField } from "./daily-schedules-form-field";
 
 interface RichiestaServizioFormProps {
@@ -105,18 +105,26 @@ export function RichiestaServizioForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tipo di Servizio</FormLabel>
-                <FormControl>
-                  <Input {...field} readOnly className="bg-muted" />
-                </FormControl>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleziona il tipo di servizio" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="PIANTONAMENTO_ARMATO">Piantonamento Armato</SelectItem>
+                    <SelectItem value="SERVIZIO_FIDUCIARIO">Servizio Fiduciario</SelectItem>
+                  </SelectContent>
+                </Select>
                 <FormDescription className="text-xs">
-                  Attualmente è supportato solo il tipo "ORE".
+                  Seleziona la tipologia di servizio richiesta.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          {/* Campi specifici per tipo_servizio "ORE" */}
+          {/* Campi specifici per tipo_servizio "ORE" (ora applicabili a entrambi i tipi) */}
           <>
             <FormField
               control={form.control}
