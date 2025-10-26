@@ -37,6 +37,10 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    --blue-accent: 210 90% 50%; /* Nuovo colore: Blu vivace */
+    --blue-accent-foreground: 0 0% 100%;
+    --orange-accent: 30 90% 50%; /* Nuovo colore: Arancione caldo */
+    --orange-accent-foreground: 0 0% 100%;
     font-size: 90%; /* Riduzione globale della dimensione del font */
   }
   .dark {
@@ -72,6 +76,10 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    --blue-accent: 210 90% 60%; /* Blu vivace per tema scuro */
+    --blue-accent-foreground: 0 0% 100%;
+    --orange-accent: 30 90% 60%; /* Arancione caldo per tema scuro */
+    --orange-accent-foreground: 0 0% 100%;
   }
 }
 

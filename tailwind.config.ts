@@ -59,7 +59,15 @@ export default {
   				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
-  			}
+  			},
+            'blue-accent': { // Nuovo colore accentato
+                DEFAULT: 'hsl(var(--blue-accent))',
+                foreground: 'hsl(var(--blue-accent-foreground))'
+            },
+            'orange-accent': { // Nuovo colore accentato
+                DEFAULT: 'hsl(var(--orange-accent))',
+                foreground: 'hsl(var(--orange-accent-foreground))'
+            }
   		},
   		borderRadius: {
   			lg: 'var(--radius)',

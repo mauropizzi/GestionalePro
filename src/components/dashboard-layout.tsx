@@ -169,14 +169,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   </SidebarLink>
                   <div className="ml-4 flex flex-col gap-0.5">
                     {link.subLinks.filter(subLink => profile?.role && subLink.roles.includes(profile.role)).map((subLink, subIdx) => (
-                      <SidebarLink key={subIdx} href={subLink.href} className="text-sidebar-foreground text-xs hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+                      <SidebarLink key={subIdx} href={subLink.href} className="text-sidebar-foreground text-xs hover:bg-blue-accent hover:text-blue-accent-foreground">
                         {subLink.icon} {subLink.label}
                       </SidebarLink>
                     ))}
                   </div>
                 </div>
               ) : (
-                <SidebarLink key={idx} href={link.href} className="text-sidebar-foreground text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+                <SidebarLink key={idx} href={link.href} className="text-sidebar-foreground text-sm hover:bg-blue-accent hover:text-blue-accent-foreground">
                   {link.icon} {link.label}
                 </SidebarLink>
               )
@@ -185,7 +185,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="p-4">
             <Button
               onClick={handleLogout}
-              className="w-full justify-start text-sidebar-foreground text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              className="w-full justify-start text-sidebar-foreground text-sm hover:bg-blue-accent hover:text-blue-accent-foreground"
               variant="ghost"
             >
               <LogOut className="h-3.5 w-3.5 mr-2" />
