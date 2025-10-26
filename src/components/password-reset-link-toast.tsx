@@ -22,7 +22,7 @@ export function PasswordResetLinkToast({ actionLink, toastId }: PasswordResetLin
       <p className="text-xs font-medium">Link per il reset della password generato:</p>
       <div className="flex w-full items-center space-x-1">
         <Input type="text" value={actionLink} readOnly className="flex-1 text-xs" />
-        <Button type="button" size="xs" onClick={handleCopy}>
+        <Button type="button" size="sm" onClick={handleCopy}>
           <Copy className="h-3 w-3 mr-1" /> Copia
         </Button>
       </div>
