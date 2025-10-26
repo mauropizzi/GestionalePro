@@ -1,0 +1,40 @@
+export interface Client {
+  id: string;
+  ragione_sociale: string;
+}
+
+export interface PuntoServizio {
+  id: string;
+  nome_punto_servizio: string;
+}
+
+export interface Fornitore {
+  id: string;
+  ragione_sociale: string;
+}
+
+export interface DailySchedule {
+  id?: string;
+  richiesta_servizio_id: string;
+  giorno_settimana: string;
+  h24: boolean;
+  ora_inizio: string | null;
+  ora_fine: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface RichiestaServizio {
+  id: string;
+  client_id: string | null;
+  punto_servizio_id: string | null;
+  tipo_servizio: string;
+  data_inizio_servizio: string;
+  data_fine_servizio: string;
+  numero_agenti: number;
+  note: string | null;
+  status: string;
+  total_hours_calculated: number | null;
+  created_at: string;
+  updated_at: string;
+}

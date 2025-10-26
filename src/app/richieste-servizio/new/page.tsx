@@ -87,7 +87,7 @@ const formSchema = z.object({
   ora_fine_servizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
   numero_agenti: z.coerce.number().min(1, "Il numero di agenti deve essere almeno 1."),
   note: z.string().nullable(),
-  daily_schedules: z.array(dailyScheduleSchema).min(7, "Devi definire gli orari per tutti i giorni della settimana."),
+  daily_schedules: z.array(dailyScheduleSchema).min(8, "Devi definire gli orari per tutti i giorni della settimana."),
 }).refine(data => {
   const startDateTime = setMinutes(setHours(data.data_inizio_servizio, parseInt(data.ora_inizio_servizio.split(':')[0]),), parseInt(data.ora_inizio_servizio.split(':')[1]));
   const endDateTime = setMinutes(setHours(data.data_fine_servizio, parseInt(data.ora_fine_servizio.split(':')[0]),), parseInt(data.ora_fine_servizio.split(':')[1]));
