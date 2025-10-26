@@ -1,3 +1,5 @@
+"use client";
+
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useSession } from "@/components/session-context-provider";
