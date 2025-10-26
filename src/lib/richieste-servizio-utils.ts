@@ -11,21 +11,25 @@ export const dailyScheduleSchema = z.object({
   h24: z.boolean(),
   ora_inizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)").nullable(),
   ora_fine: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)").nullable(),
+  attivo: z.boolean(),
 }).refine(data => {
+  if (!data.attivo) {
+    return data.h24 === false && data.ora_inizio === null && data.ora_fine === null;
+  }
   if (data.h24) {
     return data.ora_inizio === null && data.ora_fine === null;
   } else {
     return data.ora_inizio !== null && data.ora_fine !== null;
   }
 }, {
-  message: "Specificare orari di inizio e fine o selezionare h24.",
+  message: "Specificare orari di inizio e fine o selezionare h24 se il giorno è attivo.",
   path: ["ora_inizio"],
 }).refine(data => {
-  if (!data.h24 && data.ora_inizio && data.ora_fine) {
+  if (data.attivo && !data.h24 && data.ora_inizio && data.ora_fine) {
     const [startH, startM] = data.ora_inizio.split(':').map(Number);
     const [endH, endM] = data.ora_fine.split(':').map(Number);
     const startTime = setMinutes(setHours(new Date(), startH), startM);
-    const endTime = setMinutes(setHours(new Date(), endM), endM);
+    const endTime = setMinutes(setHours(new Date(), endH), endM);
     return endTime > startTime;
   }
   return true;
@@ -72,7 +76,7 @@ export const calculateTotalHours = (
     const dayOfWeek = format(currentDate, 'EEEE', { locale: it }); // e.g., "lunedì"
     const schedule = dailySchedules.find(s => s.giorno_settimana.toLowerCase() === dayOfWeek.toLowerCase());
 
-    if (schedule) {
+    if (schedule && schedule.attivo) { // Only consider active schedules
       if (schedule.h24) {
         totalHours += 24;
       } else if (schedule.ora_inizio && schedule.ora_fine) {
@@ -111,14 +115,14 @@ export const calculateTotalHours = (
 };
 
 export const defaultDailySchedules = [
-  { giorno_settimana: "Lunedì", h24: false, ora_inizio: "09:00", ora_fine: "18:00" },
-  { giorno_settimana: "Martedì", h24: false, ora_inizio: "09:00", ora_fine: "18:00" },
-  { giorno_settimana: "Mercoledì", h24: false, ora_inizio: "09:00", ora_fine: "18:00" },
-  { giorno_settimana: "Giovedì", h24: false, ora_inizio: "09:00", ora_fine: "18:00" },
-  { giorno_settimana: "Venerdì", h24: false, ora_inizio: "09:00", ora_fine: "18:00" },
-  { giorno_settimana: "Sabato", h24: false, ora_inizio: "09:00", ora_fine: "13:00" },
-  { giorno_settimana: "Domenica", h24: false, ora_inizio: null, ora_fine: null },
-  { giorno_settimana: "Festivo", h24: false, ora_inizio: null, ora_fine: null },
+  { giorno_settimana: "Lunedì", h24: false, ora_inizio: "09:00", ora_fine: "18:00", attivo: true },
+  { giorno_settimana: "Martedì", h24: false, ora_inizio: "09:00", ora_fine: "18:00", attivo: true },
+  { giorno_settimana: "Mercoledì", h24: false, ora_inizio: "09:00", ora_fine: "18:00", attivo: true },
+  { giorno_settimana: "Giovedì", h24: false, ora_inizio: "09:00", ora_fine: "18:00", attivo: true },
+  { giorno_settimana: "Venerdì", h24: false, ora_inizio: "09:00", ora_fine: "18:00", attivo: true },
+  { giorno_settimana: "Sabato", h24: false, ora_inizio: "09:00", ora_fine: "13:00", attivo: true },
+  { giorno_settimana: "Domenica", h24: false, ora_inizio: null, ora_fine: null, attivo: false },
+  { giorno_settimana: "Festivo", h24: false, ora_inizio: null, ora_fine: null, attivo: false },
 ];
 
 export const daysOfWeek = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica", "Festivo"];

@@ -100,6 +100,7 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
             h24: existingSchedule.h24,
             ora_inizio: existingSchedule.ora_inizio,
             ora_fine: existingSchedule.ora_fine,
+            attivo: existingSchedule.attivo,
           } : {
             ...defaultSchedule,
             richiesta_servizio_id: richiestaId,
@@ -170,6 +171,7 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
         h24: schedule.h24,
         ora_inizio: schedule.h24 ? null : schedule.ora_inizio,
         ora_fine: schedule.h24 ? null : schedule.ora_fine,
+        attivo: schedule.attivo,
         updated_at: now,
       };
 

@@ -32,23 +32,43 @@ export function DailySchedulesFormField() {
             <FormItem className="flex flex-col space-y-2 mb-4 p-3 border rounded-md">
               <div className="flex items-center justify-between">
                 <FormLabel className="text-base">{day}</FormLabel>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    checked={field.value.h24}
-                    onCheckedChange={(checked) => {
-                      field.onChange({
-                        ...field.value,
-                        h24: checked,
-                        ora_inizio: checked ? null : "09:00",
-                        ora_fine: checked ? null : "18:00",
-                      });
-                    }}
-                    id={`h24-${day}`}
-                  />
-                  <Label htmlFor={`h24-${day}`}>H24</Label>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={field.value.attivo}
+                      onCheckedChange={(checked) => {
+                        field.onChange({
+                          ...field.value,
+                          attivo: checked,
+                          h24: checked ? field.value.h24 : false, // Reset h24 if not active
+                          ora_inizio: checked ? field.value.ora_inizio : null, // Reset times if not active
+                          ora_fine: checked ? field.value.ora_fine : null,     // Reset times if not active
+                        });
+                      }}
+                      id={`attivo-${day}`}
+                    />
+                    <Label htmlFor={`attivo-${day}`}>Attivo</Label>
+                  </div>
+                  {field.value.attivo && (
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={field.value.h24}
+                        onCheckedChange={(checked) => {
+                          field.onChange({
+                            ...field.value,
+                            h24: checked,
+                            ora_inizio: checked ? null : "09:00",
+                            ora_fine: checked ? null : "18:00",
+                          });
+                        }}
+                        id={`h24-${day}`}
+                      />
+                      <Label htmlFor={`h24-${day}`}>H24</Label>
+                    </div>
+                  )}
                 </div>
               </div>
-              {!field.value.h24 && (
+              {field.value.attivo && !field.value.h24 && (
                 <div className="grid grid-cols-2 gap-4 mt-2">
                   <FormItem>
                     <FormLabel>Ora Inizio</FormLabel>
