@@ -7,7 +7,6 @@ export const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 export const dailyScheduleSchema = z.object({
   id: z.string().optional(),
-  richiesta_servizio_id: z.string().optional(), // Reso opzionale nello schema
   giorno_settimana: z.string(),
   h24: z.boolean(),
   ora_inizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)").nullable(),
@@ -45,7 +44,7 @@ export const richiestaServizioFormSchema = z.object({
   ora_fine_servizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
   numero_agenti: z.coerce.number().min(1, "Il numero di agenti deve essere almeno 1."),
   note: z.string().nullable(),
-  daily_schedules: z.array(dailyScheduleSchema).min(1, "Devi definire almeno un orario giornaliero per il servizio."),
+  daily_schedules: z.array(dailyScheduleSchema).min(8, "Devi definire gli orari per tutti i giorni della settimana e per i festivi."),
 }).refine(data => {
   const startDateTime = setMinutes(setHours(data.data_inizio_servizio, parseInt(data.ora_inizio_servizio.split(':')[0])), parseInt(data.ora_inizio_servizio.split(':')[1]));
   const endDateTime = setMinutes(setHours(data.data_fine_servizio, parseInt(data.ora_fine_servizio.split(':')[0])), parseInt(data.ora_fine_servizio.split(':')[1]));
@@ -53,18 +52,6 @@ export const richiestaServizioFormSchema = z.object({
 }, {
   message: "La data e ora di fine servizio devono essere successive alla data e ora di inizio.",
   path: ["data_fine_servizio"],
-}).refine(data => {
-  const selectedDays = new Set<string>();
-  for (const schedule of data.daily_schedules) {
-    if (selectedDays.has(schedule.giorno_settimana)) {
-      return false;
-    }
-    selectedDays.add(schedule.giorno_settimana);
-  }
-  return true;
-}, {
-  message: "Non puoi avere orari duplicati per lo stesso giorno della settimana.",
-  path: ["daily_schedules"],
 });
 
 export type RichiestaServizioFormSchema = z.infer<typeof richiestaServizioFormSchema>;

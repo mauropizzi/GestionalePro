@@ -11,6 +11,7 @@ import {
   RichiestaServizioFormSchema,
   richiestaServizioFormSchema,
   calculateTotalHours,
+  defaultDailySchedules,
 } from "@/lib/richieste-servizio-utils";
 import { Client, PuntoServizio, RichiestaServizio, DailySchedule } from "@/types/richieste-servizio";
 
@@ -34,7 +35,7 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
       ora_fine_servizio: "18:00",
       numero_agenti: 1,
       note: null,
-      daily_schedules: [], // Inizialmente vuoto, verrà popolato dai dati esistenti
+      daily_schedules: defaultDailySchedules,
     },
   });
 
@@ -90,6 +91,21 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
           toast.error("Errore nel recupero degli orari giornalieri: " + schedulesError.message);
         }
 
+        const mergedSchedules = defaultDailySchedules.map(defaultSchedule => {
+          const existingSchedule = schedulesData?.find(s => s.giorno_settimana === defaultSchedule.giorno_settimana);
+          return existingSchedule ? {
+            id: existingSchedule.id,
+            richiesta_servizio_id: existingSchedule.richiesta_servizio_id,
+            giorno_settimana: existingSchedule.giorno_settimana,
+            h24: existingSchedule.h24,
+            ora_inizio: existingSchedule.ora_inizio,
+            ora_fine: existingSchedule.ora_fine,
+          } : {
+            ...defaultSchedule,
+            richiesta_servizio_id: richiestaId,
+          };
+        });
+
         form.reset({
           client_id: richiestaData.client_id || "",
           punto_servizio_id: richiestaData.punto_servizio_id || null,
@@ -100,7 +116,7 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
           ora_fine_servizio: format(parseISO(richiestaData.data_fine_servizio), "HH:mm"),
           numero_agenti: richiestaData.numero_agenti,
           note: richiestaData.note || null,
-          daily_schedules: (schedulesData || []) as DailySchedule[],
+          daily_schedules: mergedSchedules,
         });
       }
       setIsLoading(false);
@@ -144,34 +160,6 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
       toast.error("Errore durante l'aggiornamento della richiesta di servizio: " + richiestaError.message);
       setIsSubmitting(false);
       return;
-    }
-
-    // Fetch current schedules to determine what to delete
-    const { data: currentSchedules, error: fetchCurrentError } = await supabase
-      .from("richieste_servizio_orari_giornalieri")
-      .select("id")
-      .eq("richiesta_servizio_id", richiestaId);
-
-    if (fetchCurrentError) {
-      toast.error("Errore nel recupero degli orari attuali per l'eliminazione: " + fetchCurrentError.message);
-      setIsSubmitting(false);
-      return;
-    }
-
-    const currentScheduleIds = new Set(currentSchedules?.map(s => s.id));
-    const submittedScheduleIds = new Set(values.daily_schedules.filter(s => s.id).map(s => s.id));
-
-    // Delete schedules that are no longer in the form
-    for (const currentId of currentScheduleIds) {
-      if (!submittedScheduleIds.has(currentId)) {
-        const { error: deleteError } = await supabase
-          .from("richieste_servizio_orari_giornalieri")
-          .delete()
-          .eq("id", currentId);
-        if (deleteError) {
-          toast.error(`Errore nell'eliminazione dell'orario con ID ${currentId}: ` + deleteError.message);
-        }
-      }
     }
 
     // Update or insert daily schedules

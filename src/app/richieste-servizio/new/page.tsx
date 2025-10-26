@@ -29,18 +29,75 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Clock, ArrowLeft, Loader2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
-import { format, setHours, setMinutes } from "date-fns";
+import { format, setHours, setMinutes, parseISO, isValid } from "date-fns";
 import { it } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Client, PuntoServizio } from "@/types/richieste-servizio";
-import {
-  RichiestaServizioFormSchema,
-  richiestaServizioFormSchema,
-  calculateTotalHours,
-} from "@/lib/richieste-servizio-utils";
-import { DailySchedulesFormField } from "@/components/richieste-servizio/daily-schedules-form-field";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label"; // Import aggiunto
+
+interface Client {
+  id: string;
+  ragione_sociale: string;
+}
+
+interface PuntoServizio {
+  id: string;
+  nome_punto_servizio: string;
+}
+
+const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+const dailyScheduleSchema = z.object({
+  giorno_settimana: z.string(),
+  h24: z.boolean(),
+  ora_inizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)").nullable(),
+  ora_fine: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)").nullable(),
+}).refine(data => {
+  if (data.h24) {
+    return data.ora_inizio === null && data.ora_fine === null;
+  } else {
+    return data.ora_inizio !== null && data.ora_fine !== null;
+  }
+}, {
+  message: "Specificare orari di inizio e fine o selezionare h24.",
+  path: ["ora_inizio"],
+}).refine(data => {
+  if (!data.h24 && data.ora_inizio && data.ora_fine) {
+    const [startH, startM] = data.ora_inizio.split(':').map(Number);
+    const [endH, endM] = data.ora_fine.split(':').map(Number);
+    const startTime = setMinutes(setHours(new Date(), startH), startM);
+    const endTime = setMinutes(setHours(new Date(), endH), endM);
+    return endTime > startTime;
+  }
+  return true;
+}, {
+  message: "L'ora di fine deve essere successiva all'ora di inizio.",
+  path: ["ora_fine"],
+});
+
+const formSchema = z.object({
+  client_id: z.string().uuid("Seleziona un cliente valido."),
+  punto_servizio_id: z.string().uuid("Seleziona un punto servizio valido.").nullable(),
+  tipo_servizio: z.literal("ORE"), // For now, only "ORE" is supported
+  data_inizio_servizio: z.date({ required_error: "La data di inizio servizio è richiesta." }),
+  ora_inizio_servizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
+  data_fine_servizio: z.date({ required_error: "La data di fine servizio è richiesta." }),
+  ora_fine_servizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
+  numero_agenti: z.coerce.number().min(1, "Il numero di agenti deve essere almeno 1."),
+  note: z.string().nullable(),
+  daily_schedules: z.array(dailyScheduleSchema).min(8, "Devi definire gli orari per tutti i giorni della settimana."),
+}).refine(data => {
+  const startDateTime = setMinutes(setHours(data.data_inizio_servizio, parseInt(data.ora_inizio_servizio.split(':')[0]),), parseInt(data.ora_inizio_servizio.split(':')[1]));
+  const endDateTime = setMinutes(setHours(data.data_fine_servizio, parseInt(data.ora_fine_servizio.split(':')[0]),), parseInt(data.ora_fine_servizio.split(':')[1]));
+  return endDateTime > startDateTime;
+}, {
+  message: "La data e ora di fine servizio devono essere successive alla data e ora di inizio.",
+  path: ["data_fine_servizio"],
+});
+
+type RichiestaServizioFormSchema = z.infer<typeof formSchema>;
 
 export default function NewRichiestaServizioPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -49,7 +106,7 @@ export default function NewRichiestaServizioPage() {
   const router = useRouter();
 
   const form = useForm<RichiestaServizioFormSchema>({
-    resolver: zodResolver(richiestaServizioFormSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       client_id: "",
       punto_servizio_id: null,
@@ -60,7 +117,16 @@ export default function NewRichiestaServizioPage() {
       ora_fine_servizio: "18:00",
       numero_agenti: 1,
       note: null,
-      daily_schedules: [], // Inizialmente vuoto, l'utente aggiungerà i giorni
+      daily_schedules: [
+        { giorno_settimana: "Lunedì", h24: false, ora_inizio: "09:00", ora_fine: "18:00" },
+        { giorno_settimana: "Martedì", h24: false, ora_inizio: "09:00", ora_fine: "18:00" },
+        { giorno_settimana: "Mercoledì", h24: false, ora_inizio: "09:00", ora_fine: "18:00" },
+        { giorno_settimana: "Giovedì", h24: false, ora_inizio: "09:00", ora_fine: "18:00" },
+        { giorno_settimana: "Venerdì", h24: false, ora_inizio: "09:00", ora_fine: "18:00" },
+        { giorno_settimana: "Sabato", h24: false, ora_inizio: "09:00", ora_fine: "13:00" },
+        { giorno_settimana: "Domenica", h24: false, ora_inizio: null, ora_fine: null },
+        { giorno_settimana: "Festivo", h24: false, ora_inizio: null, ora_fine: null },
+      ],
     },
   });
 
@@ -90,6 +156,60 @@ export default function NewRichiestaServizioPage() {
     }
     fetchDependencies();
   }, []);
+
+  const calculateTotalHours = (
+    startDate: Date,
+    endDate: Date,
+    dailySchedules: typeof formSchema._type.daily_schedules,
+    numAgents: number
+  ): number => {
+    let totalHours = 0;
+    let currentDate = new Date(startDate);
+    currentDate.setHours(0, 0, 0, 0); // Normalize to start of day
+
+    const endDateTime = new Date(endDate);
+
+    while (currentDate <= endDateTime) {
+      const dayOfWeek = format(currentDate, 'EEEE', { locale: it }); // e.g., "lunedì"
+      const schedule = dailySchedules.find(s => s.giorno_settimana.toLowerCase() === dayOfWeek.toLowerCase());
+
+      if (schedule) {
+        if (schedule.h24) {
+          totalHours += 24;
+        } else if (schedule.ora_inizio && schedule.ora_fine) {
+          const [startH, startM] = schedule.ora_inizio.split(':').map(Number);
+          const [endH, endM] = schedule.ora_fine.split(':').map(Number);
+
+          let dayStart = setMinutes(setHours(new Date(currentDate), startH), startM);
+          let dayEnd = setMinutes(setHours(new Date(currentDate), endH), endM);
+
+          // Adjust for start/end service times on the first/last day
+          if (currentDate.toDateString() === startDate.toDateString()) {
+            const serviceStartHour = startDate.getHours();
+            const serviceStartMinute = startDate.getMinutes();
+            const serviceStartTime = setMinutes(setHours(new Date(currentDate), serviceStartHour), serviceStartMinute);
+            if (serviceStartTime > dayStart) {
+              dayStart = serviceStartTime;
+            }
+          }
+          if (currentDate.toDateString() === endDate.toDateString()) {
+            const serviceEndHour = endDate.getHours();
+            const serviceEndMinute = endDate.getMinutes();
+            const serviceEndTime = setMinutes(setHours(new Date(currentDate), serviceEndHour), serviceEndMinute);
+            if (serviceEndTime < dayEnd) {
+              dayEnd = serviceEndTime;
+            }
+          }
+
+          if (dayEnd > dayStart) {
+            totalHours += (dayEnd.getTime() - dayStart.getTime()) / (1000 * 60 * 60);
+          }
+        }
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    return totalHours * numAgents;
+  };
 
   async function onSubmit(values: RichiestaServizioFormSchema) {
     setIsLoading(true);
@@ -133,9 +253,8 @@ export default function NewRichiestaServizioPage() {
 
     // Insert daily schedules
     const schedulesToInsert = values.daily_schedules.map(schedule => ({
-      richiesta_servizio_id: newRichiesta.id, // Ora richiesta_servizio_id è presente
-      giorno_settimana: schedule.giorno_settimana,
-      h24: schedule.h24,
+      ...schedule,
+      richiesta_servizio_id: newRichiesta.id,
       ora_inizio: schedule.h24 ? null : schedule.ora_inizio,
       ora_fine: schedule.h24 ? null : schedule.ora_fine,
       created_at: now,
@@ -155,6 +274,8 @@ export default function NewRichiestaServizioPage() {
     }
     setIsLoading(false);
   }
+
+  const daysOfWeek = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica", "Festivo"];
 
   return (
     <DashboardLayout>
@@ -364,7 +485,68 @@ export default function NewRichiestaServizioPage() {
                 )}
               />
 
-              <DailySchedulesFormField />
+              <div className="md:col-span-2 mt-6">
+                <h3 className="text-xl font-semibold mb-4">Orari Giornalieri</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Definisci gli orari di servizio per ogni giorno della settimana e per i giorni festivi.
+                </p>
+                {daysOfWeek.map((day, index) => (
+                  <FormField
+                    key={day}
+                    control={form.control}
+                    name={`daily_schedules.${index}`}
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col space-y-2 mb-4 p-3 border rounded-md">
+                        <div className="flex items-center justify-between">
+                          <FormLabel className="text-base">{day}</FormLabel>
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={field.value.h24}
+                              onCheckedChange={(checked) => {
+                                field.onChange({
+                                  ...field.value,
+                                  h24: checked,
+                                  ora_inizio: checked ? null : "09:00", // Reset or set default
+                                  ora_fine: checked ? null : "18:00",   // Reset or set default
+                                });
+                              }}
+                              id={`h24-${day}`}
+                            />
+                            <Label htmlFor={`h24-${day}`}>H24</Label>
+                          </div>
+                        </div>
+                        {!field.value.h24 && (
+                          <div className="grid grid-cols-2 gap-4 mt-2">
+                            <FormItem>
+                              <FormLabel>Ora Inizio</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="time"
+                                  value={field.value.ora_inizio ?? ""}
+                                  onChange={(e) => field.onChange({ ...field.value, ora_inizio: e.target.value })}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                            <FormItem>
+                              <FormLabel>Ora Fine</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="time"
+                                  value={field.value.ora_fine ?? ""}
+                                  onChange={(e) => field.onChange({ ...field.value, ora_fine: e.target.value })}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          </div>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ))}
+              </div>
             </>
 
             <FormField
