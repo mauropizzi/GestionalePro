@@ -58,18 +58,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo", "pending_approval"],
     },
     {
-      label: "Gestione Utenti",
-      href: "/admin/users",
-      icon: <Users className="h-3.5 w-3.5" />,
-      roles: ["super_admin", "amministrazione"],
-    },
-    {
-      label: "Approvazione Registrazioni",
-      href: "/admin/registrations",
-      icon: <UserCog className="h-3.5 w-3.5" />,
-      roles: ["super_admin", "amministrazione"],
-    },
-    {
       label: "Operazioni",
       href: "/operations",
       icon: <Briefcase className="h-3.5 w-3.5" />,
@@ -137,6 +125,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       href: "/settings",
       icon: <Settings className="h-3.5 w-3.5" />,
       roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo", "pending_approval"],
+    },
+    {
+      label: "Gestione Utenti",
+      href: "/admin/users",
+      icon: <Users className="h-3.5 w-3.5" />,
+      roles: ["super_admin", "amministrazione"],
+    },
+    {
+      label: "Approvazione Registrazioni",
+      href: "/admin/registrations",
+      icon: <UserCog className="h-3.5 w-3.5" />,
+      roles: ["super_admin", "amministrazione"],
     },
   ];
 
