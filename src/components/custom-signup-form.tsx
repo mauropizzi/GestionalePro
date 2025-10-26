@@ -64,13 +64,13 @@ export function CustomSignUpForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
         <FormField
           control={form.control}
           name="first_name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nome</FormLabel>
+              <FormLabel className="text-sm">Nome</FormLabel>
               <FormControl>
                 <Input placeholder="Il tuo nome" {...field} />
               </FormControl>
@@ -83,7 +83,7 @@ export function CustomSignUpForm() {
           name="last_name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Cognome</FormLabel>
+              <FormLabel className="text-sm">Cognome</FormLabel>
               <FormControl>
                 <Input placeholder="Il tuo cognome" {...field} />
               </FormControl>
@@ -96,7 +96,7 @@ export function CustomSignUpForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel className="text-sm">Email</FormLabel>
               <FormControl>
                 <Input type="email" placeholder="La tua email" {...field} />
               </FormControl>
@@ -109,7 +109,7 @@ export function CustomSignUpForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel className="text-sm">Password</FormLabel>
               <FormControl>
                 <Input type="password" placeholder="Crea una password" {...field} />
               </FormControl>

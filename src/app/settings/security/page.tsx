@@ -86,18 +86,18 @@ export default function SecuritySettingsPage() {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Sicurezza Account</h1>
+      <div className="container mx-auto py-6">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold">Sicurezza Account</h1>
         </div>
-        <p className="text-base text-muted-foreground mb-8">
+        <p className="text-sm text-muted-foreground mb-6">
           Gestisci le impostazioni di sicurezza del tuo account, inclusa la modifica della password.
         </p>
 
         <Card className="max-w-lg">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Lock className="h-5 w-5 text-muted-foreground" /> Cambia Password
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Lock className="h-4 w-4 text-muted-foreground" /> Cambia Password
             </CardTitle>
           </CardHeader>
           <CardContent>

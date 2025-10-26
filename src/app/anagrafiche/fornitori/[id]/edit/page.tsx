@@ -184,16 +184,16 @@ export default function EditSupplierPage() {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-8">
-        <div className="flex items-center gap-4 mb-4">
+      <div className="container mx-auto py-6">
+        <div className="flex items-center gap-4 mb-3">
           <Button variant="outline" size="icon" asChild>
             <Link href="/anagrafiche/fornitori">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h1 className="text-3xl font-bold">Modifica Fornitore: {supplier.ragione_sociale}</h1>
+          <h1 className="text-2xl font-bold">Modifica Fornitore: {supplier.ragione_sociale}</h1>
         </div>
-        <p className="text-base text-muted-foreground mb-6">
+        <p className="text-sm text-muted-foreground mb-4">
           Apporta modifiche ai dati del fornitore.
         </p>
 
@@ -376,8 +376,8 @@ export default function EditSupplierPage() {
               )}
             />
             <div className="md:col-span-2 flex justify-end">
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? (
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   "Salva modifiche"

@@ -172,15 +172,15 @@ export default function NewRichiestaServizioPage() {
   return (
     <DashboardLayout>
       <div className="container mx-auto py-4">
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex items-center gap-4 mb-3">
           <Button variant="outline" size="icon" asChild>
             <Link href="/richieste-servizio">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h1 className="text-4xl font-bold">Nuova Richiesta di Servizio</h1>
+          <h1 className="text-2xl font-bold">Nuova Richiesta di Servizio</h1>
         </div>
-        <p className="text-lg text-muted-foreground mb-6">
+        <p className="text-sm text-muted-foreground mb-4">
           Crea una nuova richiesta di servizio per un cliente.
         </p>
 
@@ -243,7 +243,7 @@ export default function NewRichiestaServizioPage() {
                   <FormControl>
                     <Input {...field} readOnly className="bg-muted" />
                   </FormControl>
-                  <FormDescription>
+                  <FormDescription className="text-xs">
                     Attualmente è supportato solo il tipo "ORE".
                   </FormDescription>
                   <FormMessage />

@@ -44,26 +44,26 @@ export default function AppearanceSettingsPage() {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Aspetto</h1>
+      <div className="container mx-auto py-6">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold">Aspetto</h1>
         </div>
-        <p className="text-base text-muted-foreground mb-8">
+        <p className="text-sm text-muted-foreground mb-6">
           Personalizza il tema e l'aspetto dell'interfaccia utente.
         </p>
 
         <Card className="max-w-lg">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Palette className="h-5 w-5 text-muted-foreground" /> Personalizza Aspetto
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Palette className="h-4 w-4 text-muted-foreground" /> Personalizza Aspetto
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
                 <Label htmlFor="theme-select" className="text-sm">Tema</Label>
                 <Select value={theme} onValueChange={(value) => setTheme(value)}>
-                  <SelectTrigger id="theme-select" className="w-[180px]">
+                  <SelectTrigger id="theme-select" className="w-[160px]">
                     <SelectValue placeholder="Seleziona tema" />
                   </SelectTrigger>
                   <SelectContent>
@@ -72,7 +72,7 @@ export default function AppearanceSettingsPage() {
                     <SelectItem value="system">Sistema</SelectItem>
                   </SelectContent>
                 </Select>
-                <CardDescription className="mt-2 text-xs">
+                <CardDescription className="mt-1 text-xs">
                   Scegli il tema dell'applicazione (chiaro, scuro o basato sulle impostazioni di sistema).
                 </CardDescription>
               </div>

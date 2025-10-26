@@ -163,10 +163,10 @@ export default function AdminUsersPage() {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-8">
-        <h1 className="text-3xl font-bold mb-6 text-center">Gestione Utenti</h1>
+      <div className="container mx-auto py-6">
+        <h1 className="text-2xl font-bold mb-4 text-center">Gestione Utenti</h1>
 
-        <div className="mb-6 flex justify-between items-center">
+        <div className="mb-4 flex justify-between items-center">
           <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -194,7 +194,7 @@ export default function AdminUsersPage() {
             <TableBody>
               {filteredUsers.length === 0 && !loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="h-20 text-center text-muted-foreground">
                     Nessun utente trovato.
                   </TableCell>
                 </TableRow>
@@ -209,7 +209,7 @@ export default function AdminUsersPage() {
                         onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
                         disabled={isActionLoading || user.id === currentUserProfile?.id}
                       >
-                        <SelectTrigger className="w-[160px]">
+                        <SelectTrigger className="w-[140px]">
                           <SelectValue placeholder="Seleziona Ruolo" />
                         </SelectTrigger>
                         <SelectContent>

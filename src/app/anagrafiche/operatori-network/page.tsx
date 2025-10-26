@@ -126,20 +126,20 @@ export default function OperatoriNetworkPage() {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Gestione Operatori Network</h1>
+      <div className="container mx-auto py-6">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold">Gestione Operatori Network</h1>
           <Button asChild disabled={isActionLoading}>
             <Link href="/anagrafiche/operatori-network/new">
               <PlusCircle className="h-4 w-4 mr-2" /> Nuovo Operatore
             </Link>
           </Button>
         </div>
-        <p className="text-base text-muted-foreground mb-8">
+        <p className="text-sm text-muted-foreground mb-6">
           Gestisci gli operatori network associati ai clienti.
         </p>
 
-        <div className="mb-6 flex justify-between items-center">
+        <div className="mb-4 flex justify-between items-center">
           <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -168,7 +168,7 @@ export default function OperatoriNetworkPage() {
             <TableBody>
               {filteredOperators.length === 0 && !loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="h-20 text-center text-muted-foreground">
                     Nessun operatore network trovato.
                   </TableCell>
                 </TableRow>

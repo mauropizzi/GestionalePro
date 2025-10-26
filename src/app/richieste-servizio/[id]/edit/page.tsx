@@ -50,15 +50,15 @@ export default function EditRichiestaServizioPage() {
   return (
     <DashboardLayout>
       <div className="container mx-auto py-4">
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex items-center gap-4 mb-3">
           <Button variant="outline" size="icon" asChild>
             <Link href="/richieste-servizio">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h1 className="text-4xl font-bold">Modifica Richiesta di Servizio: {richiesta.tipo_servizio}</h1>
+          <h1 className="text-2xl font-bold">Modifica Richiesta di Servizio: {richiesta.tipo_servizio}</h1>
         </div>
-        <p className="text-lg text-muted-foreground mb-6">
+        <p className="text-sm text-muted-foreground mb-4">
           Apporta modifiche ai dati della richiesta di servizio.
         </p>
 

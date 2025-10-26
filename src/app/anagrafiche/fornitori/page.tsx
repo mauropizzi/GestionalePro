@@ -142,20 +142,20 @@ export default function FornitoriPage() {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Gestione Fornitori</h1>
+      <div className="container mx-auto py-6">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold">Gestione Fornitori</h1>
           <Button asChild disabled={isActionLoading}>
             <Link href="/anagrafiche/fornitori/new">
               <PlusCircle className="h-4 w-4 mr-2" /> Nuovo Fornitore
             </Link>
           </Button>
         </div>
-        <p className="text-base text-muted-foreground mb-8">
+        <p className="text-sm text-muted-foreground mb-6">
           Gestisci le anagrafiche dei tuoi fornitori.
         </p>
 
-        <div className="mb-6 flex justify-between items-center">
+        <div className="mb-4 flex justify-between items-center">
           <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -184,7 +184,7 @@ export default function FornitoriPage() {
             <TableBody>
               {filteredSuppliers.length === 0 && !loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="h-20 text-center text-muted-foreground">
                     Nessun fornitore trovato.
                   </TableCell>
                 </TableRow>
@@ -196,7 +196,7 @@ export default function FornitoriPage() {
                     <TableCell>{supplier.tipo_servizio || "N/A"}</TableCell>
                     <TableCell>{supplier.citta || "N/A"}</TableCell>
                     <TableCell>
-                      <div className="flex items-center space-x-2 text-sm">
+                      <div className="flex items-center space-x-2 text-xs">
                         <Switch
                           id={`attivo-${supplier.id}`}
                           checked={supplier.attivo}

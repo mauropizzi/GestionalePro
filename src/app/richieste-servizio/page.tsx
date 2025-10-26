@@ -127,20 +127,20 @@ export default function RichiesteServizioPage() {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-4xl font-bold">Gestione Richieste di Servizio</h1>
+      <div className="container mx-auto py-6">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold">Gestione Richieste di Servizio</h1>
           <Button asChild disabled={isActionLoading}>
             <Link href="/richieste-servizio/new">
               <PlusCircle className="h-4 w-4 mr-2" /> Nuova Richiesta
             </Link>
           </Button>
         </div>
-        <p className="text-lg text-muted-foreground mb-8">
+        <p className="text-sm text-muted-foreground mb-6">
           Gestisci le richieste di servizio dei clienti.
         </p>
 
-        <div className="mb-6 flex justify-between items-center">
+        <div className="mb-4 flex justify-between items-center">
           <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -170,7 +170,7 @@ export default function RichiesteServizioPage() {
             <TableBody>
               {filteredRichieste.length === 0 && !loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="h-20 text-center text-muted-foreground">
                     Nessuna richiesta di servizio trovata.
                   </TableCell>
                 </TableRow>

@@ -185,16 +185,16 @@ export default function EditClientPage() {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-8">
-        <div className="flex items-center gap-4 mb-4">
+      <div className="container mx-auto py-6">
+        <div className="flex items-center gap-4 mb-3">
           <Button variant="outline" size="icon" asChild>
             <Link href="/anagrafiche/clienti">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h1 className="text-3xl font-bold">Modifica Cliente: {client.ragione_sociale}</h1>
+          <h1 className="text-2xl font-bold">Modifica Cliente: {client.ragione_sociale}</h1>
         </div>
-        <p className="text-base text-muted-foreground mb-6">
+        <p className="text-sm text-muted-foreground mb-4">
           Apporta modifiche ai dati del cliente.
         </p>
 

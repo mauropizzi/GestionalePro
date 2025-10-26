@@ -234,21 +234,21 @@ export default function EditTariffaPage() {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-8">
-        <div className="flex items-center gap-4 mb-6">
+      <div className="container mx-auto py-6">
+        <div className="flex items-center gap-4 mb-3">
           <Button variant="outline" size="icon" asChild>
             <Link href="/anagrafiche/tariffe">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h1 className="text-4xl font-bold">Modifica Tariffa: {tariffa.tipo_servizio}</h1>
+          <h1 className="text-2xl font-bold">Modifica Tariffa: {tariffa.tipo_servizio}</h1>
         </div>
-        <p className="text-lg text-muted-foreground mb-8">
+        <p className="text-sm text-muted-foreground mb-4">
           Apporta modifiche ai dati della tariffa.
         </p>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 max-w-3xl mx-auto">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2 max-w-3xl mx-auto">
             <FormField
               control={form.control}
               name="tipo_servizio"

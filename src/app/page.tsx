@@ -6,8 +6,8 @@ export default function Home() {
   return (
     <DashboardLayout>
       <div className="flex flex-col items-center justify-center h-full text-center">
-        <h1 className="text-3xl font-bold mb-4">Benvenuto nella tua Dashboard!</h1>
-        <p className="text-base text-muted-foreground">
+        <h1 className="text-2xl font-bold mb-3">Benvenuto nella tua Dashboard!</h1>
+        <p className="text-sm text-muted-foreground">
           Utilizza la sidebar a sinistra per navigare tra le sezioni dell'applicazione.
         </p>
       </div>

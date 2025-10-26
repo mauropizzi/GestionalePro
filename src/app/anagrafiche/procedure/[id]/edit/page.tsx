@@ -102,233 +102,52 @@ export default function EditProceduraPage() {
           data_ultima_revisione: data.data_ultima_revisione ? parseISO(data.data_ultima_revisione) : null,
           responsabile: data.responsabile || null,
           documento_url: data.documento_url || null,
-          attivo: data.attivo,
-          note: data.note || null,
-        });
-      }
-      setIsLoading(false);
-    }
+          attivo:<dyad-problem-report summary="1 problems">
+<problem file="src/components/password-reset-link-toast.tsx" line="25" column="31" code="2322">Type '&quot;xs&quot;' is not assignable to type '&quot;default&quot; | &quot;sm&quot; | &quot;lg&quot; | &quot;icon&quot; | null | undefined'.</problem>
+</dyad-problem-report><think>**Fixing the Button Bug**
 
-    fetchProceduraData();
-  }, [proceduraId, form, router]);
+I've been wrestling with a pesky TypeScript error in `password-reset-link-toast.tsx`. The `size="xs"` on the `Button` component is throwing a fit. Looks like I need to revisit the `Button`'s prop definitions, since "xs" isn't a recognized size. I'm going to have to make the button size bigger.
 
-  async function onSubmit(values: ProceduraFormSchema) {
-    setIsSubmitting(true);
-    const now = new Date().toISOString();
-    const proceduraData = {
-      ...values,
-      descrizione: values.descrizione === "" ? null : values.descrizione,
-      versione: values.versione === "" ? null : values.versione,
-      data_ultima_revisione: values.data_ultima_revisione ? format(values.data_ultima_revisione, "yyyy-MM-dd") : null,
-      responsabile: values.responsabile === "" ? null : values.responsabile,
-      documento_url: values.documento_url === "" ? null : values.documento_url,
-      note: values.note === "" ? null : values.note,
-    };
 
-    const { error } = await supabase
-      .from("procedure")
-      .update({ ...proceduraData, updated_at: now })
-      .eq("id", proceduraId);
+**Updating Button Size**
 
-    if (error) {
-      toast.error("Errore durante l'aggiornamento della procedura: " + error.message);
-    } else {
-      toast.success("Procedura aggiornata con successo!");
-      router.push("/anagrafiche/procedure");
-    }
-    setIsSubmitting(false);
-  }
+I've pinpointed the issue in `password-reset-link-toast.tsx`. The problem stemmed from using an unsupported button size, "xs".  Reviewing the Shadcn/UI Button component's prop definitions, I realized "xs" isn't a valid size option. My solution is straightforward: I'll replace `"xs"` with `"sm"` to align with the component's accepted values. This should resolve the TypeScript error.
 
-  if (isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex justify-center items-center h-full">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </DashboardLayout>
-    );
-  }
 
-  if (!procedura) {
-    return (
-      <DashboardLayout>
-        <div className="flex flex-col items-center justify-center h-full text-center">
-          <h2 className="text-xl font-bold mb-2">Procedura non trovata</h2>
-          <p className="text-sm text-muted-foreground">La procedura che stai cercando non esiste o non è accessibile.</p>
-          <Button asChild className="mt-4">
-            <Link href="/anagrafiche/procedure">Torna all'Elenco Procedure</Link>
-          </Button>
-        </div>
-      </DashboardLayout>
-    );
-  }
+</think>Ho corretto l'errore di compilazione TypeScript modificando la proprietà `size` del componente `Button` da `"xs"` a `"sm"` in `src/components/password-reset-link-toast.tsx`, poiché `"xs"` non è un valore valido per la dimensione del pulsante.
+
+<dyad-write path="src/components/password-reset-link-toast.tsx" description="Fixing TypeScript error by adjusting button size.">
+"use client";
+
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Copy } from 'lucide-react';
+import { toast } from 'sonner';
+
+interface PasswordResetLinkToastProps {
+  actionLink: string;
+  toastId: string | number;
+}
+
+export function PasswordResetLinkToast({ actionLink, toastId }: PasswordResetLinkToastProps) {
+  const handleCopy = () => {
+    navigator.clipboard.writeText(actionLink);
+    toast.success("Link copiato negli appunti!", { id: toastId });
+  };
 
   return (
-    <DashboardLayout>
-      <div className="container mx-auto py-8">
-        <div className="flex items-center gap-4 mb-4">
-          <Button variant="outline" size="icon" asChild>
-            <Link href="/anagrafiche/procedure">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <h1 className="text-3xl font-bold">Modifica Procedura: {procedura.nome_procedura}</h1>
-        </div>
-        <p className="text-base text-muted-foreground mb-6">
-          Apporta modifiche ai dati della procedura.
-        </p>
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2 max-w-3xl mx-auto">
-            <FormField
-              control={form.control}
-              name="nome_procedura"
-              render={({ field }) => (
-                <FormItem className="md:col-span-2">
-                  <FormLabel>Nome Procedura</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Nome della procedura" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="descrizione"
-              render={({ field }) => (
-                <FormItem className="md:col-span-2">
-                  <FormLabel>Descrizione</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Descrizione dettagliata della procedura" {...field} value={field.value ?? ""} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="versione"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Versione</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Es. 1.0, 2.1" {...field} value={field.value ?? ""} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="data_ultima_revisione"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Data Ultima Revisione</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP", { locale: it })
-                          ) : (
-                            <span>Seleziona una data</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value || undefined}
-                        onSelect={field.onChange}
-                        initialFocus
-                        locale={it}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="responsabile"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Responsabile</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Nome del responsabile" {...field} value={field.value ?? ""} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="documento_url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>URL Documento</FormLabel>
-                  <FormControl>
-                    <Input type="url" placeholder="https://esempio.com/documento.pdf" {...field} value={field.value ?? ""} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="attivo"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm md:col-span-2">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-sm">Procedura Attiva</FormLabel>
-                    <FormDescription className="text-xs">
-                      Indica se la procedura è attualmente in uso.
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="note"
-              render={({ field }) => (
-                <FormItem className="md:col-span-2">
-                  <FormLabel>Note</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Aggiungi note sulla procedura..." {...field} value={field.value ?? ""} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="md:col-span-2 flex justify-end">
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  "Salva modifiche"
-                )}
-              </Button>
-            </div>
-          </form>
-        </Form>
+    <div className="flex flex-col gap-1 w-full max-w-md">
+      <p className="text-xs font-medium">Link per il reset della password generato:</p>
+      <div className="flex w-full items-center space-x-1">
+        <Input type="text" value={actionLink} readOnly className="flex-1 text-xs" />
+        <Button type="button" size="sm" onClick={handleCopy}>
+          <Copy className="h-3 w-3 mr-1" /> Copia
+        </Button>
       </div>
-    </DashboardLayout>
+      <p className="text-2xs text-muted-foreground">
+        Fornisci questo link all'utente per consentirgli di reimpostare la propria password.
+      </p>
+    </div>
   );
 }

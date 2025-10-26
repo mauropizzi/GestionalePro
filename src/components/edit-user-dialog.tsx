@@ -113,12 +113,12 @@ export function EditUserDialog({ user, isOpen, onClose, onUserUpdated }: EditUse
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Modifica Utente</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm">
             Apporta modifiche al profilo di {user.first_name} {user.last_name}. Clicca su salva quando hai finito.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-3 py-3">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-2 py-2">
             <FormField
               control={form.control}
               name="first_name"

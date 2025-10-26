@@ -138,20 +138,20 @@ export default function ProcedurePage() {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Gestione Procedure</h1>
+      <div className="container mx-auto py-6">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold">Gestione Procedure</h1>
           <Button asChild disabled={isActionLoading}>
             <Link href="/anagrafiche/procedure/new">
               <PlusCircle className="h-4 w-4 mr-2" /> Nuova Procedura
             </Link>
           </Button>
         </div>
-        <p className="text-base text-muted-foreground mb-8">
+        <p className="text-sm text-muted-foreground mb-6">
           Gestisci l'elenco delle procedure aziendali.
         </p>
 
-        <div className="mb-6 flex justify-between items-center">
+        <div className="mb-4 flex justify-between items-center">
           <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -180,7 +180,7 @@ export default function ProcedurePage() {
             <TableBody>
               {filteredProcedure.length === 0 && !loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="h-20 text-center text-muted-foreground">
                     Nessuna procedura trovata.
                   </TableCell>
                 </TableRow>
@@ -194,7 +194,7 @@ export default function ProcedurePage() {
                       {p.data_ultima_revisione ? format(new Date(p.data_ultima_revisione), "PPP", { locale: it }) : "N/A"}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center space-x-2 text-sm">
+                      <div className="flex items-center space-x-2 text-xs">
                         <Switch
                           id={`attivo-${p.id}`}
                           checked={p.attivo}

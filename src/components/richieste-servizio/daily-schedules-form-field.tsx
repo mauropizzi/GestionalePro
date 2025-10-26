@@ -19,8 +19,8 @@ export function DailySchedulesFormField() {
 
   return (
     <div className="md:col-span-2 mt-2">
-      <h3 className="text-xl font-semibold mb-2">Orari Giornalieri</h3>
-      <p className="text-sm text-muted-foreground mb-1">
+      <h3 className="text-base font-semibold mb-1">Orari Giornalieri</h3>
+      <p className="text-xs text-muted-foreground mb-1">
         Definisci gli orari di servizio per ogni giorno della settimana e per i giorni festivi.
       </p>
       {daysOfWeek.map((day, index) => (
@@ -31,7 +31,7 @@ export function DailySchedulesFormField() {
           render={({ field }) => (
             <FormItem className="flex flex-col space-y-0.5 mb-1 p-1 border rounded-md">
               <div className="flex items-center justify-between">
-                <FormLabel className="text-base">{day}</FormLabel>
+                <FormLabel className="text-sm">{day}</FormLabel>
                 <div className="flex items-center space-x-2">
                   <div className="flex items-center space-x-1">
                     <Switch
@@ -47,7 +47,7 @@ export function DailySchedulesFormField() {
                       }}
                       id={`attivo-${day}`}
                     />
-                    <Label htmlFor={`attivo-${day}`}>Attivo</Label>
+                    <Label htmlFor={`attivo-${day}`} className="text-xs">Attivo</Label>
                   </div>
                   {field.value.attivo && (
                     <div className="flex items-center space-x-1">
@@ -63,7 +63,7 @@ export function DailySchedulesFormField() {
                         }}
                         id={`h24-${day}`}
                       />
-                      <Label htmlFor={`h24-${day}`}>H24</Label>
+                      <Label htmlFor={`h24-${day}`} className="text-xs">H24</Label>
                     </div>
                   )}
                 </div>
@@ -71,7 +71,7 @@ export function DailySchedulesFormField() {
               {field.value.attivo && !field.value.h24 && (
                 <div className="grid grid-cols-2 gap-1 mt-0.5">
                   <FormItem>
-                    <FormLabel>Ora Inizio</FormLabel>
+                    <FormLabel className="text-xs">Ora Inizio</FormLabel>
                     <FormControl>
                       <Input
                         type="time"
@@ -82,7 +82,7 @@ export function DailySchedulesFormField() {
                     <FormMessage />
                   </FormItem>
                   <FormItem>
-                    <FormLabel>Ora Fine</FormLabel>
+                    <FormLabel className="text-xs">Ora Fine</FormLabel>
                     <FormControl>
                       <Input
                         type="time"

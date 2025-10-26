@@ -127,17 +127,17 @@ export default function AdminRegistrationsPage() {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-8">
-        <h1 className="text-3xl font-bold mb-6 text-center">Approvazione Registrazioni</h1>
+      <div className="container mx-auto py-6">
+        <h1 className="text-2xl font-bold mb-4 text-center">Approvazione Registrazioni</h1>
 
         {loading ? (
-          <div className="flex justify-center items-center h-48">
+          <div className="flex justify-center items-center h-40">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : pendingUsers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-center text-muted-foreground">
-            <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
-            <p className="text-base">Nessuna registrazione in attesa di approvazione.</p>
+          <div className="flex flex-col items-center justify-center h-40 text-center text-muted-foreground">
+            <CheckCircle className="h-10 w-10 text-green-500 mb-3" />
+            <p className="text-sm">Nessuna registrazione in attesa di approvazione.</p>
           </div>
         ) : (
           <div className="rounded-md border">
@@ -184,7 +184,7 @@ export default function AdminRegistrationsPage() {
                                 Seleziona il ruolo da assegnare a {user.first_name} {user.last_name} e conferma l'approvazione.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
-                            <div className="py-4">
+                            <div className="py-3">
                               <Select
                                 value={selectedRole}
                                 onValueChange={setSelectedRole}

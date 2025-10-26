@@ -100,16 +100,16 @@ export default function NewNetworkOperatorPage() {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-8">
-        <div className="flex items-center gap-4 mb-4">
+      <div className="container mx-auto py-6">
+        <div className="flex items-center gap-4 mb-3">
           <Button variant="outline" size="icon" asChild>
             <Link href="/anagrafiche/operatori-network">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h1 className="text-3xl font-bold">Nuovo Operatore Network</h1>
+          <h1 className="text-2xl font-bold">Nuovo Operatore Network</h1>
         </div>
-        <p className="text-base text-muted-foreground mb-6">
+        <p className="text-sm text-muted-foreground mb-4">
           Aggiungi un nuovo operatore network al sistema.
         </p>
 
