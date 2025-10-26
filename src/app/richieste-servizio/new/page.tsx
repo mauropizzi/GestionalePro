@@ -185,7 +185,7 @@ export default function NewRichiestaServizioPage() {
         </p>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 max-w-3xl mx-auto">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2 max-w-3xl mx-auto">
             <FormField
               control={form.control}
               name="client_id"
@@ -352,7 +352,7 @@ export default function NewRichiestaServizioPage() {
                 name="ora_fine_servizio"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Ora Fine Servela</FormLabel>
+                    <FormLabel>Ora Fine Servizio</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input type="time" {...field} className="pr-8" />

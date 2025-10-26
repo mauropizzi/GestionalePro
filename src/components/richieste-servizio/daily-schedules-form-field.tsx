@@ -18,9 +18,9 @@ export function DailySchedulesFormField() {
   const form = useFormContext<RichiestaServizioFormSchema>();
 
   return (
-    <div className="md:col-span-2 mt-6">
-      <h3 className="text-xl font-semibold mb-4">Orari Giornalieri</h3>
-      <p className="text-sm text-muted-foreground mb-4">
+    <div className="md:col-span-2 mt-4">
+      <h3 className="text-xl font-semibold mb-2">Orari Giornalieri</h3>
+      <p className="text-sm text-muted-foreground mb-2">
         Definisci gli orari di servizio per ogni giorno della settimana e per i giorni festivi.
       </p>
       {daysOfWeek.map((day, index) => (
@@ -29,10 +29,10 @@ export function DailySchedulesFormField() {
           control={form.control}
           name={`daily_schedules.${index}`}
           render={({ field }) => (
-            <FormItem className="flex flex-col space-y-2 mb-4 p-3 border rounded-md">
+            <FormItem className="flex flex-col space-y-1 mb-2 p-2 border rounded-md">
               <div className="flex items-center justify-between">
                 <FormLabel className="text-base">{day}</FormLabel>
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-3">
                   <div className="flex items-center space-x-2">
                     <Switch
                       checked={field.value.attivo}
@@ -69,7 +69,7 @@ export function DailySchedulesFormField() {
                 </div>
               </div>
               {field.value.attivo && !field.value.h24 && (
-                <div className="grid grid-cols-2 gap-4 mt-2">
+                <div className="grid grid-cols-2 gap-2 mt-1">
                   <FormItem>
                     <FormLabel>Ora Inizio</FormLabel>
                     <FormControl>
