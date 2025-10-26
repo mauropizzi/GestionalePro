@@ -88,8 +88,8 @@ export default function ProfileSettingsPage() {
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center h-full text-center">
           <ShieldAlert className="h-16 w-16 text-red-500 mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Accesso Negato</h2>
-          <p className="text-muted-foreground">Non hai i permessi necessari per visualizzare questa pagina.</p>
+          <h2 className="text-xl font-bold mb-2">Accesso Negato</h2>
+          <p className="text-sm text-muted-foreground">Non hai i permessi necessari per visualizzare questa pagina.</p>
         </div>
       </DashboardLayout>
     );
@@ -99,9 +99,9 @@ export default function ProfileSettingsPage() {
     <DashboardLayout>
       <div className="container mx-auto py-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-4xl font-bold">Informazioni Profilo</h1>
+          <h1 className="text-3xl font-bold">Informazioni Profilo</h1>
         </div>
-        <p className="text-lg text-muted-foreground mb-8">
+        <p className="text-base text-muted-foreground mb-8">
           Aggiorna il tuo nome, cognome e altre informazioni personali.
         </p>
 
@@ -113,7 +113,7 @@ export default function ProfileSettingsPage() {
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
                 <FormField
                   control={form.control}
                   name="first_name"

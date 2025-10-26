@@ -117,8 +117,8 @@ export default function OperatoriNetworkPage() {
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center h-full text-center">
           <ShieldAlert className="h-16 w-16 text-red-500 mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Accesso Negato</h2>
-          <p className="text-muted-foreground">Non hai i permessi necessari per visualizzare questa pagina.</p>
+          <h2 className="text-xl font-bold mb-2">Accesso Negato</h2>
+          <p className="text-sm text-muted-foreground">Non hai i permessi necessari per visualizzare questa pagina.</p>
         </div>
       </DashboardLayout>
     );
@@ -128,14 +128,14 @@ export default function OperatoriNetworkPage() {
     <DashboardLayout>
       <div className="container mx-auto py-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-4xl font-bold">Gestione Operatori Network</h1>
+          <h1 className="text-3xl font-bold">Gestione Operatori Network</h1>
           <Button asChild disabled={isActionLoading}>
             <Link href="/anagrafiche/operatori-network/new">
               <PlusCircle className="h-4 w-4 mr-2" /> Nuovo Operatore
             </Link>
           </Button>
         </div>
-        <p className="text-lg text-muted-foreground mb-8">
+        <p className="text-base text-muted-foreground mb-8">
           Gestisci gli operatori network associati ai clienti.
         </p>
 

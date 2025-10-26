@@ -114,20 +114,20 @@ export default function NewPersonalePage() {
   return (
     <DashboardLayout>
       <div className="container mx-auto py-8">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-4 mb-4">
           <Button variant="outline" size="icon" asChild>
             <Link href="/anagrafiche/personale">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h1 className="text-4xl font-bold">Nuovo Personale</h1>
+          <h1 className="text-3xl font-bold">Nuovo Personale</h1>
         </div>
-        <p className="text-lg text-muted-foreground mb-8">
+        <p className="text-base text-muted-foreground mb-6">
           Aggiungi un nuovo membro del personale al sistema.
         </p>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 max-w-3xl mx-auto">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2 max-w-3xl mx-auto">
             <FormField
               control={form.control}
               name="nome"
@@ -394,8 +394,8 @@ export default function NewPersonalePage() {
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm md:col-span-2">
                   <div className="space-y-0.5">
-                    <FormLabel>Personale Attivo</FormLabel>
-                    <FormDescription>
+                    <FormLabel className="text-sm">Personale Attivo</FormLabel>
+                    <FormDescription className="text-xs">
                       Indica se il membro del personale è attualmente attivo.
                     </FormDescription>
                   </div>

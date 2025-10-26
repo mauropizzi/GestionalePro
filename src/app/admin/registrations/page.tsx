@@ -118,8 +118,8 @@ export default function AdminRegistrationsPage() {
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center h-full text-center">
           <ShieldAlert className="h-16 w-16 text-red-500 mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Accesso Negato</h2>
-          <p className="text-muted-foreground">Non hai i permessi necessari per visualizzare questa pagina.</p>
+          <h2 className="text-xl font-bold mb-2">Accesso Negato</h2>
+          <p className="text-sm text-muted-foreground">Non hai i permessi necessari per visualizzare questa pagina.</p>
         </div>
       </DashboardLayout>
     );
@@ -128,7 +128,7 @@ export default function AdminRegistrationsPage() {
   return (
     <DashboardLayout>
       <div className="container mx-auto py-8">
-        <h1 className="text-4xl font-bold mb-6 text-center">Approvazione Registrazioni</h1>
+        <h1 className="text-3xl font-bold mb-6 text-center">Approvazione Registrazioni</h1>
 
         {loading ? (
           <div className="flex justify-center items-center h-48">
@@ -137,7 +137,7 @@ export default function AdminRegistrationsPage() {
         ) : pendingUsers.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-center text-muted-foreground">
             <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
-            <p className="text-lg">Nessuna registrazione in attesa di approvazione.</p>
+            <p className="text-base">Nessuna registrazione in attesa di approvazione.</p>
           </div>
         ) : (
           <div className="rounded-md border">

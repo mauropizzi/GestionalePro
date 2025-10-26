@@ -39,7 +39,7 @@ export default function LoginPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
       <div className="w-full max-w-md p-8 space-y-6 bg-card rounded-lg shadow-lg">
-        <h2 className="text-2xl font-bold text-center text-foreground">
+        <h2 className="text-xl font-bold text-center text-foreground">
           {showCustomSignUp ? "Registrati" : "Accedi"}
         </h2>
 
@@ -102,7 +102,7 @@ export default function LoginPage() {
 
         <Button
           variant="link"
-          className="w-full text-sm text-muted-foreground"
+          className="w-full text-xs text-muted-foreground"
           onClick={() => setShowCustomSignUp(!showCustomSignUp)}
         >
           {showCustomSignUp

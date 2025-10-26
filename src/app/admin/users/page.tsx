@@ -154,8 +154,8 @@ export default function AdminUsersPage() {
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center h-full text-center">
           <ShieldAlert className="h-16 w-16 text-red-500 mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Accesso Negato</h2>
-          <p className="text-muted-foreground">Non hai i permessi necessari per visualizzare questa pagina.</p>
+          <h2 className="text-xl font-bold mb-2">Accesso Negato</h2>
+          <p className="text-sm text-muted-foreground">Non hai i permessi necessari per visualizzare questa pagina.</p>
         </div>
       </DashboardLayout>
     );
@@ -164,7 +164,7 @@ export default function AdminUsersPage() {
   return (
     <DashboardLayout>
       <div className="container mx-auto py-8">
-        <h1 className="text-4xl font-bold mb-6 text-center">Gestione Utenti</h1>
+        <h1 className="text-3xl font-bold mb-6 text-center">Gestione Utenti</h1>
 
         <div className="mb-6 flex justify-between items-center">
           <div className="relative w-full max-w-md">
@@ -209,7 +209,7 @@ export default function AdminUsersPage() {
                         onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
                         disabled={isActionLoading || user.id === currentUserProfile?.id}
                       >
-                        <SelectTrigger className="w-[180px]">
+                        <SelectTrigger className="w-[160px]">
                           <SelectValue placeholder="Seleziona Ruolo" />
                         </SelectTrigger>
                         <SelectContent>

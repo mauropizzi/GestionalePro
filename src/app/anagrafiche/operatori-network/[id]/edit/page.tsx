@@ -154,8 +154,8 @@ export default function EditNetworkOperatorPage() {
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center h-full text-center">
-          <h2 className="text-2xl font-bold mb-2">Operatore Network non trovato</h2>
-          <p className="text-muted-foreground">L'operatore network che stai cercando non esiste o non è accessibile.</p>
+          <h2 className="text-xl font-bold mb-2">Operatore Network non trovato</h2>
+          <p className="text-sm text-muted-foreground">L'operatore network che stai cercando non esiste o non è accessibile.</p>
           <Button asChild className="mt-4">
             <Link href="/anagrafiche/operatori-network">Torna agli Operatori Network</Link>
           </Button>
@@ -167,20 +167,20 @@ export default function EditNetworkOperatorPage() {
   return (
     <DashboardLayout>
       <div className="container mx-auto py-8">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-4 mb-4">
           <Button variant="outline" size="icon" asChild>
             <Link href="/anagrafiche/operatori-network">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h1 className="text-4xl font-bold">Modifica Operatore Network: {operator.nome} {operator.cognome}</h1>
+          <h1 className="text-3xl font-bold">Modifica Operatore Network: {operator.nome} {operator.cognome}</h1>
         </div>
-        <p className="text-lg text-muted-foreground mb-8">
+        <p className="text-base text-muted-foreground mb-6">
           Apporta modifiche ai dati dell'operatore network.
         </p>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 max-w-3xl mx-auto">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2 max-w-3xl mx-auto">
             <FormField
               control={form.control}
               name="nome"

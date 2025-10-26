@@ -192,8 +192,8 @@ export default function EditPersonalePage() {
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center h-full text-center">
-          <h2 className="text-2xl font-bold mb-2">Personale non trovato</h2>
-          <p className="text-muted-foreground">Il membro del personale che stai cercando non esiste o non è accessibile.</p>
+          <h2 className="text-xl font-bold mb-2">Personale non trovato</h2>
+          <p className="text-sm text-muted-foreground">Il membro del personale che stai cercando non esiste o non è accessibile.</p>
           <Button asChild className="mt-4">
             <Link href="/anagrafiche/personale">Torna all'Elenco Personale</Link>
           </Button>
@@ -205,20 +205,20 @@ export default function EditPersonalePage() {
   return (
     <DashboardLayout>
       <div className="container mx-auto py-8">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-4 mb-4">
           <Button variant="outline" size="icon" asChild>
             <Link href="/anagrafiche/personale">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h1 className="text-4xl font-bold">Modifica Personale: {personale.nome} {personale.cognome}</h1>
+          <h1 className="text-3xl font-bold">Modifica Personale: {personale.nome} {personale.cognome}</h1>
         </div>
-        <p className="text-lg text-muted-foreground mb-8">
+        <p className="text-base text-muted-foreground mb-6">
           Apporta modifiche ai dati del membro del personale.
         </p>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 max-w-3xl mx-auto">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2 max-w-3xl mx-auto">
             <FormField
               control={form.control}
               name="nome"
@@ -485,8 +485,8 @@ export default function EditPersonalePage() {
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm md:col-span-2">
                   <div className="space-y-0.5">
-                    <FormLabel>Personale Attivo</FormLabel>
-                    <FormDescription>
+                    <FormLabel className="text-sm">Personale Attivo</FormLabel>
+                    <FormDescription className="text-xs">
                       Indica se il membro del personale è attualmente attivo.
                     </FormDescription>
                   </div>

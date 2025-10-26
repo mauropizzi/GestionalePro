@@ -153,8 +153,8 @@ export default function EditProceduraPage() {
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center h-full text-center">
-          <h2 className="text-2xl font-bold mb-2">Procedura non trovata</h2>
-          <p className="text-muted-foreground">La procedura che stai cercando non esiste o non è accessibile.</p>
+          <h2 className="text-xl font-bold mb-2">Procedura non trovata</h2>
+          <p className="text-sm text-muted-foreground">La procedura che stai cercando non esiste o non è accessibile.</p>
           <Button asChild className="mt-4">
             <Link href="/anagrafiche/procedure">Torna all'Elenco Procedure</Link>
           </Button>
@@ -166,20 +166,20 @@ export default function EditProceduraPage() {
   return (
     <DashboardLayout>
       <div className="container mx-auto py-8">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-4 mb-4">
           <Button variant="outline" size="icon" asChild>
             <Link href="/anagrafiche/procedure">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h1 className="text-4xl font-bold">Modifica Procedura: {procedura.nome_procedura}</h1>
+          <h1 className="text-3xl font-bold">Modifica Procedura: {procedura.nome_procedura}</h1>
         </div>
-        <p className="text-lg text-muted-foreground mb-8">
+        <p className="text-base text-muted-foreground mb-6">
           Apporta modifiche ai dati della procedura.
         </p>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 max-w-3xl mx-auto">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2 max-w-3xl mx-auto">
             <FormField
               control={form.control}
               name="nome_procedura"
@@ -290,8 +290,8 @@ export default function EditProceduraPage() {
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm md:col-span-2">
                   <div className="space-y-0.5">
-                    <FormLabel>Procedura Attiva</FormLabel>
-                    <FormDescription>
+                    <FormLabel className="text-sm">Procedura Attiva</FormLabel>
+                    <FormDescription className="text-xs">
                       Indica se la procedura è attualmente in uso.
                     </FormDescription>
                   </div>

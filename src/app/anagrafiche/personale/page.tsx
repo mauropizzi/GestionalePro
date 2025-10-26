@@ -137,8 +137,8 @@ export default function PersonalePage() {
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center h-full text-center">
           <ShieldAlert className="h-16 w-16 text-red-500 mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Accesso Negato</h2>
-          <p className="text-muted-foreground">Non hai i permessi necessari per visualizzare questa pagina.</p>
+          <h2 className="text-xl font-bold mb-2">Accesso Negato</h2>
+          <p className="text-sm text-muted-foreground">Non hai i permessi necessari per visualizzare questa pagina.</p>
         </div>
       </DashboardLayout>
     );
@@ -148,14 +148,14 @@ export default function PersonalePage() {
     <DashboardLayout>
       <div className="container mx-auto py-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-4xl font-bold">Gestione Personale</h1>
+          <h1 className="text-3xl font-bold">Gestione Personale</h1>
           <Button asChild disabled={isActionLoading}>
             <Link href="/anagrafiche/personale/new">
               <PlusCircle className="h-4 w-4 mr-2" /> Nuovo Personale
             </Link>
           </Button>
         </div>
-        <p className="text-lg text-muted-foreground mb-8">
+        <p className="text-base text-muted-foreground mb-8">
           Gestisci l'elenco del personale.
         </p>
 
@@ -200,7 +200,7 @@ export default function PersonalePage() {
                     <TableCell>{p.ruolo || "N/A"}</TableCell>
                     <TableCell>{p.email || "N/A"}</TableCell>
                     <TableCell>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 text-sm">
                         <Switch
                           id={`attivo-${p.id}`}
                           checked={p.attivo}
