@@ -35,6 +35,7 @@ interface RichiestaServizio {
   id: string;
   client_id: string | null;
   punto_servizio_id: string | null;
+  fornitore_id: string | null; // Nuovo campo
   tipo_servizio: string;
   data_inizio_servizio: string;
   data_fine_servizio: string;
@@ -46,6 +47,7 @@ interface RichiestaServizio {
   updated_at: string;
   clienti?: { ragione_sociale: string } | null;
   punti_servizio?: { nome_punto_servizio: string } | null;
+  fornitori?: { ragione_sociale: string } | null; // Per visualizzare il nome del fornitore
 }
 
 export default function RichiesteServizioPage() {
@@ -74,8 +76,9 @@ export default function RichiesteServizioPage() {
       .select(`
         *,
         clienti ( ragione_sociale ),
-        punti_servizio ( nome_punto_servizio )
-      `)
+        punti_servizio ( nome_punto_servizio ),
+        fornitori ( ragione_sociale )
+      `) // Includi il fornitore
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -106,6 +109,7 @@ export default function RichiesteServizioPage() {
     richiesta.tipo_servizio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     richiesta.clienti?.ragione_sociale?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     richiesta.punti_servizio?.nome_punto_servizio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    richiesta.fornitori?.ragione_sociale?.toLowerCase().includes(searchTerm.toLowerCase()) || // Includi il fornitore nella ricerca
     richiesta.status?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -145,7 +149,7 @@ export default function RichiesteServizioPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Cerca richieste per tipo servizio, cliente, punto servizio, stato..."
+              placeholder="Cerca richieste per tipo servizio, cliente, punto servizio, fornitore, stato..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9"
@@ -161,6 +165,7 @@ export default function RichiesteServizioPage() {
                 <TableHead>Tipo Servizio</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Punto Servizio</TableHead>
+                <TableHead>Fornitore</TableHead> {/* Nuova colonna */}
                 <TableHead>Data Inizio</TableHead>
                 <TableHead>Data Fine</TableHead>
                 <TableHead>Stato</TableHead>
@@ -170,7 +175,7 @@ export default function RichiesteServizioPage() {
             <TableBody>
               {filteredRichieste.length === 0 && !loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-20 text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="h-20 text-center text-muted-foreground">
                     Nessuna richiesta di servizio trovata.
                   </TableCell>
                 </TableRow>
@@ -180,6 +185,7 @@ export default function RichiesteServizioPage() {
                     <TableCell className="font-medium">{richiesta.tipo_servizio}</TableCell>
                     <TableCell>{richiesta.clienti?.ragione_sociale || "N/A"}</TableCell>
                     <TableCell>{richiesta.punti_servizio?.nome_punto_servizio || "N/A"}</TableCell>
+                    <TableCell>{richiesta.fornitori?.ragione_sociale || "N/A"}</TableCell> {/* Visualizza il nome del fornitore */}
                     <TableCell>{format(new Date(richiesta.data_inizio_servizio), "dd/MM/yyyy HH:mm", { locale: it })}</TableCell>
                     <TableCell>{format(new Date(richiesta.data_fine_servizio), "dd/MM/yyyy HH:mm", { locale: it })}</TableCell>
                     <TableCell>

@@ -27,14 +27,15 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Client, PuntoServizio } from "@/types/richieste-servizio";
-import { RichiestaServizioFormSchema, SERVICE_TYPES } from "@/lib/richieste-servizio-utils"; // Importa SERVICE_TYPES
+import { Client, PuntoServizio, Fornitore } from "@/types/richieste-servizio"; // Importa Fornitore
+import { RichiestaServizioFormSchema, SERVICE_TYPES } from "@/lib/richieste-servizio-utils";
 import { DailySchedulesFormField } from "./daily-schedules-form-field";
 
 interface RichiestaServizioFormProps {
   form: UseFormReturn<RichiestaServizioFormSchema>;
   clients: Client[];
   puntiServizio: PuntoServizio[];
+  fornitori: Fornitore[]; // Nuovo prop
   onSubmit: (values: RichiestaServizioFormSchema) => void;
   isSubmitting: boolean;
 }
@@ -43,6 +44,7 @@ export function RichiestaServizioForm({
   form,
   clients,
   puntiServizio,
+  fornitori, // Utilizza il nuovo prop
   onSubmit,
   isSubmitting,
 }: RichiestaServizioFormProps) {
@@ -91,6 +93,30 @@ export function RichiestaServizioForm({
                     {puntiServizio.map((punto) => (
                       <SelectItem key={punto.id} value={punto.id}>
                         {punto.nome_punto_servizio}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="fornitore_id" // Nuovo campo Fornitore
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Fornitore del Servizio</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value || ""}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleziona un fornitore (opzionale)" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {fornitori.map((fornitore) => (
+                      <SelectItem key={fornitore.id} value={fornitore.id}>
+                        {fornitore.ragione_sociale}
                       </SelectItem>
                     ))}
                   </SelectContent>

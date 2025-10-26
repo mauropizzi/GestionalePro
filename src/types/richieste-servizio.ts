@@ -31,6 +31,7 @@ export interface RichiestaServizio {
   id: string;
   client_id: string | null;
   punto_servizio_id: string | null;
+  fornitore_id: string | null; // Nuovo campo
   tipo_servizio: ServiceType; // Aggiornato per usare ServiceType
   data_inizio_servizio: string;
   data_fine_servizio: string;

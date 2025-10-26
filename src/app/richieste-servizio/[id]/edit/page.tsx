@@ -18,6 +18,7 @@ export default function EditRichiestaServizioPage() {
     richiesta,
     clients,
     puntiServizio,
+    fornitori, // Recupera i fornitori dal hook
     isLoading,
     isSubmitting,
     onSubmit,
@@ -66,6 +67,7 @@ export default function EditRichiestaServizioPage() {
           form={form}
           clients={clients}
           puntiServizio={puntiServizio}
+          fornitori={fornitori} // Passa i fornitori al componente form
           onSubmit={onSubmit}
           isSubmitting={isSubmitting}
         />

@@ -12,9 +12,9 @@ import {
   richiestaServizioFormSchema,
   calculateTotalHours,
   defaultDailySchedules,
-  ServiceType, // Importa ServiceType
+  ServiceType,
 } from "@/lib/richieste-servizio-utils";
-import { Client, PuntoServizio, RichiestaServizio, DailySchedule } from "@/types/richieste-servizio";
+import { Client, PuntoServizio, RichiestaServizio, DailySchedule, Fornitore } from "@/types/richieste-servizio"; // Importa Fornitore
 
 export function useRichiestaServizioEditForm(richiestaId: string) {
   const [isLoading, setIsLoading] = useState(true);
@@ -22,6 +22,7 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
   const [richiesta, setRichiesta] = useState<RichiestaServizio | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [puntiServizio, setPuntiServizio] = useState<PuntoServizio[]>([]);
+  const [fornitori, setFornitori] = useState<Fornitore[]>([]); // Nuovo stato per i fornitori
   const router = useRouter();
 
   const form = useForm<RichiestaServizioFormSchema>({
@@ -29,7 +30,8 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
     defaultValues: {
       client_id: "",
       punto_servizio_id: null,
-      tipo_servizio: "PIANTONAMENTO_ARMATO", // Impostato come valore predefinito
+      fornitore_id: null, // Valore predefinito per il nuovo campo
+      tipo_servizio: "PIANTONAMENTO_ARMATO",
       data_inizio_servizio: new Date(),
       ora_inizio_servizio: "09:00",
       data_fine_servizio: new Date(),
@@ -66,6 +68,18 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
         toast.error("Errore nel recupero dei punti di servizio: " + puntiServizioError.message);
       } else {
         setPuntiServizio(puntiServizioData || []);
+      }
+
+      // Recupera i fornitori
+      const { data: fornitoriData, error: fornitoriError } = await supabase
+        .from("fornitori")
+        .select("id, ragione_sociale")
+        .order("ragione_sociale", { ascending: true });
+
+      if (fornitoriError) {
+        toast.error("Errore nel recupero dei fornitori: " + fornitoriError.message);
+      } else {
+        setFornitori(fornitoriData || []);
       }
 
       // Fetch richiesta_servizio
@@ -111,7 +125,8 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
         form.reset({
           client_id: richiestaData.client_id || "",
           punto_servizio_id: richiestaData.punto_servizio_id || null,
-          tipo_servizio: richiestaData.tipo_servizio as ServiceType, // Cast a ServiceType
+          fornitore_id: richiestaData.fornitore_id || null, // Includi il fornitore_id
+          tipo_servizio: richiestaData.tipo_servizio as ServiceType,
           data_inizio_servizio: parseISO(richiestaData.data_inizio_servizio),
           ora_inizio_servizio: format(parseISO(richiestaData.data_inizio_servizio), "HH:mm"),
           data_fine_servizio: parseISO(richiestaData.data_fine_servizio),
@@ -144,6 +159,7 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
     const richiestaData = {
       client_id: values.client_id,
       punto_servizio_id: values.punto_servizio_id === "" ? null : values.punto_servizio_id,
+      fornitore_id: values.fornitore_id === "" ? null : values.fornitore_id, // Includi il fornitore_id
       tipo_servizio: values.tipo_servizio,
       data_inizio_servizio: dataInizioServizio.toISOString(),
       data_fine_servizio: dataFineServizio.toISOString(),
@@ -206,6 +222,7 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
     richiesta,
     clients,
     puntiServizio,
+    fornitori, // Ritorna i fornitori
     isLoading,
     isSubmitting,
     onSubmit,

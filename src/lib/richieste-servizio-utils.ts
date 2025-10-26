@@ -44,6 +44,7 @@ export const dailyScheduleSchema = z.object({
 export const richiestaServizioFormSchema = z.object({
   client_id: z.string().uuid("Seleziona un cliente valido."),
   punto_servizio_id: z.string().uuid("Seleziona un punto servizio valido.").nullable(),
+  fornitore_id: z.string().uuid("Seleziona un fornitore valido.").nullable(), // Nuovo campo
   tipo_servizio: z.enum(SERVICE_TYPES, { required_error: "Il tipo di servizio è richiesto." }), // Aggiornato a enum
   data_inizio_servizio: z.date({ required_error: "La data di inizio servizio è richiesta." }),
   ora_inizio_servizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
