@@ -9,6 +9,9 @@ export default {
   ],
   theme: {
   	extend: {
+        fontFamily: {
+            sans: ['Tahoma', 'Geneva', 'sans-serif'], // Aggiunto Tahoma come font principale
+        },
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
