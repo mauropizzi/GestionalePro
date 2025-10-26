@@ -15,7 +15,7 @@ export interface Fornitore {
 
 export interface DailySchedule {
   id?: string;
-  richiesta_servizio_id: string;
+  richiesta_servizio_id?: string; // Reso opzionale
   giorno_settimana: string;
   h24: boolean;
   ora_inizio: string | null;
