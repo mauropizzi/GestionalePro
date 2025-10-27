@@ -156,11 +156,44 @@ export default function ImportExportPage() {
 
   const handleExportData = async (anagraficaType: string) => {
     setLoading(true);
-    // TODO: Implement server-side logic for export (Supabase Edge Function or direct client-side fetch)
-    // This would involve fetching data from Supabase, converting to Excel, and triggering a download.
-    toast.info(`Funzionalità di esportazione per ${anagraficaType} in fase di sviluppo.`);
-    console.log("Exporting data for:", anagraficaType);
-    setLoading(false);
+    try {
+      const response = await fetch(
+        "https://mlkahaedxpwkhheqwsjc.supabase.co/functions/v1/export-data", // URL della tua Edge Function di esportazione
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ anagraficaType }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Errore durante l'esportazione di ${anagraficaType}.`);
+      }
+
+      const blob = await response.blob();
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
+      const filename = filenameMatch ? filenameMatch[1] : `${anagraficaType}_export.xlsx`;
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success(`Dati ${anagraficaType} esportati con successo!`);
+
+    } catch (error: any) {
+      toast.error(`Errore nell'esportazione: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (isSessionLoading) {
