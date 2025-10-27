@@ -113,15 +113,22 @@ export default function ImportExportPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Errore durante l\'importazione dei dati.');
+        // Se la risposta non è OK, prova a leggere il corpo come JSON, altrimenti come testo
+        let errorBody;
+        try {
+          errorBody = await response.json();
+        } catch {
+          errorBody = await response.text();
+        }
+        throw new Error(errorBody.error || errorBody || `Server responded with status ${response.status}`);
       }
 
+      // Se la risposta è OK, dovrebbe essere JSON
       const result = await response.json();
       toast.success(result.message || "Dati importati con successo!");
       setParsedData([]); // Cancella i dati parsati dopo l'importazione
       setFile(null); // Cancella il file selezionato
-      // Opzionalmente, resetta selectedAnagrafica se desiderato
+      setSelectedAnagrafica(""); // Reset selected anagrafica after successful import
     } catch (error: any) {
       toast.error("Errore di importazione: " + error.message);
     } finally {
