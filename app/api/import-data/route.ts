@@ -27,9 +27,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: `Invalid anagraficaType: ${anagraficaType}` }, { status: 400 });
     }
 
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables.');
+      return NextResponse.json({ error: 'Server configuration error: Supabase credentials missing.' }, { status: 500 });
+    }
+
     const supabaseAdmin = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      supabaseUrl,
+      supabaseServiceRoleKey
     );
 
     const processedData = data.map((row: any) => {
