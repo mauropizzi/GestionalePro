@@ -52,19 +52,15 @@ export default function NewRichiestaServizioPage() {
       fornitore_id: null,
       tipo_servizio: "PIANTONAMENTO_ARMATO", // Initial default service type
       note: null,
-      // Common scheduling fields
+      // Common scheduling fields for PIANTONAMENTO_ARMATO / SERVIZIO_FIDUCIARIO
       data_inizio_servizio: new Date(),
       ora_inizio_servizio: "09:00",
       data_fine_servizio: new Date(),
       ora_fine_servizio: "18:00",
       numero_agenti: 1,
       daily_schedules: defaultDailySchedules,
-      // ISPEZIONI specific fields (set to undefined as they are not applicable for PIANTONAMENTO_ARMATO)
-      ora_inizio_fascia: undefined,
-      ora_fine_fascia: undefined,
-      cadenza_ore: undefined,
-      tipo_ispezione: undefined,
-    },
+      // ISPEZIONI specific fields are omitted here as default type is PIANTONAMENTO_ARMATO
+    } as RichiestaServizioFormSchema, // Cast to ensure correct type for defaultValues
   });
 
   useEffect(() => {
