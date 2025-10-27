@@ -103,12 +103,41 @@ export default function ImportExportPage() {
     }
 
     setLoading(true);
-    // TODO: Implement server-side logic for import (Supabase Edge Function)
-    // This would involve sending parsedData and selectedAnagrafica to an Edge Function
-    // for validation, comparison with existing data (duplicates, modifications), and actual database inserts/updates.
-    toast.info("Funzionalità di importazione in fase di sviluppo. I dati non sono stati salvati nel database.");
-    console.log("Importing data for:", selectedAnagrafica, parsedData);
-    setLoading(false);
+    try {
+      const response = await fetch(
+        "https://mlkahaedxpwkhheqwsjc.supabase.co/functions/v1/import-data", // URL della tua Edge Function
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            // Non è necessario un token di autorizzazione qui se la funzione è configurata per non richiederlo
+            // o se si usa la chiave anonima per invocare funzioni non protette da RLS.
+            // Per funzioni admin, si usa la chiave del ruolo di servizio, ma l'invocazione client-side
+            // di solito non la include direttamente per motivi di sicurezza.
+            // L'Edge Function stessa userà la chiave del ruolo di servizio.
+          },
+          body: JSON.stringify({
+            anagraficaType: selectedAnagrafica,
+            data: parsedData,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Errore durante l'importazione dei dati.");
+      }
+
+      toast.success(result.message);
+      setParsedData([]); // Clear parsed data after successful import
+      setFile(null); // Clear selected file
+      // Potresti voler ricaricare i dati della tabella specifica qui se necessario
+    } catch (error: any) {
+      toast.error("Errore nell'importazione: " + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleExportData = async (anagraficaType: string) => {
