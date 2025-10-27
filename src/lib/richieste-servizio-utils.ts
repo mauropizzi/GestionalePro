@@ -1,15 +1,26 @@
 import * as z from "zod";
 import { format, setHours, setMinutes } from "date-fns";
 import { it } from "date-fns/locale";
-import { DailySchedule } from "@/types/richieste-servizio";
 
 export const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
-export const SERVICE_TYPES = ["PIANTONAMENTO_ARMATO", "SERVIZIO_FIDUCIARIO", "ISPEZIONI"] as const;
-export type ServiceType = (typeof SERVICE_TYPES)[number];
+// Define SERVICE_TYPES as an array of objects
+export const SERVICE_TYPES = [
+  { value: "PIANTONAMENTO_ARMATO", label: "Piantonamento Armato" },
+  { value: "SERVIZIO_FIDUCIARIO", label: "Servizio Fiduciario" },
+  { value: "ISPEZIONI", label: "Ispezioni" },
+] as const; // Use 'as const' for better type inference
 
-export const INSPECTION_TYPES = ["PERIMETRALE", "INTERNA", "COMPLETA"] as const;
-export type InspectionType = (typeof INSPECTION_TYPES)[number];
+export type ServiceType = (typeof SERVICE_TYPES)[number]["value"];
+
+// Define INSPECTION_TYPES as an array of objects
+export const INSPECTION_TYPES = [
+  { value: "PERIMETRALE", label: "Perimetrale" },
+  { value: "INTERNA", label: "Interna" },
+  { value: "COMPLETA", label: "Completa" },
+] as const; // Use 'as const' for better type inference
+
+export type InspectionType = (typeof INSPECTION_TYPES)[number]["value"];
 
 export const dailyScheduleSchema = z.object({
   id: z.string().optional(),
@@ -54,7 +65,7 @@ const baseRichiestaServizioObjectSchema = z.object({
 
 // Define schema for PIANTONAMENTO_ARMATO without refinement
 const piantonamentoArmatoBaseSchema = baseRichiestaServizioObjectSchema.extend({
-  tipo_servizio: z.literal("PIANTONAMENTO_ARMATO"),
+  tipo_servizio: z.literal(SERVICE_TYPES[0].value), // Use the value from the object
   data_inizio_servizio: z.date({ required_error: "La data di inizio servizio è richiesta." }),
   ora_inizio_servizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
   data_fine_servizio: z.date({ required_error: "La data di fine servizio è richiesta." }),
@@ -65,7 +76,7 @@ const piantonamentoArmatoBaseSchema = baseRichiestaServizioObjectSchema.extend({
 
 // Define schema for SERVIZIO_FIDUCIARIO without refinement
 const servizioFiduciarioBaseSchema = baseRichiestaServizioObjectSchema.extend({
-  tipo_servizio: z.literal("SERVIZIO_FIDUCIARIO"),
+  tipo_servizio: z.literal(SERVICE_TYPES[1].value), // Use the value from the object
   data_inizio_servizio: z.date({ required_error: "La data di inizio servizio è richiesta." }),
   ora_inizio_servizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
   data_fine_servizio: z.date({ required_error: "La data di fine servizio è richiesta." }),
@@ -76,18 +87,18 @@ const servizioFiduciarioBaseSchema = baseRichiestaServizioObjectSchema.extend({
 
 // Define schema for ISPEZIONI without refinement
 const ispezioniBaseSchema = baseRichiestaServizioObjectSchema.extend({
-  tipo_servizio: z.literal("ISPEZIONI"),
+  tipo_servizio: z.literal(SERVICE_TYPES[2].value), // Use the value from the object
   data_inizio_servizio: z.date({ required_error: "La data di inizio servizio è richiesta." }),
   ora_inizio_servizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
   data_fine_servizio: z.date({ required_error: "La data di fine servizio è richiesta." }),
   ora_fine_servizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
-  numero_agenti: z.coerce.number().min(1, "Il numero di agenti deve essere almeno 1."),
+  numero_agenti: z.coerce.number().min(1, "Il numero di agenti deve essere almeno 1."), // Keep numero_agenti for ISPEZIONI as well, as per current schema
   daily_schedules: z.array(dailyScheduleSchema).min(8, "Devi definire gli orari per tutti i giorni della settimana e per i festivi."),
   // Retain inspection-specific fields
   ora_inizio_fascia: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
   ora_fine_fascia: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
   cadenza_ore: z.coerce.number().min(0.5, "La cadenza deve essere almeno 0.5 ore."),
-  tipo_ispezione: z.enum(INSPECTION_TYPES, { required_error: "Il tipo di ispezione è richiesto." }),
+  tipo_ispezione: z.enum(INSPECTION_TYPES.map(t => t.value) as [string, ...string[]], { required_error: "Il tipo di ispezione è richiesto." }),
 });
 
 export const richiestaServizioFormSchema = z.discriminatedUnion("tipo_servizio", [
@@ -103,22 +114,23 @@ export type RichiestaServizioFormSchema = z.infer<typeof richiestaServizioFormSc
 export type IspezioniFormSchema = z.infer<typeof ispezioniBaseSchema>; // Nuovo tipo esportato
 
 export const calculateTotalHours = (
-  startDate: Date,
-  endDate: Date,
-  dailySchedules: DailySchedule[],
+  serviceStartDateTime: Date, // Full Date object including time
+  serviceEndDateTime: Date,   // Full Date object including time
+  dailySchedules: z.infer<typeof dailyScheduleSchema>[],
   numAgents: number
 ): number => {
   let totalHours = 0;
-  let currentDate = new Date(startDate);
-  currentDate.setHours(0, 0, 0, 0); // Normalize to start of day
+  let currentDate = new Date(serviceStartDateTime);
+  currentDate.setHours(0, 0, 0, 0); // Normalize to start of day for iteration
 
-  const endDateTime = new Date(endDate);
+  const endServiceDate = new Date(serviceEndDateTime);
+  endServiceDate.setHours(0, 0, 0, 0); // Normalize to start of day for comparison
 
-  while (currentDate <= endDateTime) {
+  while (currentDate <= endServiceDate) {
     const dayOfWeek = format(currentDate, 'EEEE', { locale: it }); // e.g., "lunedì"
     const schedule = dailySchedules.find(s => s.giorno_settimana.toLowerCase() === dayOfWeek.toLowerCase());
 
-    if (schedule && schedule.attivo) { // Only consider active schedules
+    if (schedule && schedule.attivo) {
       if (schedule.h24) {
         totalHours += 24;
       } else if (schedule.ora_inizio && schedule.ora_fine) {
@@ -128,21 +140,15 @@ export const calculateTotalHours = (
         let dayStart = setMinutes(setHours(new Date(currentDate), startH), startM);
         let dayEnd = setMinutes(setHours(new Date(currentDate), endH), endM);
 
-        // Adjust for start/end service times on the first/last day
-        if (currentDate.toDateString() === startDate.toDateString()) {
-          const serviceStartHour = startDate.getHours();
-          const serviceStartMinute = startDate.getMinutes();
-          const serviceStartTime = setMinutes(setHours(new Date(currentDate), serviceStartHour), serviceStartMinute);
-          if (serviceStartTime > dayStart) {
-            dayStart = serviceStartTime;
+        // Adjust for overall service start/end times on the first/last day of the service period
+        if (currentDate.toDateString() === serviceStartDateTime.toDateString()) {
+          if (serviceStartDateTime > dayStart) {
+            dayStart = serviceStartDateTime;
           }
         }
-        if (currentDate.toDateString() === endDate.toDateString()) {
-          const serviceEndHour = endDate.getHours();
-          const serviceEndMinute = endDate.getMinutes();
-          const serviceEndTime = setMinutes(setHours(new Date(currentDate), serviceEndHour), serviceEndMinute);
-          if (serviceEndTime < dayEnd) {
-            dayEnd = serviceEndTime;
+        if (currentDate.toDateString() === serviceEndDateTime.toDateString()) {
+          if (serviceEndDateTime < dayEnd) {
+            dayEnd = serviceEndDateTime;
           }
         }
 

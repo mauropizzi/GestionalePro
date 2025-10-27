@@ -7,7 +7,7 @@ export interface Client {
 
 export interface PuntoServizio {
   id: string;
-  nome_punto_servizio: string;
+  nome_punto_servizio: string; // Changed from 'nome' to 'nome_punto_servizio' to match DB schema
 }
 
 export interface Fornitore {

@@ -12,10 +12,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { RichiestaServizioFormSchema, daysOfWeek } from "@/lib/richieste-servizio-utils";
+import { RichiestaServizioFormSchema, daysOfWeek, dailyScheduleSchema } from "@/lib/richieste-servizio-utils";
+import { z } from "zod"; // Import z
 
-export function DailySchedulesFormField() {
-  const form = useFormContext<RichiestaServizioFormSchema>();
+interface DailySchedulesFormFieldProps {
+  value: z.infer<typeof dailyScheduleSchema>[];
+  onChange: (value: z.infer<typeof dailyScheduleSchema>[]) => void;
+}
+
+export function DailySchedulesFormField({ value, onChange }: DailySchedulesFormFieldProps) {
+  const form = useFormContext<RichiestaServizioFormSchema>(); // Keep useFormContext for other form interactions if needed
 
   return (
     <div className="md:col-span-2 mt-2">

@@ -34,6 +34,7 @@ import {
   INSPECTION_TYPES,
   calculateTotalHours,
   calculateNumberOfInspections,
+  IspezioniFormSchema, // Import IspezioniFormSchema
 } from "@/lib/richieste-servizio-utils";
 import { DailySchedulesFormField } from "./daily-schedules-form-field";
 
@@ -56,41 +57,31 @@ export function RichiestaServizioForm({
 }: RichiestaServizioFormProps) {
   const selectedServiceType = form.watch("tipo_servizio");
 
-  // Watch all fields relevant for calculations by watching the entire form object
   const formValues = form.watch();
 
   let calculatedValue: number | null = null;
   let calculationLabel: string = "";
 
-  // Utilizza un'asserzione di tipo per restringere il tipo di formValues
-  // quando selectedServiceType è uno dei tipi che usano calculateTotalHours
-  if (selectedServiceType === "PIANTONAMENTO_ARMATO" || selectedServiceType === "SERVIZIO_FIDUCIARIO" || selectedServiceType === "ISPEZIONI") {
-    const { data_inizio_servizio, ora_inizio_servizio, data_fine_servizio, ora_fine_servizio, daily_schedules } = formValues;
+  if (selectedServiceType === "PIANTONAMENTO_ARMATO" || selectedServiceType === "SERVIZIO_FIDUCIARIO") {
+    const { data_inizio_servizio, ora_inizio_servizio, data_fine_servizio, ora_fine_servizio, numero_agenti, daily_schedules } = formValues;
 
-    if (data_inizio_servizio && ora_inizio_servizio && data_fine_servizio && ora_fine_servizio && daily_schedules) {
+    if (data_inizio_servizio && ora_inizio_servizio && data_fine_servizio && ora_fine_servizio && daily_schedules && numero_agenti !== undefined) {
       calculatedValue = calculateTotalHours(
         data_inizio_servizio,
         ora_inizio_servizio,
         data_fine_servizio,
         ora_fine_servizio,
-        daily_schedules // Ora daily_schedules è il 5° argomento, come previsto dalla nuova firma
+        daily_schedules,
+        numero_agenti // Pass numero_agenti as the 6th argument
       );
       calculationLabel = "Ore totali stimate:";
     }
-  }
+  } else if (selectedServiceType === "ISPEZIONI") {
+    // Narrow the type of formValues for ISPEZIONI
+    const ispezioniValues = formValues as IspezioniFormSchema;
+    const { ora_inizio_fascia, ora_fine_fascia, cadenza_ore } = ispezioniValues;
 
-  // Questo blocco deve essere un `else if` o gestito separatamente se "ISPEZIONI"
-  // ha calcoli diversi che non si sovrappongono al blocco precedente.
-  // Se "ISPEZIONI" usa calculateTotalHours E calculateNumberOfInspections,
-  // allora il calcolo per calculateNumberOfInspections dovrebbe essere qui.
-  // Assumendo che calculateNumberOfInspections sia un calcolo aggiuntivo/alternativo per ISPEZIONI:
-  if (selectedServiceType === "ISPEZIONI") {
-    // TypeScript ora capirà che formValues ha questi campi grazie allo schema discriminato
-    const { ora_inizio_fascia, ora_fine_fascia, cadenza_ore } = formValues;
-
-    if (ora_inizio_fascia && ora_fine_fascia && cadenza_ore) {
-      // Se ci sono due calcoli per ISPEZIONI, potresti voler mostrare entrambi o scegliere quale.
-      // Per ora, sovrascrivo il valore calcolato se ISPEZIONI ha un calcolo specifico.
+    if (ora_inizio_fascia && ora_fine_fascia && cadenza_ore !== undefined) {
       calculatedValue = calculateNumberOfInspections(
         ora_inizio_fascia,
         ora_fine_fascia,
@@ -144,7 +135,6 @@ export function RichiestaServizioForm({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {/* Corretto per usare value e label dagli oggetti in SERVICE_TYPES */}
                   {SERVICE_TYPES.map((type) => (
                     <SelectItem key={type.value} value={type.value}>
                       {type.label}
@@ -176,8 +166,7 @@ export function RichiestaServizioForm({
                   <SelectContent>
                     {puntiServizio.map((punto) => (
                       <SelectItem key={punto.id} value={punto.id}>
-                        {/* Corretto per usare punto.nome, assumendo che esista nell'interfaccia PuntoServizio */}
-                        {punto.nome}
+                        {punto.nome_punto_servizio} {/* Corrected to nome_punto_servizio */}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -338,7 +327,8 @@ export function RichiestaServizioForm({
 
         {/* Numero Agenti */}
         {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
-          selectedServiceType === "SERVIZIO_FIDUCIARIO") && (
+          selectedServiceType === "SERVIZIO_FIDUCIARIO" || // Also show for ISPEZIONI as per schema
+          selectedServiceType === "ISPEZIONI") && (
           <FormField
             control={form.control}
             name="numero_agenti"
@@ -365,7 +355,6 @@ export function RichiestaServizioForm({
               <FormItem>
                 <FormLabel>Programmazione Giornaliera</FormLabel>
                 <FormControl>
-                  {/* Corretto per passare le props value e onChange al componente DailySchedulesFormField */}
                   <DailySchedulesFormField
                     value={field.value}
                     onChange={field.onChange}
@@ -395,7 +384,6 @@ export function RichiestaServizioForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {/* Corretto per usare value e label dagli oggetti in INSPECTION_TYPES */}
                     {INSPECTION_TYPES.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
                         {type.label}
@@ -470,7 +458,6 @@ export function RichiestaServizioForm({
             <FormItem>
               <FormLabel>Note</FormLabel>
               <FormControl>
-                {/* Corretto per gestire il valore null */}
                 <Textarea placeholder="Aggiungi note aggiuntive" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
