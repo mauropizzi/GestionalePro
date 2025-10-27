@@ -21,14 +21,20 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Clock, Loader2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { format, setHours, setMinutes } from "date-fns";
 import { it } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Client, PuntoServizio, Fornitore } from "@/types/richieste-servizio";
-import { RichiestaServizioFormSchema, SERVICE_TYPES, INSPECTION_TYPES } from "@/lib/richieste-servizio-utils";
+import {
+  RichiestaServizioFormSchema,
+  SERVICE_TYPES,
+  INSPECTION_TYPES,
+  calculateTotalHours, // Import the utility function
+  calculateNumberOfInspections, // Import the utility function
+} from "@/lib/richieste-servizio-utils";
 import { DailySchedulesFormField } from "./daily-schedules-form-field";
 
 interface RichiestaServizioFormProps {
@@ -49,6 +55,75 @@ export function RichiestaServizioForm({
   isSubmitting,
 }: RichiestaServizioFormProps) {
   const selectedServiceType = form.watch("tipo_servizio");
+
+  // Watch all fields relevant for calculations
+  const watchedFields = form.watch([
+    "data_inizio_servizio",
+    "ora_inizio_servizio",
+    "data_fine_servizio",
+    "ora_fine_servizio",
+    "numero_agenti",
+    "daily_schedules",
+    "ora_inizio_fascia",
+    "ora_fine_fascia",
+    "cadenza_ore",
+  ]);
+
+  let calculatedValue: number | null = null;
+  let calculationLabel: string = "";
+
+  if (selectedServiceType === "PIANTONAMENTO_ARMATO" || selectedServiceType === "SERVIZIO_FIDUCIARIO" || selectedServiceType === "ISPEZIONI") {
+    const { data_inizio_servizio, ora_inizio_servizio, data_fine_servizio, ora_fine_servizio, numero_agenti, daily_schedules } = watchedFields;
+
+    if (data_inizio_servizio && ora_inizio_servizio && data_fine_servizio && ora_fine_servizio && numero_agenti !== undefined && daily_schedules) {
+      try {
+        const startDateTime = setMinutes(setHours(data_inizio_servizio, parseInt(ora_inizio_servizio.split(':')[0])), parseInt(ora_inizio_servizio.split(':')[1]));
+        const endDateTime = setMinutes(setHours(data_fine_servizio, parseInt(ora_fine_servizio.split(':')[0])), parseInt(ora_fine_servizio.split(':')[1]));
+
+        if (endDateTime > startDateTime) {
+          calculatedValue = calculateTotalHours(
+            startDateTime,
+            endDateTime,
+            daily_schedules,
+            numero_agenti
+          );
+          calculationLabel = "Ore Totali Calcolate";
+        } else {
+          calculationLabel = "Data/Ora fine deve essere successiva a inizio";
+        }
+      } catch (e) {
+        // Handle potential parsing errors if time format is invalid before Zod validation
+        calculationLabel = "Errore nel calcolo delle ore";
+      }
+    }
+  }
+
+  if (selectedServiceType === "ISPEZIONI") {
+    const { ora_inizio_fascia, ora_fine_fascia, cadenza_ore } = watchedFields;
+
+    if (ora_inizio_fascia && ora_fine_fascia && cadenza_ore !== undefined) {
+      try {
+        const [startH, startM] = ora_inizio_fascia.split(':').map(Number);
+        const [endH, endM] = ora_fine_fascia.split(':').map(Number);
+        const startTime = setMinutes(setHours(new Date(), startH), startM);
+        const endTime = setMinutes(setHours(new Date(), endH), endM);
+
+        if (endTime > startTime) {
+          calculatedValue = calculateNumberOfInspections(
+            ora_inizio_fascia,
+            ora_fine_fascia,
+            cadenza_ore
+          );
+          calculationLabel = "Numero di Ispezioni Calcolate";
+        } else {
+          calculationLabel = "Ora fine fascia deve essere successiva a inizio fascia";
+        }
+      } catch (e) {
+        calculationLabel = "Errore nel calcolo delle ispezioni";
+      }
+    }
+  }
+
 
   return (
     <Form {...form}>
@@ -375,9 +450,20 @@ export function RichiestaServizioForm({
           />
         </div>
 
-        {/* Right Column for Daily Schedules (now for all service types) */}
-        <div>
+        {/* Right Column for Daily Schedules and Calculation Preview */}
+        <div className="flex flex-col gap-3">
           <DailySchedulesFormField />
+
+          {/* Calculation Preview Section */}
+          {(calculatedValue !== null && calculationLabel) && (
+            <div className="mt-4 p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
+              <h3 className="text-lg font-semibold mb-2">Anteprima Calcolo</h3>
+              <p className="text-sm text-muted-foreground">
+                {calculationLabel}: <span className="font-bold text-primary">{calculatedValue.toFixed(2)}</span>
+                {selectedServiceType === "ISPEZIONI" ? "" : " ore"}
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="md:col-span-2 flex justify-end mt-4">
