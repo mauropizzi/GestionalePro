@@ -112,8 +112,6 @@ export default function ImportExportPage() {
             "Content-Type": "application/json",
             // Non è necessario un token di autorizzazione qui se la funzione è configurata per non richiederlo
             // o se si usa la chiave anonima per invocare funzioni non protette da RLS.
-            // Per funzioni admin, si usa la chiave del ruolo di servizio, ma l'invocazione client-side
-            // di solito non la include direttamente per motivi di sicurezza.
             // L'Edge Function stessa userà la chiave del ruolo di servizio.
           },
           body: JSON.stringify({
@@ -169,8 +167,16 @@ export default function ImportExportPage() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Errore durante l'esportazione di ${anagraficaType}.`);
+        let errorMessage = `Errore durante l'esportazione di ${anagraficaType}.`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (jsonError) {
+          // If response is not JSON, read it as text
+          const textError = await response.text();
+          errorMessage = `Errore durante l'esportazione di ${anagraficaType}: ${textError}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const blob = await response.blob();
