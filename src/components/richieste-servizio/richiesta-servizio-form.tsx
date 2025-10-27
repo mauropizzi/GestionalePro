@@ -62,17 +62,22 @@ export function RichiestaServizioForm({
   let calculatedValue: number | null = null;
   let calculationLabel: string = "";
 
-  if (selectedServiceType === "PIANTONAMENTO_ARMATO" || selectedServiceType === "SERVIZIO_FIDUCIARIO") {
+  if (selectedServiceType === "PIANTONAMENTO_ARMATO" || selectedServiceType === "SERVIZIO_FIDUCIARIO" || selectedServiceType === "ISPEZIONI") {
     const { data_inizio_servizio, ora_inizio_servizio, data_fine_servizio, ora_fine_servizio, numero_agenti, daily_schedules } = formValues;
 
     if (data_inizio_servizio && ora_inizio_servizio && data_fine_servizio && ora_fine_servizio && daily_schedules && numero_agenti !== undefined) {
+      // Combine date and time into full Date objects
+      const [startHour, startMinute] = ora_inizio_servizio.split(':').map(Number);
+      const fullStartDateTime = setMinutes(setHours(data_inizio_servizio, startHour), startMinute);
+
+      const [endHour, endMinute] = ora_fine_servizio.split(':').map(Number);
+      const fullEndDateTime = setMinutes(setHours(data_fine_servizio, endHour), endMinute);
+
       calculatedValue = calculateTotalHours(
-        data_inizio_servizio,
-        ora_inizio_servizio,
-        data_fine_servizio,
-        ora_fine_servizio,
+        fullStartDateTime,
+        fullEndDateTime,
         daily_schedules,
-        numero_agenti // Pass numero_agenti as the 6th argument
+        numero_agenti
       );
       calculationLabel = "Ore totali stimate:";
     }
