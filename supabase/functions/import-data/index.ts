@@ -59,6 +59,7 @@ serve(async (req) => {
       try {
         if (anagraficaType === 'clienti') {
           const clientToProcess = mapClientData(row);
+          console.log('Processing client:', clientToProcess); // Log the processed data
 
           // Check if client already exists by ragione_sociale or partita_iva
           const { data: existingClients, error: fetchError } = await supabaseAdmin
@@ -86,7 +87,6 @@ serve(async (req) => {
           successCount++;
         } else {
           // TODO: Implement logic for other anagrafica types (fornitori, punti_servizio, etc.)
-          // For now, if anagraficaType is not 'clienti', it will be skipped or throw an error.
           throw new Error(`Import logic not implemented for anagrafica type: ${anagraficaType}`);
         }
       } catch (rowError: any) {
