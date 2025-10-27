@@ -34,7 +34,7 @@ export default function ImportExportPage() {
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedDataRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedAnagrafica, setSelectedAnagrafica] = useState<string>(""); // To specify which anagrafica type is being imported/exported
+  const [selectedAnagrafica, setSelectedAnagrafica] = useState<string>("");
 
   const hasAccess =
     currentUserProfile?.role === "super_admin" ||
@@ -42,8 +42,8 @@ export default function ImportExportPage() {
 
   useEffect(() => {
     if (!isSessionLoading && !hasAccess) {
-      // Redirect or show access denied message if user doesn't have access
-      // For now, the DashboardLayout handles the access denied message.
+      // Reindirizza o mostra un messaggio di accesso negato se l'utente non ha i permessi
+      // Per ora, il DashboardLayout gestisce il messaggio di accesso negato.
     }
   }, [isSessionLoading, hasAccess]);
 
@@ -51,7 +51,7 @@ export default function ImportExportPage() {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
-      setParsedData([]); // Clear previous data
+      setParsedData([]);
     }
   };
 
@@ -103,21 +103,66 @@ export default function ImportExportPage() {
     }
 
     setLoading(true);
-    // TODO: Implement server-side logic for import (Supabase Edge Function)
-    // This would involve sending parsedData and selectedAnagrafica to an Edge Function
-    // for validation, comparison with existing data (duplicates, modifications), and actual database inserts/updates.
-    toast.info("Funzionalità di importazione in fase di sviluppo. I dati non sono stati salvati nel database.");
-    console.log("Importing data for:", selectedAnagrafica, parsedData);
-    setLoading(false);
+    try {
+      const response = await fetch('/api/import-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ anagraficaType: selectedAnagrafica, data: parsedData }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Errore durante l\'importazione dei dati.');
+      }
+
+      const result = await response.json();
+      toast.success(result.message || "Dati importati con successo!");
+      setParsedData([]);
+      setFile(null);
+    } catch (error: any) {
+      toast.error("Errore di importazione: " + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleExportData = async (anagraficaType: string) => {
     setLoading(true);
-    // TODO: Implement server-side logic for export (Supabase Edge Function or direct client-side fetch)
-    // This would involve fetching data from Supabase, converting to Excel, and triggering a download.
-    toast.info(`Funzionalità di esportazione per ${anagraficaType} in fase di sviluppo.`);
-    console.log("Exporting data for:", anagraficaType);
-    setLoading(false);
+    try {
+      const response = await fetch(`/api/export-data?type=${anagraficaType}`);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Errore durante l\'esportazione dei dati.');
+      }
+
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = `${anagraficaType}_export.xlsx`;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success(`Dati ${anagraficaType} esportati con successo!`);
+    } catch (error: any) {
+      toast.error("Errore di esportazione: " + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (isSessionLoading) {
@@ -195,7 +240,7 @@ export default function ImportExportPage() {
               ) : (
                 <FileText className="mr-2 h-4 w-4" />
               )}
-              Verifica File {/* Changed from Parsa File to Verifica File */}
+              Verifica File
             </Button>
             <Button onClick={handleImportData} disabled={loading || parsedData.length === 0} variant="blue-accent">
               {loading && parsedData.length > 0 ? (
@@ -220,7 +265,7 @@ export default function ImportExportPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {parsedData.slice(0, 10).map((row, rowIndex) => ( // Show first 10 rows as preview
+                    {parsedData.slice(0, 10).map((row, rowIndex) => (
                       <TableRow key={rowIndex}>
                         {Object.values(row).map((value, colIndex) => (
                           <TableCell key={colIndex}>{String(value)}</TableCell>
@@ -238,7 +283,7 @@ export default function ImportExportPage() {
                 </Table>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Questa è un'anteprima dei primi 10 record del file Excel. La logica per la gestione di modifiche, duplicati e nuovi record verrà implementata in un secondo momento.
+                Questa è un'anteprima dei primi 10 record del file Excel. Assicurati che le colonne corrispondano ai campi del database.
               </p>
             </div>
           )}
