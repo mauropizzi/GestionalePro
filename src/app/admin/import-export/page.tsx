@@ -126,13 +126,27 @@ export default function ImportExportPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Errore durante l'importazione dei dati.");
+        if (response.status === 207 && result.errors && Array.isArray(result.errors)) {
+          // Display detailed errors if status is 207 (Multi-Status)
+          const errorSummary = `Importazione completata con ${result.successCount || 0} successi e ${result.errorCount || result.errors.length} errori.`;
+          const firstFewErrors = result.errors.slice(0, 3).map((err: string) => `- ${err}`).join('\n');
+          const moreErrorsMessage = result.errors.length > 3 ? `\n...e altri ${result.errors.length - 3} errori. Controlla la console per i dettagli completi.` : '';
+          toast.error(
+            <div>
+              <p className="font-semibold">{errorSummary}</p>
+              <pre className="mt-2 whitespace-pre-wrap text-xs">{firstFewErrors}{moreErrorsMessage}</pre>
+            </div>,
+            { duration: 10000 } // Keep toast visible longer for errors
+          );
+        } else {
+          throw new Error(result.error || "Errore durante l'importazione dei dati.");
+        }
+      } else {
+        toast.success(result.message);
+        setParsedData([]); // Clear parsed data after successful import
+        setFile(null); // Clear selected file
+        // Potresti voler ricaricare i dati della tabella specifica qui se necessario
       }
-
-      toast.success(result.message);
-      setParsedData([]); // Clear parsed data after successful import
-      setFile(null); // Clear selected file
-      // Potresti voler ricaricare i dati della tabella specifica qui se necessario
     } catch (error: any) {
       toast.error("Errore nell'importazione: " + error.message);
     } finally {
