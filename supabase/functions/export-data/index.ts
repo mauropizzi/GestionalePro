@@ -35,7 +35,11 @@ serve(async (req) => {
 
     if (error) {
       console.error(`Error fetching data for ${anagraficaType}:`, error);
-      return new Response(JSON.stringify({ error: error.message }), {
+      let errorMessage = error.message;
+      if (error.details) errorMessage += ` Details: ${error.details}`;
+      if (error.hint) errorMessage += ` Hint: ${error.hint}`;
+      if (error.code) errorMessage += ` Code: ${error.code}`;
+      return new Response(JSON.stringify({ error: errorMessage }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
