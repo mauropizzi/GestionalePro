@@ -195,7 +195,7 @@ export default function ImportExportPage() {
               ) : (
                 <FileText className="mr-2 h-4 w-4" />
               )}
-              Parsa File
+              Verifica File {/* Changed from Parsa File to Verifica File */}
             </Button>
             <Button onClick={handleImportData} disabled={loading || parsedData.length === 0} variant="blue-accent">
               {loading && parsedData.length > 0 ? (
