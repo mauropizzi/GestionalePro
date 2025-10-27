@@ -88,31 +88,11 @@ export const richiestaServizioFormSchema = z.discriminatedUnion("tipo_servizio",
   piantonamentoArmatoBaseSchema,
   servizioFiduciarioBaseSchema,
   ispezioniBaseSchema,
-])
-.refine(data => {
-  if (data.tipo_servizio === "PIANTONAMENTO_ARMATO" || data.tipo_servizio === "SERVIZIO_FIDUCIARIO") {
-    const startDateTime = setMinutes(setHours(data.data_inizio_servizio, parseInt(data.ora_inizio_servizio.split(':')[0])), parseInt(data.ora_inizio_servizio.split(':')[1]));
-    const endDateTime = setMinutes(setHours(data.data_fine_servizio, parseInt(data.ora_fine_servizio.split(':')[0])), parseInt(data.ora_fine_servizio.split(':')[1]));
-    return endDateTime > startDateTime;
-  }
-  return true; // No refinement needed for ISPEZIONI at this level
-}, {
-  message: "La data e ora di fine servizio devono essere successive alla data e ora di inizio.",
-  path: ["data_fine_servizio"],
-})
-.refine(data => {
-  if (data.tipo_servizio === "ISPEZIONI") {
-    const [startH, startM] = data.ora_inizio_fascia.split(':').map(Number);
-    const [endH, endM] = data.ora_fine_fascia.split(':').map(Number);
-    const startTime = setMinutes(setHours(new Date(), startH), startM);
-    const endTime = setMinutes(setHours(new Date(), endH), endM);
-    return endTime > startTime;
-  }
-  return true; // No refinement needed for other service types
-}, {
-  message: "L'ora di fine fascia deve essere successiva all'ora di inizio fascia.",
-  path: ["ora_fine_fascia"],
-});
+]);
+// IMPORTANT: The conditional refinements that were previously here have been removed
+// to prevent a Zod internal runtime error.
+// These validations (e.g., data_fine_servizio > data_inizio_servizio, ora_fine_fascia > ora_inizio_fascia)
+// must now be implemented at the form level using `form.superRefine` or within the `onSubmit` handler.
 
 export type RichiestaServizioFormSchema = z.infer<typeof richiestaServizioFormSchema>;
 
