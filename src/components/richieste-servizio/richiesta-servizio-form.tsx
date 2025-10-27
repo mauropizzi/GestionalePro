@@ -133,7 +133,7 @@ export function RichiestaServizioForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tipo di Servizio</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value ?? ""}> {/* Changed to ?? "" */}
+                <Select onValueChange={field.onChange} value={typeof field.value === 'string' ? field.value : ""}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleziona il tipo di servizio" />
