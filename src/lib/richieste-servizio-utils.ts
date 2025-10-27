@@ -74,7 +74,7 @@ const servizioFiduciarioBaseSchema = baseRichiestaServizioObjectSchema.extend({
   daily_schedules: z.array(dailyScheduleSchema).min(8, "Devi definire gli orari per tutti i giorni della settimana e per i festivi."),
 });
 
-// Define schema for ISPEZIONI, now including daily scheduling and agent count
+// Define schema for ISPEZIONI without refinement
 const ispezioniBaseSchema = baseRichiestaServizioObjectSchema.extend({
   tipo_servizio: z.literal("ISPEZIONI"),
   data_inizio_servizio: z.date({ required_error: "La data di inizio servizio è richiesta." }),
@@ -100,6 +100,7 @@ export const richiestaServizioFormSchema = z.discriminatedUnion("tipo_servizio",
 // using `form.superRefine` or within the `onSubmit` handler.
 
 export type RichiestaServizioFormSchema = z.infer<typeof richiestaServizioFormSchema>;
+export type IspezioniFormSchema = z.infer<typeof ispezioniBaseSchema>; // Nuovo tipo esportato
 
 export const calculateTotalHours = (
   startDate: Date,

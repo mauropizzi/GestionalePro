@@ -34,6 +34,7 @@ import {
   INSPECTION_TYPES,
   calculateTotalHours, // Import the utility function
   calculateNumberOfInspections, // Import the utility function
+  IspezioniFormSchema, // Import the new type
 } from "@/lib/richieste-servizio-utils";
 import { DailySchedulesFormField } from "./daily-schedules-form-field";
 
@@ -56,24 +57,16 @@ export function RichiestaServizioForm({
 }: RichiestaServizioFormProps) {
   const selectedServiceType = form.watch("tipo_servizio");
 
-  // Watch all fields relevant for calculations
-  const watchedFields = form.watch([
-    "data_inizio_servizio",
-    "ora_inizio_servizio",
-    "data_fine_servizio",
-    "ora_fine_servizio",
-    "numero_agenti",
-    "daily_schedules",
-    "ora_inizio_fascia",
-    "ora_fine_fascia",
-    "cadenza_ore",
-  ]);
+  // Watch all fields relevant for calculations by watching the entire form object
+  const formValues = form.watch();
 
   let calculatedValue: number | null = null;
   let calculationLabel: string = "";
 
+  // This block is fine because all union members (PIANTONAMENTO_ARMATO, SERVIZIO_FIDUCIARIO, ISPEZIONI)
+  // now share these common scheduling fields.
   if (selectedServiceType === "PIANTONAMENTO_ARMATO" || selectedServiceType === "SERVIZIO_FIDUCIARIO" || selectedServiceType === "ISPEZIONI") {
-    const { data_inizio_servizio, ora_inizio_servizio, data_fine_servizio, ora_fine_servizio, numero_agenti, daily_schedules } = watchedFields;
+    const { data_inizio_servizio, ora_inizio_servizio, data_fine_servizio, ora_fine_servizio, numero_agenti, daily_schedules } = formValues;
 
     if (data_inizio_servizio && ora_inizio_servizio && data_fine_servizio && ora_fine_servizio && numero_agenti !== undefined && daily_schedules) {
       try {
@@ -99,7 +92,9 @@ export function RichiestaServizioForm({
   }
 
   if (selectedServiceType === "ISPEZIONI") {
-    const { ora_inizio_fascia, ora_fine_fascia, cadenza_ore } = watchedFields;
+    // Asserzione di tipo per restringere formValues al tipo specifico di ISPEZIONI
+    const ispezioniValues = formValues as IspezioniFormSchema;
+    const { ora_inizio_fascia, ora_fine_fascia, cadenza_ore } = ispezioniValues;
 
     if (ora_inizio_fascia && ora_fine_fascia && cadenza_ore !== undefined) {
       try {
@@ -248,8 +243,8 @@ export function RichiestaServizioForm({
                             !field.value && "text-muted-foreground"
                           )}
                         >
-                          {field.value ? (
-                            format(field.value, "PPP", { locale: it })
+                          {formValues.data_inizio_servizio ? (
+                            format(formValues.data_inizio_servizio, "PPP", { locale: it })
                           ) : (
                             <span>Seleziona una data</span>
                           )}
@@ -260,7 +255,7 @@ export function RichiestaServizioForm({
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
-                        selected={field.value}
+                        selected={formValues.data_inizio_servizio}
                         onSelect={field.onChange}
                         initialFocus
                         locale={it}
@@ -303,8 +298,8 @@ export function RichiestaServizioForm({
                             !field.value && "text-muted-foreground"
                           )}
                         >
-                          {field.value ? (
-                            format(field.value, "PPP", { locale: it })
+                          {formValues.data_fine_servizio ? (
+                            format(formValues.data_fine_servizio, "PPP", { locale: it })
                           ) : (
                             <span>Seleziona una data</span>
                           )}
@@ -315,7 +310,7 @@ export function RichiestaServizioForm({
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
-                        selected={field.value}
+                        selected={formValues.data_fine_servizio}
                         onSelect={field.onChange}
                         initialFocus
                         locale={it}
