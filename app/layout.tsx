@@ -1,4 +1,4 @@
-import './globals.css'; // Assicurati che questo percorso sia corretto
+import './globals.css'; // Questo percorso è corretto se globals.css è in app/
 
 export const metadata = {
   title: 'Next.js App',
