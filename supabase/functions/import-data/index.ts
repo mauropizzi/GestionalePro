@@ -9,20 +9,25 @@ const corsHeaders = {
 
 // Helper function to clean and map incoming data to database schema
 function mapClientData(rowData: any) {
+  const ragione_sociale = rowData['Ragione Sociale'] || rowData['ragione_sociale'];
+  if (!ragione_sociale || typeof ragione_sociale !== 'string' || ragione_sociale.trim() === '') {
+    throw new Error('Ragione Sociale is required and cannot be empty.');
+  }
+
   return {
-    ragione_sociale: rowData['Ragione Sociale'] || rowData['ragione_sociale'],
-    codice_fiscale: rowData['Codice Fiscale'] || rowData['codice_fiscale'] || null,
-    partita_iva: rowData['Partita IVA'] || rowData['partita_iva'] || null,
-    indirizzo: rowData['Indirizzo'] || rowData['indirizzo'] || null,
-    citta: rowData['Città'] || rowData['citta'] || null,
-    cap: rowData['CAP'] || rowData['cap'] || null,
-    provincia: rowData['Provincia'] || rowData['provincia'] || null,
-    telefono: rowData['Telefono'] || rowData['telefono'] || null,
-    email: rowData['Email'] || rowData['email'] || null,
-    pec: rowData['PEC'] || rowData['pec'] || null,
-    sdi: rowData['SDI'] || rowData['sdi'] || null,
+    ragione_sociale: ragione_sociale.trim(),
+    codice_fiscale: (rowData['Codice Fiscale'] || rowData['codice_fiscale'] || '').trim() || null,
+    partita_iva: (rowData['Partita IVA'] || rowData['partita_iva'] || '').trim() || null,
+    indirizzo: (rowData['Indirizzo'] || rowData['indirizzo'] || '').trim() || null,
+    citta: (rowData['Città'] || rowData['citta'] || '').trim() || null,
+    cap: (rowData['CAP'] || rowData['cap'] || '').trim() || null,
+    provincia: (rowData['Provincia'] || rowData['provincia'] || '').trim() || null,
+    telefono: (rowData['Telefono'] || rowData['telefono'] || '').trim() || null,
+    email: (rowData['Email'] || rowData['email'] || '').trim() || null,
+    pec: (rowData['PEC'] || rowData['pec'] || '').trim() || null,
+    sdi: (rowData['SDI'] || rowData['sdi'] || '').trim() || null,
     attivo: rowData['Attivo'] === 'TRUE' || rowData['attivo'] === true || rowData['Attivo'] === 1, // Handle boolean conversion
-    note: rowData['Note'] || rowData['note'] || null,
+    note: (rowData['Note'] || rowData['note'] || '').trim() || null,
   };
 }
 
@@ -86,7 +91,11 @@ serve(async (req) => {
         }
       } catch (rowError: any) {
         errorCount++;
-        errors.push(`Error processing row ${JSON.stringify(row)}: ${rowError.message}`);
+        let errorMessage = `Error processing row ${JSON.stringify(row)}: ${rowError.message}`;
+        if (rowError.details) errorMessage += ` Details: ${rowError.details}`;
+        if (rowError.hint) errorMessage += ` Hint: ${rowError.hint}`;
+        if (rowError.code) errorMessage += ` Code: ${rowError.code}`;
+        errors.push(errorMessage);
         console.error(`Error processing row for ${anagraficaType}:`, rowError);
       }
     }
