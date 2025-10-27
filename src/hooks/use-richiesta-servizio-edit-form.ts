@@ -33,21 +33,20 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
       client_id: "",
       punto_servizio_id: null,
       fornitore_id: null,
-      tipo_servizio: "PIANTONAMENTO_ARMATO",
+      tipo_servizio: "PIANTONAMENTO_ARMATO", // Initial default service type
       note: null,
-      // Default values for PIANTONAMENTO_ARMATO / SERVIZIO_FIDUCIARIO
+      // Common scheduling fields
       data_inizio_servizio: new Date(),
       ora_inizio_servizio: "09:00",
       data_fine_servizio: new Date(),
       ora_fine_servizio: "18:00",
       numero_agenti: 1,
       daily_schedules: defaultDailySchedules,
-      // Default values for ISPEZIONI
-      data_servizio: new Date(),
-      ora_inizio_fascia: "00:00",
-      ora_fine_fascia: "00:00",
-      cadenza_ore: 1,
-      tipo_ispezione: "PERIMETRALE",
+      // ISPEZIONI specific fields (set to undefined as they are not applicable for PIANTONAMENTO_ARMATO)
+      ora_inizio_fascia: undefined,
+      ora_fine_fascia: undefined,
+      cadenza_ore: undefined,
+      tipo_ispezione: undefined,
     },
   });
 
@@ -91,12 +90,13 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
         setFornitori(fornitoriData || []);
       }
 
-      // Fetch richiesta_servizio
+      // Fetch richiesta_servizio and daily schedules
       const { data: richiestaData, error: richiestaError } = await supabase
         .from("richieste_servizio")
         .select(`
           *,
-          inspection_details:richieste_servizio_ispezioni(*)
+          inspection_details:richieste_servizio_ispezioni(*),
+          daily_schedules:richieste_servizio_orari_giornalieri(*)
         `)
         .eq("id", richiestaId)
         .single();
@@ -107,63 +107,55 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
       } else if (richiestaData) {
         setRichiesta(richiestaData);
 
+        const mergedSchedules = defaultDailySchedules.map(defaultSchedule => {
+          const existingSchedule = richiestaData.daily_schedules?.find((s: DailySchedule) => s.giorno_settimana === defaultSchedule.giorno_settimana);
+          return existingSchedule ? {
+            id: existingSchedule.id,
+            richiesta_servizio_id: existingSchedule.richiesta_servizio_id,
+            giorno_settimana: existingSchedule.giorno_settimana,
+            h24: existingSchedule.h24,
+            ora_inizio: existingSchedule.ora_inizio,
+            ora_fine: existingSchedule.ora_fine,
+            attivo: existingSchedule.attivo,
+          } : {
+            ...defaultSchedule,
+            richiesta_servizio_id: richiestaId,
+          };
+        });
+
         const baseFormValues: Partial<RichiestaServizioFormSchema> = {
           client_id: richiestaData.client_id || "",
           punto_servizio_id: richiestaData.punto_servizio_id || null,
           fornitore_id: richiestaData.fornitore_id || null,
           tipo_servizio: richiestaData.tipo_servizio as ServiceType,
           note: richiestaData.note || null,
+          data_inizio_servizio: richiestaData.data_inizio_servizio ? parseISO(richiestaData.data_inizio_servizio) : new Date(),
+          ora_inizio_servizio: richiestaData.data_inizio_servizio ? format(parseISO(richiestaData.data_inizio_servizio), "HH:mm") : "09:00",
+          data_fine_servizio: richiestaData.data_fine_servizio ? parseISO(richiestaData.data_fine_servizio) : new Date(),
+          ora_fine_servizio: richiestaData.data_fine_servizio ? format(parseISO(richiestaData.data_fine_servizio), "HH:mm") : "18:00",
+          numero_agenti: richiestaData.numero_agenti || 1,
+          daily_schedules: mergedSchedules,
         };
 
-        if (richiestaData.tipo_servizio === "ISPEZIONI" && richiestaData.inspection_details) { // Accesso diretto
+        if (richiestaData.tipo_servizio === "ISPEZIONI" && richiestaData.inspection_details) {
           const inspectionDetail = richiestaData.inspection_details;
           form.reset({
             ...baseFormValues,
             tipo_servizio: "ISPEZIONI",
-            data_servizio: parseISO(inspectionDetail.data_servizio),
             ora_inizio_fascia: inspectionDetail.ora_inizio_fascia,
             ora_fine_fascia: inspectionDetail.ora_fine_fascia,
             cadenza_ore: inspectionDetail.cadenza_ore,
             tipo_ispezione: inspectionDetail.tipo_ispezione as InspectionType,
-          });
+          } as RichiestaServizioFormSchema); // Cast to ensure correct type for reset
         } else {
-          // Fetch daily schedules for PIANTONAMENTO_ARMATO and SERVIZIO_FIDUCIARIO
-          const { data: schedulesData, error: schedulesError } = await supabase
-            .from("richieste_servizio_orari_giornalieri")
-            .select("*")
-            .eq("richiesta_servizio_id", richiestaId)
-            .order("giorno_settimana", { ascending: true });
-
-          if (schedulesError) {
-            toast.error("Errore nel recupero degli orari giornalieri: " + schedulesError.message);
-          }
-
-          const mergedSchedules = defaultDailySchedules.map(defaultSchedule => {
-            const existingSchedule = schedulesData?.find(s => s.giorno_settimana === defaultSchedule.giorno_settimana);
-            return existingSchedule ? {
-              id: existingSchedule.id,
-              richiesta_servizio_id: existingSchedule.richiesta_servizio_id,
-              giorno_settimana: existingSchedule.giorno_settimana,
-              h24: existingSchedule.h24,
-              ora_inizio: existingSchedule.ora_inizio,
-              ora_fine: existingSchedule.ora_fine,
-              attivo: existingSchedule.attivo,
-            } : {
-              ...defaultSchedule,
-              richiesta_servizio_id: richiestaId,
-            };
-          });
-
           form.reset({
             ...baseFormValues,
-            tipo_servizio: richiestaData.tipo_servizio as ServiceType,
-            data_inizio_servizio: parseISO(richiestaData.data_inizio_servizio),
-            ora_inizio_servizio: format(parseISO(richiestaData.data_inizio_servizio), "HH:mm"),
-            data_fine_servizio: parseISO(richiestaData.data_fine_servizio),
-            ora_fine_servizio: format(parseISO(richiestaData.data_fine_servizio), "HH:mm"),
-            numero_agenti: richiestaData.numero_agenti,
-            daily_schedules: mergedSchedules,
-          });
+            // Ensure inspection-specific fields are reset/defaulted if not ISPEZIONI
+            ora_inizio_fascia: undefined,
+            ora_fine_fascia: undefined,
+            cadenza_ore: undefined,
+            tipo_ispezione: undefined,
+          } as RichiestaServizioFormSchema); // Cast to ensure correct type for reset
         }
       }
       setIsLoading(false);
@@ -179,56 +171,36 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
     let richiestaDataToUpdate: any;
     let inspectionDetailsToSave: any = null;
 
+    const dataInizioServizio = setMinutes(setHours(values.data_inizio_servizio, parseInt(values.ora_inizio_servizio.split(':')[0])), parseInt(values.ora_inizio_servizio.split(':')[1]));
+    const dataFineServizio = setMinutes(setHours(values.data_fine_servizio, parseInt(values.ora_fine_servizio.split(':')[0])), parseInt(values.ora_fine_servizio.split(':')[1]));
+
+    totalCalculatedValue = calculateTotalHours(
+      dataInizioServizio,
+      dataFineServizio,
+      values.daily_schedules,
+      values.numero_agenti
+    );
+
+    richiestaDataToUpdate = {
+      client_id: values.client_id,
+      punto_servizio_id: values.punto_servizio_id === "" ? null : values.punto_servizio_id,
+      fornitore_id: values.fornitore_id === "" ? null : values.fornitore_id,
+      tipo_servizio: values.tipo_servizio,
+      data_inizio_servizio: dataInizioServizio.toISOString(),
+      data_fine_servizio: dataFineServizio.toISOString(),
+      numero_agenti: values.numero_agenti,
+      note: values.note === "" ? null : values.note,
+      total_hours_calculated: totalCalculatedValue,
+      updated_at: now,
+    };
+
     if (values.tipo_servizio === "ISPEZIONI") {
-      totalCalculatedValue = calculateNumberOfInspections(
-        values.ora_inizio_fascia,
-        values.ora_fine_fascia,
-        values.cadenza_ore
-      );
-
-      richiestaDataToUpdate = {
-        client_id: values.client_id,
-        punto_servizio_id: values.punto_servizio_id === "" ? null : values.punto_servizio_id,
-        fornitore_id: values.fornitore_id === "" ? null : values.fornitore_id,
-        tipo_servizio: values.tipo_servizio,
-        note: values.note === "" ? null : values.note,
-        total_hours_calculated: totalCalculatedValue,
-        data_inizio_servizio: null, // Clear fields not relevant to ISPEZIONI
-        data_fine_servizio: null,
-        numero_agenti: null,
-        updated_at: now,
-      };
-
       inspectionDetailsToSave = {
-        data_servizio: format(values.data_servizio, "yyyy-MM-dd"),
+        data_servizio: format(values.data_inizio_servizio, "yyyy-MM-dd"), // Use data_inizio_servizio for inspection date
         ora_inizio_fascia: values.ora_inizio_fascia,
         ora_fine_fascia: values.ora_fine_fascia,
         cadenza_ore: values.cadenza_ore,
         tipo_ispezione: values.tipo_ispezione,
-        updated_at: now,
-      };
-
-    } else { // PIANTONAMENTO_ARMATO or SERVIZIO_FIDUCIARIO
-      const dataInizioServizio = setMinutes(setHours(values.data_inizio_servizio, parseInt(values.ora_inizio_servizio.split(':')[0])), parseInt(values.ora_inizio_servizio.split(':')[1]));
-      const dataFineServizio = setMinutes(setHours(values.data_fine_servizio, parseInt(values.ora_fine_servizio.split(':')[0])), parseInt(values.ora_fine_servizio.split(':')[1]));
-
-      totalCalculatedValue = calculateTotalHours(
-        dataInizioServizio,
-        dataFineServizio,
-        values.daily_schedules,
-        values.numero_agenti
-      );
-
-      richiestaDataToUpdate = {
-        client_id: values.client_id,
-        punto_servizio_id: values.punto_servizio_id === "" ? null : values.punto_servizio_id,
-        fornitore_id: values.fornitore_id === "" ? null : values.fornitore_id,
-        tipo_servizio: values.tipo_servizio,
-        data_inizio_servizio: dataInizioServizio.toISOString(),
-        data_fine_servizio: dataFineServizio.toISOString(),
-        numero_agenti: values.numero_agenti,
-        note: values.note === "" ? null : values.note,
-        total_hours_calculated: totalCalculatedValue,
         updated_at: now,
       };
     }
@@ -244,13 +216,45 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
       return;
     }
 
+    // Update or insert daily schedules for all service types
+    for (const schedule of values.daily_schedules) {
+      const scheduleToSave = {
+        richiesta_servizio_id: richiestaId,
+        giorno_settimana: schedule.giorno_settimana,
+        h24: schedule.h24,
+        ora_inizio: schedule.h24 || !schedule.attivo ? null : schedule.ora_inizio,
+        ora_fine: schedule.h24 || !schedule.attivo ? null : schedule.ora_fine,
+        attivo: schedule.attivo,
+        updated_at: now,
+      };
+
+      if (schedule.id) {
+        // Update existing schedule
+        const { error } = await supabase
+          .from("richieste_servizio_orari_giornalieri")
+          .update(scheduleToSave)
+          .eq("id", schedule.id);
+        if (error) {
+          toast.error(`Errore nell'aggiornamento orario per ${schedule.giorno_settimana}: ` + error.message);
+        }
+      } else {
+        // Insert new schedule
+        const { error } = await supabase
+          .from("richieste_servizio_orari_giornalieri")
+          .insert({ ...scheduleToSave, created_at: now });
+        if (error) {
+          toast.error(`Errore nell'inserimento orario per ${schedule.giorno_settimana}: ` + error.message);
+        }
+      }
+    }
+
     if (values.tipo_servizio === "ISPEZIONI" && inspectionDetailsToSave) {
-      if (richiesta?.inspection_details?.id) { // Accesso diretto
+      if (richiesta?.inspection_details?.id) {
         // Update existing inspection details
         const { error: inspectionError } = await supabase
           .from("richieste_servizio_ispezioni")
           .update(inspectionDetailsToSave)
-          .eq("id", richiesta.inspection_details.id); // Accesso diretto
+          .eq("id", richiesta.inspection_details.id);
         if (inspectionError) {
           toast.error("Errore nell'aggiornamento dei dettagli dell'ispezione: " + inspectionError.message);
         }
@@ -263,44 +267,9 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
           toast.error("Errore nell'inserimento dei dettagli dell'ispezione: " + inspectionError.message);
         }
       }
-      // Delete daily schedules if switching from hourly to inspection
-      await supabase.from("richieste_servizio_orari_giornalieri").delete().eq("richiesta_servizio_id", richiestaId);
-
-    } else if (values.tipo_servizio !== "ISPEZIONI") {
-      // Delete inspection details if switching from inspection to hourly
+    } else if (richiesta?.inspection_details?.id) {
+      // If service type changed from ISPEZIONI to something else, delete old inspection details
       await supabase.from("richieste_servizio_ispezioni").delete().eq("richiesta_servizio_id", richiestaId);
-
-      // Update or insert daily schedules for PIANTONAMENTO_ARMATO and SERVIZIO_FIDUCIARIO
-      for (const schedule of values.daily_schedules) {
-        const scheduleToSave = {
-          richiesta_servizio_id: richiestaId,
-          giorno_settimana: schedule.giorno_settimana,
-          h24: schedule.h24,
-          ora_inizio: schedule.h24 || !schedule.attivo ? null : schedule.ora_inizio,
-          ora_fine: schedule.h24 || !schedule.attivo ? null : schedule.ora_fine,
-          attivo: schedule.attivo,
-          updated_at: now,
-        };
-
-        if (schedule.id) {
-          // Update existing schedule
-          const { error } = await supabase
-            .from("richieste_servizio_orari_giornalieri")
-            .update(scheduleToSave)
-            .eq("id", schedule.id);
-          if (error) {
-            toast.error(`Errore nell'aggiornamento orario per ${schedule.giorno_settimana}: ` + error.message);
-          }
-        } else {
-          // Insert new schedule
-          const { error } = await supabase
-            .from("richieste_servizio_orari_giornalieri")
-            .insert({ ...scheduleToSave, created_at: now });
-          if (error) {
-            toast.error(`Errore nell'inserimento orario per ${schedule.giorno_settimana}: ` + error.message);
-          }
-        }
-      }
     }
 
     toast.success("Richiesta di servizio aggiornata con successo!");

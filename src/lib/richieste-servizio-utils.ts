@@ -74,10 +74,16 @@ const servizioFiduciarioBaseSchema = baseRichiestaServizioObjectSchema.extend({
   daily_schedules: z.array(dailyScheduleSchema).min(8, "Devi definire gli orari per tutti i giorni della settimana e per i festivi."),
 });
 
-// Define schema for ISPEZIONI without refinement
+// Define schema for ISPEZIONI, now including daily scheduling and agent count
 const ispezioniBaseSchema = baseRichiestaServizioObjectSchema.extend({
   tipo_servizio: z.literal("ISPEZIONI"),
-  data_servizio: z.date({ required_error: "La data del servizio è richiesta." }),
+  data_inizio_servizio: z.date({ required_error: "La data di inizio servizio è richiesta." }),
+  ora_inizio_servizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
+  data_fine_servizio: z.date({ required_error: "La data di fine servizio è richiesta." }),
+  ora_fine_servizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
+  numero_agenti: z.coerce.number().min(1, "Il numero di agenti deve essere almeno 1."),
+  daily_schedules: z.array(dailyScheduleSchema).min(8, "Devi definire gli orari per tutti i giorni della settimana e per i festivi."),
+  // Retain inspection-specific fields
   ora_inizio_fascia: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
   ora_fine_fascia: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
   cadenza_ore: z.coerce.number().min(0.5, "La cadenza deve essere almeno 0.5 ore."),
@@ -89,10 +95,9 @@ export const richiestaServizioFormSchema = z.discriminatedUnion("tipo_servizio",
   servizioFiduciarioBaseSchema,
   ispezioniBaseSchema,
 ]);
-// IMPORTANT: The conditional refinements that were previously here have been removed
-// to prevent a Zod internal runtime error.
-// These validations (e.g., data_fine_servizio > data_inizio_servizio, ora_fine_fascia > ora_inizio_fascia)
-// must now be implemented at the form level using `form.superRefine` or within the `onSubmit` handler.
+// IMPORTANT: Conditional refinements for date/time ranges (e.g., data_fine_servizio > data_inizio_servizio,
+// ora_fine_fascia > ora_inizio_fascia) must now be implemented at the form level
+// using `form.superRefine` or within the `onSubmit` handler.
 
 export type RichiestaServizioFormSchema = z.infer<typeof richiestaServizioFormSchema>;
 

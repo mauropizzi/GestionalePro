@@ -19,8 +19,8 @@ import {
   calculateNumberOfInspections,
   defaultDailySchedules,
 } from "@/lib/richieste-servizio-utils";
-import { RichiestaServizioForm } from "@/components/richieste-servizio/richiesta-servizio-form";
 import { DailySchedule } from "@/types/richieste-servizio"; // Importa DailySchedule
+import { RichiestaServizioForm } from "@/components/richieste-servizio/richiesta-servizio-form";
 
 interface Client {
   id: string;
@@ -50,21 +50,20 @@ export default function NewRichiestaServizioPage() {
       client_id: "",
       punto_servizio_id: null,
       fornitore_id: null,
-      tipo_servizio: "PIANTONAMENTO_ARMATO",
+      tipo_servizio: "PIANTONAMENTO_ARMATO", // Initial default service type
       note: null,
-      // Default values for PIANTONAMENTO_ARMATO / SERVIZIO_FIDUCIARIO
+      // Common scheduling fields
       data_inizio_servizio: new Date(),
       ora_inizio_servizio: "09:00",
       data_fine_servizio: new Date(),
       ora_fine_servizio: "18:00",
       numero_agenti: 1,
       daily_schedules: defaultDailySchedules,
-      // Default values for ISPEZIONI (will be overridden if tipo_servizio is ISPEZIONI)
-      data_servizio: new Date(),
-      ora_inizio_fascia: "00:00",
-      ora_fine_fascia: "00:00",
-      cadenza_ore: 1,
-      tipo_ispezione: "PERIMETRALE",
+      // ISPEZIONI specific fields (set to undefined as they are not applicable for PIANTONAMENTO_ARMATO)
+      ora_inizio_fascia: undefined,
+      ora_fine_fascia: undefined,
+      cadenza_ore: undefined,
+      tipo_ispezione: undefined,
     },
   });
 
@@ -113,57 +112,38 @@ export default function NewRichiestaServizioPage() {
     let richiestaData: any;
     let inspectionDetailsToInsert: any = null;
 
+    const dataInizioServizio = setMinutes(setHours(values.data_inizio_servizio, parseInt(values.ora_inizio_servizio.split(':')[0])), parseInt(values.ora_inizio_servizio.split(':')[1]));
+    const dataFineServizio = setMinutes(setHours(values.data_fine_servizio, parseInt(values.ora_fine_servizio.split(':')[0])), parseInt(values.ora_fine_servizio.split(':')[1]));
+
+    totalCalculatedValue = calculateTotalHours(
+      dataInizioServizio,
+      dataFineServizio,
+      values.daily_schedules,
+      values.numero_agenti
+    );
+
+    richiestaData = {
+      client_id: values.client_id,
+      punto_servizio_id: values.punto_servizio_id === "" ? null : values.punto_servizio_id,
+      fornitore_id: values.fornitore_id === "" ? null : values.fornitore_id,
+      tipo_servizio: values.tipo_servizio,
+      data_inizio_servizio: dataInizioServizio.toISOString(),
+      data_fine_servizio: dataFineServizio.toISOString(),
+      numero_agenti: values.numero_agenti,
+      note: values.note === "" ? null : values.note,
+      status: "pending",
+      total_hours_calculated: totalCalculatedValue,
+      created_at: now,
+      updated_at: now,
+    };
+
     if (values.tipo_servizio === "ISPEZIONI") {
-      totalCalculatedValue = calculateNumberOfInspections(
-        values.ora_inizio_fascia,
-        values.ora_fine_fascia,
-        values.cadenza_ore
-      );
-
-      richiestaData = {
-        client_id: values.client_id,
-        punto_servizio_id: values.punto_servizio_id === "" ? null : values.punto_servizio_id,
-        fornitore_id: values.fornitore_id === "" ? null : values.fornitore_id,
-        tipo_servizio: values.tipo_servizio,
-        note: values.note === "" ? null : values.note,
-        status: "pending",
-        total_hours_calculated: totalCalculatedValue, // Questo campo verrà usato per il numero di ispezioni
-        created_at: now,
-        updated_at: now,
-      };
-
       inspectionDetailsToInsert = {
-        data_servizio: format(values.data_servizio, "yyyy-MM-dd"),
+        data_servizio: format(values.data_inizio_servizio, "yyyy-MM-dd"), // Use data_inizio_servizio for inspection date
         ora_inizio_fascia: values.ora_inizio_fascia,
         ora_fine_fascia: values.ora_fine_fascia,
         cadenza_ore: values.cadenza_ore,
         tipo_ispezione: values.tipo_ispezione,
-        created_at: now,
-        updated_at: now,
-      };
-
-    } else { // PIANTONAMENTO_ARMATO or SERVIZIO_FIDUCIARIO
-      const dataInizioServizio = setMinutes(setHours(values.data_inizio_servizio, parseInt(values.ora_inizio_servizio.split(':')[0])), parseInt(values.ora_inizio_servizio.split(':')[1]));
-      const dataFineServizio = setMinutes(setHours(values.data_fine_servizio, parseInt(values.ora_fine_servizio.split(':')[0])), parseInt(values.ora_fine_servizio.split(':')[1]));
-
-      totalCalculatedValue = calculateTotalHours(
-        dataInizioServizio,
-        dataFineServizio,
-        values.daily_schedules,
-        values.numero_agenti
-      );
-
-      richiestaData = {
-        client_id: values.client_id,
-        punto_servizio_id: values.punto_servizio_id === "" ? null : values.punto_servizio_id,
-        fornitore_id: values.fornitore_id === "" ? null : values.fornitore_id,
-        tipo_servizio: values.tipo_servizio,
-        data_inizio_servizio: dataInizioServizio.toISOString(),
-        data_fine_servizio: dataFineServizio.toISOString(),
-        numero_agenti: values.numero_agenti,
-        note: values.note === "" ? null : values.note,
-        status: "pending",
-        total_hours_calculated: totalCalculatedValue,
         created_at: now,
         updated_at: now,
       };
@@ -181,6 +161,25 @@ export default function NewRichiestaServizioPage() {
       return;
     }
 
+    // Insert daily schedules for all service types now
+    const schedulesToInsert = values.daily_schedules.map((schedule: DailySchedule) => ({
+      ...schedule,
+      richiesta_servizio_id: newRichiesta.id,
+      ora_inizio: schedule.h24 || !schedule.attivo ? null : schedule.ora_inizio,
+      ora_fine: schedule.h24 || !schedule.attivo ? null : schedule.ora_fine,
+      created_at: now,
+      updated_at: now,
+    }));
+
+    const { error: schedulesError } = await supabase
+      .from("richieste_servizio_orari_giornalieri")
+      .insert(schedulesToInsert);
+
+    if (schedulesError) {
+      toast.error("Errore durante il salvataggio degli orari giornalieri: " + schedulesError.message);
+      // Consider rolling back the main request if this fails
+    }
+
     if (values.tipo_servizio === "ISPEZIONI" && inspectionDetailsToInsert) {
       const { error: inspectionError } = await supabase
         .from("richieste_servizio_ispezioni")
@@ -188,25 +187,6 @@ export default function NewRichiestaServizioPage() {
 
       if (inspectionError) {
         toast.error("Errore durante il salvataggio dei dettagli dell'ispezione: " + inspectionError.message);
-        // Consider rolling back the main request if this fails
-      }
-    } else if (values.tipo_servizio !== "ISPEZIONI") {
-      // Insert daily schedules only for PIANTONAMENTO_ARMATO and SERVIZIO_FIDUCIARIO
-      const schedulesToInsert = values.daily_schedules.map((schedule: DailySchedule) => ({ // Aggiunto tipo esplicito
-        ...schedule,
-        richiesta_servizio_id: newRichiesta.id,
-        ora_inizio: schedule.h24 || !schedule.attivo ? null : schedule.ora_inizio,
-        ora_fine: schedule.h24 || !schedule.attivo ? null : schedule.ora_fine,
-        created_at: now,
-        updated_at: now,
-      }));
-
-      const { error: schedulesError } = await supabase
-        .from("richieste_servizio_orari_giornalieri")
-        .insert(schedulesToInsert);
-
-      if (schedulesError) {
-        toast.error("Errore durante il salvataggio degli orari giornalieri: " + schedulesError.message);
         // Consider rolling back the main request if this fails
       }
     }

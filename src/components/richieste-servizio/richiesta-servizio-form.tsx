@@ -155,183 +155,142 @@ export function RichiestaServizioForm({
             )}
           />
 
-          {/* Campi specifici per PIANTONAMENTO_ARMATO e SERVIZIO_FIDUCIARIO */}
-          {(selectedServiceType === "PIANTONAMENTO_ARMATO" || selectedServiceType === "SERVIZIO_FIDUCIARIO") && (
-            <>
-              <FormField
-                control={form.control}
-                name="data_inizio_servizio"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Data Inizio Servizio</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP", { locale: it })
-                            ) : (
-                              <span>Seleziona una data</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                          locale={it}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="ora_inizio_servizio"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Ora Inizio Servizio</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input type="time" {...field} className="pr-8" />
-                        <Clock className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="data_fine_servizio"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Data Fine Servizio</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP", { locale: it })
-                            ) : (
-                              <span>Seleziona una data</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                          locale={it}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="ora_fine_servizio"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Ora Fine Servizio</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input type="time" {...field} className="pr-8" />
-                        <Clock className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="numero_agenti"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Numero di Agenti</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} min={1} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </>
-          )}
+          {/* Campi di scheduling generali, ora visibili per tutti i tipi di servizio */}
+          <>
+            <FormField
+              control={form.control}
+              name="data_inizio_servizio"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Data Inizio Servizio</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP", { locale: it })
+                          ) : (
+                            <span>Seleziona una data</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                        locale={it}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="ora_inizio_servizio"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Ora Inizio Servizio</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Input type="time" {...field} className="pr-8" />
+                      <Clock className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="data_fine_servizio"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Data Fine Servizio</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP", { locale: it })
+                          ) : (
+                            <span>Seleziona una data</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                        locale={it}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="ora_fine_servizio"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Ora Fine Servizio</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Input type="time" {...field} className="pr-8" />
+                      <Clock className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="numero_agenti"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Numero di Agenti</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} min={1} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </>
 
-          {/* Campi specifici per ISPEZIONI */}
+          {/* Campi specifici per ISPEZIONI (ora visibili insieme ai campi di scheduling generali) */}
           {selectedServiceType === "ISPEZIONI" && (
             <>
-              <FormField
-                control={form.control}
-                name="data_servizio"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Data del Servizio</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP", { locale: it })
-                            ) : (
-                              <span>Seleziona una data</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                          locale={it}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
               <FormField
                 control={form.control}
                 name="ora_inizio_fascia"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Ora Inizio Fascia</FormLabel>
+                    <FormLabel>Ora Inizio Fascia Ispezione</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input type="time" {...field} className="pr-8" />
@@ -347,7 +306,7 @@ export function RichiestaServizioForm({
                 name="ora_fine_fascia"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Ora Fine Fascia</FormLabel>
+                    <FormLabel>Ora Fine Fascia Ispezione</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input type="time" {...field} className="pr-8" />
@@ -416,12 +375,10 @@ export function RichiestaServizioForm({
           />
         </div>
 
-        {/* Right Column for Daily Schedules (only for PIANTONAMENTO_ARMATO and SERVIZIO_FIDUCIARIO) */}
-        {(selectedServiceType === "PIANTONAMENTO_ARMATO" || selectedServiceType === "SERVIZIO_FIDUCIARIO") && (
-          <div>
-            <DailySchedulesFormField />
-          </div>
-        )}
+        {/* Right Column for Daily Schedules (now for all service types) */}
+        <div>
+          <DailySchedulesFormField />
+        </div>
 
         <div className="md:col-span-2 flex justify-end mt-4">
           <Button type="submit" disabled={isSubmitting}>
