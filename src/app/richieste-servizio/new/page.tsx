@@ -8,44 +8,19 @@ import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  FormDescription,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Clock, ArrowLeft, Loader2 } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
-import { format, setHours, setMinutes, parseISO, isValid } from "date-fns";
-import { it } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { format, setHours, setMinutes } from "date-fns";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import {
   RichiestaServizioFormSchema,
   richiestaServizioFormSchema,
   calculateTotalHours,
+  calculateNumberOfInspections,
   defaultDailySchedules,
-  daysOfWeek,
-  SERVICE_TYPES,
 } from "@/lib/richieste-servizio-utils";
-import { DailySchedulesFormField } from "@/components/richieste-servizio/daily-schedules-form-field";
-import { RichiestaServizioForm } from "@/components/richieste-servizio/richiesta-servizio-form"; // Importa il componente form
+import { RichiestaServizioForm } from "@/components/richieste-servizio/richiesta-servizio-form";
+import { DailySchedule } from "@/types/richieste-servizio"; // Importa DailySchedule
 
 interface Client {
   id: string;
@@ -57,7 +32,7 @@ interface PuntoServizio {
   nome_punto_servizio: string;
 }
 
-interface Fornitore { // Definizione dell'interfaccia Fornitore
+interface Fornitore {
   id: string;
   ragione_sociale: string;
 }
@@ -66,7 +41,7 @@ export default function NewRichiestaServizioPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [puntiServizio, setPuntiServizio] = useState<PuntoServizio[]>([]);
-  const [fornitori, setFornitori] = useState<Fornitore[]>([]); // Nuovo stato per i fornitori
+  const [fornitori, setFornitori] = useState<Fornitore[]>([]);
   const router = useRouter();
 
   const form = useForm<RichiestaServizioFormSchema>({
@@ -74,15 +49,22 @@ export default function NewRichiestaServizioPage() {
     defaultValues: {
       client_id: "",
       punto_servizio_id: null,
-      fornitore_id: null, // Valore predefinito per il nuovo campo
+      fornitore_id: null,
       tipo_servizio: "PIANTONAMENTO_ARMATO",
+      note: null,
+      // Default values for PIANTONAMENTO_ARMATO / SERVIZIO_FIDUCIARIO
       data_inizio_servizio: new Date(),
       ora_inizio_servizio: "09:00",
       data_fine_servizio: new Date(),
       ora_fine_servizio: "18:00",
       numero_agenti: 1,
-      note: null,
       daily_schedules: defaultDailySchedules,
+      // Default values for ISPEZIONI (will be overridden if tipo_servizio is ISPEZIONI)
+      data_servizio: new Date(),
+      ora_inizio_fascia: "00:00",
+      ora_fine_fascia: "00:00",
+      cadenza_ore: 1,
+      tipo_ispezione: "PERIMETRALE",
     },
   });
 
@@ -110,7 +92,6 @@ export default function NewRichiestaServizioPage() {
         setPuntiServizio(puntiServizioData || []);
       }
 
-      // Recupera i fornitori
       const { data: fornitoriData, error: fornitoriError } = await supabase
         .from("fornitori")
         .select("id, ragione_sociale")
@@ -128,31 +109,65 @@ export default function NewRichiestaServizioPage() {
   async function onSubmit(values: RichiestaServizioFormSchema) {
     setIsLoading(true);
     const now = new Date().toISOString();
+    let totalCalculatedValue: number | null = null;
+    let richiestaData: any;
+    let inspectionDetailsToInsert: any = null;
 
-    const dataInizioServizio = setMinutes(setHours(values.data_inizio_servizio, parseInt(values.ora_inizio_servizio.split(':')[0])), parseInt(values.ora_inizio_servizio.split(':')[1]));
-    const dataFineServizio = setMinutes(setHours(values.data_fine_servizio, parseInt(values.ora_fine_servizio.split(':')[0])), parseInt(values.ora_fine_servizio.split(':')[1]));
+    if (values.tipo_servizio === "ISPEZIONI") {
+      totalCalculatedValue = calculateNumberOfInspections(
+        values.ora_inizio_fascia,
+        values.ora_fine_fascia,
+        values.cadenza_ore
+      );
 
-    const totalHours = calculateTotalHours(
-      dataInizioServizio,
-      dataFineServizio,
-      values.daily_schedules,
-      values.numero_agenti
-    );
+      richiestaData = {
+        client_id: values.client_id,
+        punto_servizio_id: values.punto_servizio_id === "" ? null : values.punto_servizio_id,
+        fornitore_id: values.fornitore_id === "" ? null : values.fornitore_id,
+        tipo_servizio: values.tipo_servizio,
+        note: values.note === "" ? null : values.note,
+        status: "pending",
+        total_hours_calculated: totalCalculatedValue, // Questo campo verrà usato per il numero di ispezioni
+        created_at: now,
+        updated_at: now,
+      };
 
-    const richiestaData = {
-      client_id: values.client_id,
-      punto_servizio_id: values.punto_servizio_id === "" ? null : values.punto_servizio_id,
-      fornitore_id: values.fornitore_id === "" ? null : values.fornitore_id, // Includi il fornitore_id
-      tipo_servizio: values.tipo_servizio,
-      data_inizio_servizio: dataInizioServizio.toISOString(),
-      data_fine_servizio: dataFineServizio.toISOString(),
-      numero_agenti: values.numero_agenti,
-      note: values.note === "" ? null : values.note,
-      status: "pending", // Default status
-      total_hours_calculated: totalHours,
-      created_at: now,
-      updated_at: now,
-    };
+      inspectionDetailsToInsert = {
+        data_servizio: format(values.data_servizio, "yyyy-MM-dd"),
+        ora_inizio_fascia: values.ora_inizio_fascia,
+        ora_fine_fascia: values.ora_fine_fascia,
+        cadenza_ore: values.cadenza_ore,
+        tipo_ispezione: values.tipo_ispezione,
+        created_at: now,
+        updated_at: now,
+      };
+
+    } else { // PIANTONAMENTO_ARMATO or SERVIZIO_FIDUCIARIO
+      const dataInizioServizio = setMinutes(setHours(values.data_inizio_servizio, parseInt(values.ora_inizio_servizio.split(':')[0])), parseInt(values.ora_inizio_servizio.split(':')[1]));
+      const dataFineServizio = setMinutes(setHours(values.data_fine_servizio, parseInt(values.ora_fine_servizio.split(':')[0])), parseInt(values.ora_fine_servizio.split(':')[1]));
+
+      totalCalculatedValue = calculateTotalHours(
+        dataInizioServizio,
+        dataFineServizio,
+        values.daily_schedules,
+        values.numero_agenti
+      );
+
+      richiestaData = {
+        client_id: values.client_id,
+        punto_servizio_id: values.punto_servizio_id === "" ? null : values.punto_servizio_id,
+        fornitore_id: values.fornitore_id === "" ? null : values.fornitore_id,
+        tipo_servizio: values.tipo_servizio,
+        data_inizio_servizio: dataInizioServizio.toISOString(),
+        data_fine_servizio: dataFineServizio.toISOString(),
+        numero_agenti: values.numero_agenti,
+        note: values.note === "" ? null : values.note,
+        status: "pending",
+        total_hours_calculated: totalCalculatedValue,
+        created_at: now,
+        updated_at: now,
+      };
+    }
 
     const { data: newRichiesta, error: richiestaError } = await supabase
       .from("richieste_servizio")
@@ -166,27 +181,38 @@ export default function NewRichiestaServizioPage() {
       return;
     }
 
-    // Insert daily schedules
-    const schedulesToInsert = values.daily_schedules.map(schedule => ({
-      ...schedule,
-      richiesta_servizio_id: newRichiesta.id,
-      ora_inizio: schedule.h24 || !schedule.attivo ? null : schedule.ora_inizio,
-      ora_fine: schedule.h24 || !schedule.attivo ? null : schedule.ora_fine,
-      created_at: now,
-      updated_at: now,
-    }));
+    if (values.tipo_servizio === "ISPEZIONI" && inspectionDetailsToInsert) {
+      const { error: inspectionError } = await supabase
+        .from("richieste_servizio_ispezioni")
+        .insert({ ...inspectionDetailsToInsert, richiesta_servizio_id: newRichiesta.id });
 
-    const { error: schedulesError } = await supabase
-      .from("richieste_servizio_orari_giornalieri")
-      .insert(schedulesToInsert);
+      if (inspectionError) {
+        toast.error("Errore durante il salvataggio dei dettagli dell'ispezione: " + inspectionError.message);
+        // Consider rolling back the main request if this fails
+      }
+    } else if (values.tipo_servizio !== "ISPEZIONI") {
+      // Insert daily schedules only for PIANTONAMENTO_ARMATO and SERVIZIO_FIDUCIARIO
+      const schedulesToInsert = values.daily_schedules.map((schedule: DailySchedule) => ({ // Aggiunto tipo esplicito
+        ...schedule,
+        richiesta_servizio_id: newRichiesta.id,
+        ora_inizio: schedule.h24 || !schedule.attivo ? null : schedule.ora_inizio,
+        ora_fine: schedule.h24 || !schedule.attivo ? null : schedule.ora_fine,
+        created_at: now,
+        updated_at: now,
+      }));
 
-    if (schedulesError) {
-      toast.error("Errore durante il salvataggio degli orari giornalieri: " + schedulesError.message);
-      // Consider rolling back the main request if this fails
-    } else {
-      toast.success("Richiesta di servizio salvata con successo!");
-      router.push("/richieste-servizio");
+      const { error: schedulesError } = await supabase
+        .from("richieste_servizio_orari_giornalieri")
+        .insert(schedulesToInsert);
+
+      if (schedulesError) {
+        toast.error("Errore durante il salvataggio degli orari giornalieri: " + schedulesError.message);
+        // Consider rolling back the main request if this fails
+      }
     }
+
+    toast.success("Richiesta di servizio salvata con successo!");
+    router.push("/richieste-servizio");
     setIsLoading(false);
   }
 
@@ -209,7 +235,7 @@ export default function NewRichiestaServizioPage() {
           form={form}
           clients={clients}
           puntiServizio={puntiServizio}
-          fornitori={fornitori} // Passa i fornitori al componente form
+          fornitori={fornitori}
           onSubmit={onSubmit}
           isSubmitting={isLoading}
         />

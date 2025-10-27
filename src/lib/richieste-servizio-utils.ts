@@ -5,8 +5,11 @@ import { DailySchedule } from "@/types/richieste-servizio";
 
 export const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
-export const SERVICE_TYPES = ["PIANTONAMENTO_ARMATO", "SERVIZIO_FIDUCIARIO"] as const;
+export const SERVICE_TYPES = ["PIANTONAMENTO_ARMATO", "SERVIZIO_FIDUCIARIO", "ISPEZIONI"] as const;
 export type ServiceType = (typeof SERVICE_TYPES)[number];
+
+export const INSPECTION_TYPES = ["PERIMETRALE", "INTERNA", "COMPLETA"] as const;
+export type InspectionType = (typeof INSPECTION_TYPES)[number];
 
 export const dailyScheduleSchema = z.object({
   id: z.string().optional(),
@@ -41,26 +44,82 @@ export const dailyScheduleSchema = z.object({
   path: ["ora_fine"],
 });
 
-export const richiestaServizioFormSchema = z.object({
+export const inspectionDetailsSchema = z.object({
+  data_servizio: z.date({ required_error: "La data del servizio è richiesta." }),
+  ora_inizio_fascia: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
+  ora_fine_fascia: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
+  cadenza_ore: z.coerce.number().min(0.5, "La cadenza deve essere almeno 0.5 ore."),
+  tipo_ispezione: z.enum(INSPECTION_TYPES, { required_error: "Il tipo di ispezione è richiesto." }),
+}).refine(data => {
+  const [startH, startM] = data.ora_inizio_fascia.split(':').map(Number);
+  const [endH, endM] = data.ora_fine_fascia.split(':').map(Number);
+  const startTime = setMinutes(setHours(new Date(), startH), startM);
+  const endTime = setMinutes(setHours(new Date(), endH), endM);
+  return endTime > startTime;
+}, {
+  message: "L'ora di fine fascia deve essere successiva all'ora di inizio fascia.",
+  path: ["ora_fine_fascia"],
+});
+
+// Define a base schema for common fields
+const baseRichiestaServizioSchema = z.object({
   client_id: z.string().uuid("Seleziona un cliente valido."),
   punto_servizio_id: z.string().uuid("Seleziona un punto servizio valido.").nullable(),
-  fornitore_id: z.string().uuid("Seleziona un fornitore valido.").nullable(), // Nuovo campo
-  tipo_servizio: z.enum(SERVICE_TYPES, { required_error: "Il tipo di servizio è richiesto." }), // Aggiornato a enum
-  data_inizio_servizio: z.date({ required_error: "La data di inizio servizio è richiesta." }),
-  ora_inizio_servizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
-  data_fine_servizio: z.date({ required_error: "La data di fine servizio è richiesta." }),
-  ora_fine_servizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
-  numero_agenti: z.coerce.number().min(1, "Il numero di agenti deve essere almeno 1."),
+  fornitore_id: z.string().uuid("Seleziona un fornitore valido.").nullable(),
   note: z.string().nullable(),
-  daily_schedules: z.array(dailyScheduleSchema).min(8, "Devi definire gli orari per tutti i giorni della settimana e per i festivi."),
-}).refine(data => {
-  const startDateTime = setMinutes(setHours(data.data_inizio_servizio, parseInt(data.ora_inizio_servizio.split(':')[0])), parseInt(data.ora_inizio_servizio.split(':')[1]));
-  const endDateTime = setMinutes(setHours(data.data_fine_servizio, parseInt(data.ora_fine_servizio.split(':')[0])), parseInt(data.ora_fine_servizio.split(':')[1]));
-  return endDateTime > startDateTime;
-}, {
-  message: "La data e ora di fine servizio devono essere successive alla data e ora di inizio.",
-  path: ["data_fine_servizio"],
 });
+
+export const richiestaServizioFormSchema = z.discriminatedUnion("tipo_servizio", [
+  baseRichiestaServizioSchema.extend({
+    tipo_servizio: z.literal("PIANTONAMENTO_ARMATO"),
+    data_inizio_servizio: z.date({ required_error: "La data di inizio servizio è richiesta." }),
+    ora_inizio_servizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
+    data_fine_servizio: z.date({ required_error: "La data di fine servizio è richiesta." }),
+    ora_fine_servizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
+    numero_agenti: z.coerce.number().min(1, "Il numero di agenti deve essere almeno 1."),
+    daily_schedules: z.array(dailyScheduleSchema).min(8, "Devi definire gli orari per tutti i giorni della settimana e per i festivi."),
+  }).refine(data => {
+    const startDateTime = setMinutes(setHours(data.data_inizio_servizio, parseInt(data.ora_inizio_servizio.split(':')[0])), parseInt(data.ora_inizio_servizio.split(':')[1]));
+    const endDateTime = setMinutes(setHours(data.data_fine_servizio, parseInt(data.ora_fine_servizio.split(':')[0])), parseInt(data.ora_fine_servizio.split(':')[1]));
+    return endDateTime > startDateTime;
+  }, {
+    message: "La data e ora di fine servizio devono essere successive alla data e ora di inizio.",
+    path: ["data_fine_servizio"],
+  }),
+  baseRichiestaServizioSchema.extend({
+    tipo_servizio: z.literal("SERVIZIO_FIDUCIARIO"),
+    data_inizio_servizio: z.date({ required_error: "La data di inizio servizio è richiesta." }),
+    ora_inizio_servizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
+    data_fine_servizio: z.date({ required_error: "La data di fine servizio è richiesta." }),
+    ora_fine_servizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
+    numero_agenti: z.coerce.number().min(1, "Il numero di agenti deve essere almeno 1."),
+    daily_schedules: z.array(dailyScheduleSchema).min(8, "Devi definire gli orari per tutti i giorni della settimana e per i festivi."),
+  }).refine(data => {
+    const startDateTime = setMinutes(setHours(data.data_inizio_servizio, parseInt(data.ora_inizio_servizio.split(':')[0])), parseInt(data.ora_inizio_servizio.split(':')[1]));
+    const endDateTime = setMinutes(setHours(data.data_fine_servizio, parseInt(data.ora_fine_servizio.split(':')[0])), parseInt(data.ora_fine_servizio.split(':')[1]));
+    return endDateTime > startDateTime;
+  }, {
+    message: "La data e ora di fine servizio devono essere successive alla data e ora di inizio.",
+    path: ["data_fine_servizio"],
+  }),
+  baseRichiestaServizioSchema.extend({
+    tipo_servizio: z.literal("ISPEZIONI"),
+    data_servizio: z.date({ required_error: "La data del servizio è richiesta." }),
+    ora_inizio_fascia: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
+    ora_fine_fascia: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
+    cadenza_ore: z.coerce.number().min(0.5, "La cadenza deve essere almeno 0.5 ore."),
+    tipo_ispezione: z.enum(INSPECTION_TYPES, { required_error: "Il tipo di ispezione è richiesto." }),
+  }).refine(data => {
+    const [startH, startM] = data.ora_inizio_fascia.split(':').map(Number);
+    const [endH, endM] = data.ora_fine_fascia.split(':').map(Number);
+    const startTime = setMinutes(setHours(new Date(), startH), startM);
+    const endTime = setMinutes(setHours(new Date(), endH), endM);
+    return endTime > startTime;
+  }, {
+    message: "L'ora di fine fascia deve essere successiva all'ora di inizio fascia.",
+    path: ["ora_fine_fascia"],
+  }),
+]);
 
 export type RichiestaServizioFormSchema = z.infer<typeof richiestaServizioFormSchema>;
 
@@ -116,6 +175,26 @@ export const calculateTotalHours = (
     currentDate.setDate(currentDate.getDate() + 1);
   }
   return totalHours * numAgents;
+};
+
+export const calculateNumberOfInspections = (
+  oraInizioFascia: string,
+  oraFineFascia: string,
+  cadenzaOre: number
+): number => {
+  const [startH, startM] = oraInizioFascia.split(':').map(Number);
+  const [endH, endM] = oraFineFascia.split(':').map(Number);
+
+  const startTimeInMinutes = startH * 60 + startM;
+  const endTimeInMinutes = endH * 60 + endM;
+
+  const durationInMinutes = endTimeInMinutes - startTimeInMinutes;
+  if (durationInMinutes <= 0) return 0;
+
+  const cadenzaInMinutes = cadenzaOre * 60;
+
+  // Number of intervals + 1 for the start inspection
+  return Math.floor(durationInMinutes / cadenzaInMinutes) + 1;
 };
 
 export const defaultDailySchedules = [

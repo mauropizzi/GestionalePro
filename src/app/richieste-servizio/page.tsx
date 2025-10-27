@@ -30,16 +30,18 @@ import {
 import Link from "next/link";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import { ServiceType } from "@/lib/richieste-servizio-utils";
+import { InspectionDetails } from "@/types/richieste-servizio";
 
 interface RichiestaServizio {
   id: string;
   client_id: string | null;
   punto_servizio_id: string | null;
-  fornitore_id: string | null; // Nuovo campo
-  tipo_servizio: string;
-  data_inizio_servizio: string;
-  data_fine_servizio: string;
-  numero_agenti: number;
+  fornitore_id: string | null;
+  tipo_servizio: ServiceType;
+  data_inizio_servizio: string | null;
+  data_fine_servizio: string | null;
+  numero_agenti: number | null;
   note: string | null;
   status: string;
   total_hours_calculated: number | null;
@@ -47,7 +49,8 @@ interface RichiestaServizio {
   updated_at: string;
   clienti?: { ragione_sociale: string } | null;
   punti_servizio?: { nome_punto_servizio: string } | null;
-  fornitori?: { ragione_sociale: string } | null; // Per visualizzare il nome del fornitore
+  fornitori?: { ragione_sociale: string } | null;
+  inspection_details?: InspectionDetails[];
 }
 
 export default function RichiesteServizioPage() {
@@ -77,8 +80,9 @@ export default function RichiesteServizioPage() {
         *,
         clienti ( ragione_sociale ),
         punti_servizio ( nome_punto_servizio ),
-        fornitori ( ragione_sociale )
-      `) // Includi il fornitore
+        fornitori ( ragione_sociale ),
+        inspection_details:richieste_servizio_ispezioni(*)
+      `)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -109,8 +113,9 @@ export default function RichiesteServizioPage() {
     richiesta.tipo_servizio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     richiesta.clienti?.ragione_sociale?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     richiesta.punti_servizio?.nome_punto_servizio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    richiesta.fornitori?.ragione_sociale?.toLowerCase().includes(searchTerm.toLowerCase()) || // Includi il fornitore nella ricerca
-    richiesta.status?.toLowerCase().includes(searchTerm.toLowerCase())
+    richiesta.fornitori?.ragione_sociale?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    richiesta.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (richiesta.tipo_servizio === "ISPEZIONI" && richiesta.inspection_details?.[0]?.tipo_ispezione?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   if (isSessionLoading) {
@@ -165,9 +170,8 @@ export default function RichiesteServizioPage() {
                 <TableHead>Tipo Servizio</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Punto Servizio</TableHead>
-                <TableHead>Fornitore</TableHead> {/* Nuova colonna */}
-                <TableHead>Data Inizio</TableHead>
-                <TableHead>Data Fine</TableHead>
+                <TableHead>Fornitore</TableHead>
+                <TableHead>Dettagli Servizio</TableHead> {/* Nuova colonna per i dettagli */}
                 <TableHead>Stato</TableHead>
                 <TableHead className="text-right">Azioni</TableHead>
               </TableRow>
@@ -175,19 +179,34 @@ export default function RichiesteServizioPage() {
             <TableBody>
               {filteredRichieste.length === 0 && !loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-20 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="h-20 text-center text-muted-foreground">
                     Nessuna richiesta di servizio trovata.
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredRichieste.map((richiesta) => (
                   <TableRow key={richiesta.id}>
-                    <TableCell className="font-medium">{richiesta.tipo_servizio}</TableCell>
+                    <TableCell className="font-medium">
+                      {richiesta.tipo_servizio.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                    </TableCell>
                     <TableCell>{richiesta.clienti?.ragione_sociale || "N/A"}</TableCell>
                     <TableCell>{richiesta.punti_servizio?.nome_punto_servizio || "N/A"}</TableCell>
-                    <TableCell>{richiesta.fornitori?.ragione_sociale || "N/A"}</TableCell> {/* Visualizza il nome del fornitore */}
-                    <TableCell>{format(new Date(richiesta.data_inizio_servizio), "dd/MM/yyyy HH:mm", { locale: it })}</TableCell>
-                    <TableCell>{format(new Date(richiesta.data_fine_servizio), "dd/MM/yyyy HH:mm", { locale: it })}</TableCell>
+                    <TableCell>{richiesta.fornitori?.ragione_sociale || "N/A"}</TableCell>
+                    <TableCell>
+                      {richiesta.tipo_servizio === "ISPEZIONI" && richiesta.inspection_details?.[0] ? (
+                        <div className="text-xs">
+                          Data: {format(new Date(richiesta.inspection_details[0].data_servizio), "dd/MM/yyyy", { locale: it })}<br />
+                          Fascia: {richiesta.inspection_details[0].ora_inizio_fascia} - {richiesta.inspection_details[0].ora_fine_fascia}<br />
+                          Cadenza: {richiesta.inspection_details[0].cadenza_ore}h, Tipo: {richiesta.inspection_details[0].tipo_ispezione}
+                        </div>
+                      ) : (
+                        <div className="text-xs">
+                          Inizio: {richiesta.data_inizio_servizio ? format(new Date(richiesta.data_inizio_servizio), "dd/MM/yyyy HH:mm", { locale: it }) : "N/A"}<br />
+                          Fine: {richiesta.data_fine_servizio ? format(new Date(richiesta.data_fine_servizio), "dd/MM/yyyy HH:mm", { locale: it }) : "N/A"}<br />
+                          Agenti: {richiesta.numero_agenti || "N/A"}
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                         richiesta.status === 'approved' ? 'bg-green-100 text-green-800' :
