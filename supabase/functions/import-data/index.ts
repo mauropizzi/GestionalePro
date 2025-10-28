@@ -43,8 +43,8 @@ function mapPuntoServizioData(rowData: any) {
   const id_cliente_raw = rowData['ID Cliente'] || rowData['id_cliente'] || rowData['idCliente'];
   const fornitore_id_raw = rowData['ID Fornitore'] || rowData['fornitore_id'] || rowData['fornitoreId'];
 
-  const id_cliente = isValidUuid(id_cliente_raw) ? id_cliente_raw.trim() : null;
-  const fornitore_id = isValidUuid(fornitore_id_raw) ? fornitore_id_raw.trim() : null;
+  const id_cliente = (id_cliente_raw && typeof id_cliente_raw === 'string' && isValidUuid(id_cliente_raw.trim())) ? id_cliente_raw.trim() : null;
+  const fornitore_id = (fornitore_id_raw && typeof fornitore_id_raw === 'string' && isValidUuid(fornitore_id_raw.trim())) ? fornitore_id_raw.trim() : null;
 
   return {
     nome_punto_servizio: nome_punto_servizio.trim(),
