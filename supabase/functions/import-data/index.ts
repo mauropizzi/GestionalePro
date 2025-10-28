@@ -38,15 +38,18 @@ function mapPuntoServizioData(rowData: any) {
     throw new Error('Nome Punto Servizio is required and cannot be empty.');
   }
 
-  // Assuming client_id and fornitore_id might come as names and need to be resolved to UUIDs
-  // For now, we'll assume they come as UUIDs or null.
-  // If they come as names, additional logic to fetch IDs from 'clienti' and 'fornitori' tables would be needed.
-  const id_cliente = rowData['ID Cliente'] || rowData['id_cliente'] || null;
-  const fornitore_id = rowData['ID Fornitore'] || rowData['fornitore_id'] || null;
+  // Ensure UUIDs are valid or null
+  const id_cliente_raw = rowData['ID Cliente'] || rowData['id_cliente'];
+  const fornitore_id_raw = rowData['ID Fornitore'] || rowData['fornitore_id'];
+
+  const isValidUuid = (uuid: string) => /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid);
+
+  const id_cliente = (id_cliente_raw && typeof id_cliente_raw === 'string' && isValidUuid(id_cliente_raw.trim())) ? id_cliente_raw.trim() : null;
+  const fornitore_id = (fornitore_id_raw && typeof fornitore_id_raw === 'string' && isValidUuid(fornitore_id_raw.trim())) ? fornitore_id_raw.trim() : null;
 
   return {
     nome_punto_servizio: nome_punto_servizio.trim(),
-    id_cliente: (id_cliente && typeof id_cliente === 'string' && id_cliente.trim() !== '') ? id_cliente.trim() : null,
+    id_cliente: id_cliente,
     indirizzo: (rowData['Indirizzo'] || rowData['indirizzo'] || '').trim() || null,
     citta: (rowData['Città'] || rowData['citta'] || '').trim() || null,
     cap: (rowData['CAP'] || rowData['cap'] || '').trim() || null,
@@ -57,7 +60,7 @@ function mapPuntoServizioData(rowData: any) {
     email: (rowData['Email'] || rowData['email'] || '').trim() || null,
     note: (rowData['Note'] || rowData['note'] || '').trim() || null,
     tempo_intervento: (rowData['Tempo Intervento'] || rowData['tempo_intervento'] || '').trim() || null,
-    fornitore_id: (fornitore_id && typeof fornitore_id === 'string' && fornitore_id.trim() !== '') ? fornitore_id.trim() : null,
+    fornitore_id: fornitore_id,
     codice_cliente: (rowData['Codice Cliente'] || rowData['codice_cliente'] || '').trim() || null,
     codice_sicep: (rowData['Codice SICEP'] || rowData['codice_sicep'] || '').trim() || null,
     codice_fatturazione: (rowData['Codice Fatturazione'] || rowData['codice_fatturazione'] || '').trim() || null,
@@ -157,7 +160,7 @@ serve(async (req) => {
         if (rowError.hint) errorMessage += ` Hint: ${rowError.hint}`;
         if (rowError.code) errorMessage += ` Code: ${rowError.code}`;
         errors.push(errorMessage);
-        console.error(`Error processing row for ${anagraficaType}:`, rowError);
+        console.error(`Error processing row for ${anagraficaType}:`, errorMessage); // Log the detailed error
       }
     }
 
