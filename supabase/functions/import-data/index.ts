@@ -80,6 +80,7 @@ serve(async (req) => {
     const { anagraficaType, data: importData } = await req.json();
 
     if (!anagraficaType || !importData || !Array.isArray(importData)) {
+      console.error('Invalid request: anagraficaType and data array are required.');
       return new Response(JSON.stringify({ error: 'Invalid request: anagraficaType and data array are required.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
@@ -123,8 +124,13 @@ serve(async (req) => {
           }
           successCount++;
         } else if (anagraficaType === 'punti_servizio') {
-          const puntoServizioToProcess = mapPuntoServizioData(row);
-          console.log('Processing punto_servizio:', puntoServizioToProcess);
+          let puntoServizioToProcess;
+          try {
+            puntoServizioToProcess = mapPuntoServizioData(row);
+            console.log('Processing punto_servizio:', puntoServizioToProcess);
+          } catch (mapError: any) {
+            throw new Error(`Data mapping error for row ${JSON.stringify(row)}: ${mapError.message}`);
+          }
 
           // Check if punto_servizio already exists by nome_punto_servizio
           const { data: existingPuntiServizio, error: fetchError } = await supabaseAdmin
@@ -160,7 +166,7 @@ serve(async (req) => {
         if (rowError.hint) errorMessage += ` Hint: ${rowError.hint}`;
         if (rowError.code) errorMessage += ` Code: ${rowError.code}`;
         errors.push(errorMessage);
-        console.error(`Error processing row for ${anagraficaType}:`, errorMessage); // Log the detailed error
+        console.error(`Detailed error for row:`, rowError); // Log the full error object
       }
     }
 
@@ -180,7 +186,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error in import-data function:', error);
+    console.error('Unhandled error in import-data function:', error);
     return new Response(JSON.stringify({ error: (error as Error).message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
