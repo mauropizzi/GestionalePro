@@ -38,14 +38,13 @@ function mapPuntoServizioData(rowData: any) {
     throw new Error('Nome Punto Servizio is required and cannot be empty.');
   }
 
-  // Ensure UUIDs are valid or null
+  const isValidUuid = (uuid: any) => typeof uuid === 'string' && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid.trim());
+
   const id_cliente_raw = rowData['ID Cliente'] || rowData['id_cliente'];
   const fornitore_id_raw = rowData['ID Fornitore'] || rowData['fornitore_id'];
 
-  const isValidUuid = (uuid: string) => /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid);
-
-  const id_cliente = (id_cliente_raw && typeof id_cliente_raw === 'string' && isValidUuid(id_cliente_raw.trim())) ? id_cliente_raw.trim() : null;
-  const fornitore_id = (fornitore_id_raw && typeof fornitore_id_raw === 'string' && isValidUuid(fornitore_id_raw.trim())) ? fornitore_id_raw.trim() : null;
+  const id_cliente = isValidUuid(id_cliente_raw) ? id_cliente_raw.trim() : null;
+  const fornitore_id = isValidUuid(fornitore_id_raw) ? fornitore_id_raw.trim() : null;
 
   return {
     nome_punto_servizio: nome_punto_servizio.trim(),
@@ -87,6 +86,8 @@ serve(async (req) => {
       });
     }
 
+    console.log(`Starting import for anagraficaType: ${anagraficaType} with ${importData.length} rows.`);
+
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -96,79 +97,87 @@ serve(async (req) => {
     let errorCount = 0;
     const errors: string[] = [];
 
-    for (const row of importData) {
-      try {
-        if (anagraficaType === 'clienti') {
-          const clientToProcess = mapClientData(row);
-          console.log('Processing client:', clientToProcess);
+    try { // Top-level try-catch for the entire loop
+      for (const row of importData) {
+        try {
+          if (anagraficaType === 'clienti') {
+            const clientToProcess = mapClientData(row);
+            console.log('Processing client:', clientToProcess);
 
-          const { data: existingClients, error: fetchError } = await supabaseAdmin
-            .from('clienti')
-            .select('id')
-            .or(`ragione_sociale.eq.${clientToProcess.ragione_sociale},partita_iva.eq.${clientToProcess.partita_iva}`)
-            .limit(1);
-
-          if (fetchError) throw fetchError;
-
-          if (existingClients && existingClients.length > 0) {
-            const { error: updateError } = await supabaseAdmin
+            const { data: existingClients, error: fetchError } = await supabaseAdmin
               .from('clienti')
-              .update({ ...clientToProcess, updated_at: new Date().toISOString() })
-              .eq('id', existingClients[0].id);
-            if (updateError) throw updateError;
-          } else {
-            const { error: insertError } = await supabaseAdmin
-              .from('clienti')
-              .insert({ ...clientToProcess, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
-            if (insertError) throw insertError;
-          }
-          successCount++;
-        } else if (anagraficaType === 'punti_servizio') {
-          let puntoServizioToProcess;
-          try {
-            puntoServizioToProcess = mapPuntoServizioData(row);
-            console.log('Processing punto_servizio:', puntoServizioToProcess);
-          } catch (mapError: any) {
-            throw new Error(`Data mapping error for row ${JSON.stringify(row)}: ${mapError.message}`);
-          }
+              .select('id')
+              .or(`ragione_sociale.eq.${clientToProcess.ragione_sociale},partita_iva.eq.${clientToProcess.partita_iva}`)
+              .limit(1);
 
-          // Check if punto_servizio already exists by nome_punto_servizio
-          const { data: existingPuntiServizio, error: fetchError } = await supabaseAdmin
-            .from('punti_servizio')
-            .select('id')
-            .eq('nome_punto_servizio', puntoServizioToProcess.nome_punto_servizio)
-            .limit(1);
+            if (fetchError) throw fetchError;
 
-          if (fetchError) throw fetchError;
+            if (existingClients && existingClients.length > 0) {
+              const { error: updateError } = await supabaseAdmin
+                .from('clienti')
+                .update({ ...clientToProcess, updated_at: new Date().toISOString() })
+                .eq('id', existingClients[0].id);
+              if (updateError) throw updateError;
+            } else {
+              const { error: insertError } = await supabaseAdmin
+                .from('clienti')
+                .insert({ ...clientToProcess, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+              if (insertError) throw insertError;
+            }
+            successCount++;
+          } else if (anagraficaType === 'punti_servizio') {
+            let puntoServizioToProcess;
+            try {
+              puntoServizioToProcess = mapPuntoServizioData(row);
+              console.log('Processing punto_servizio:', puntoServizioToProcess);
+            } catch (mapError: any) {
+              throw new Error(`Data mapping error for row ${JSON.stringify(row)}: ${mapError.message}`);
+            }
 
-          if (existingPuntiServizio && existingPuntiServizio.length > 0) {
-            // Update existing punto_servizio
-            const { error: updateError } = await supabaseAdmin
+            // Check if punto_servizio already exists by nome_punto_servizio
+            const { data: existingPuntiServizio, error: fetchError } = await supabaseAdmin
               .from('punti_servizio')
-              .update({ ...puntoServizioToProcess, updated_at: new Date().toISOString() })
-              .eq('id', existingPuntiServizio[0].id);
-            if (updateError) throw updateError;
+              .select('id')
+              .eq('nome_punto_servizio', puntoServizioToProcess.nome_punto_servizio)
+              .limit(1);
+
+            if (fetchError) throw fetchError;
+
+            if (existingPuntiServizio && existingPuntiServizio.length > 0) {
+              // Update existing punto_servizio
+              const { error: updateError } = await supabaseAdmin
+                .from('punti_servizio')
+                .update({ ...puntoServizioToProcess, updated_at: new Date().toISOString() })
+                .eq('id', existingPuntiServizio[0].id);
+              if (updateError) throw updateError;
+            } else {
+              // Insert new punto_servizio
+              const { error: insertError } = await supabaseAdmin
+                .from('punti_servizio')
+                .insert({ ...puntoServizioToProcess, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+              if (insertError) throw insertError;
+            }
+            successCount++;
           } else {
-            // Insert new punto_servizio
-            const { error: insertError } = await supabaseAdmin
-              .from('punti_servizio')
-              .insert({ ...puntoServizioToProcess, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
-            if (insertError) throw insertError;
+            throw new Error(`Import logic not implemented for anagrafica type: ${anagraficaType}`);
           }
-          successCount++;
-        } else {
-          throw new Error(`Import logic not implemented for anagrafica type: ${anagraficaType}`);
+        } catch (rowError: any) {
+          errorCount++;
+          let errorMessage = `Error processing row ${JSON.stringify(row)}: ${rowError.message}`;
+          if (rowError.details) errorMessage += ` Details: ${rowError.details}`;
+          if (rowError.hint) errorMessage += ` Hint: ${rowError.hint}`;
+          if (rowError.code) errorMessage += ` Code: ${rowError.code}`;
+          errors.push(errorMessage);
+          console.error(`Detailed error for row:`, rowError); // Log the full error object
         }
-      } catch (rowError: any) {
-        errorCount++;
-        let errorMessage = `Error processing row ${JSON.stringify(row)}: ${rowError.message}`;
-        if (rowError.details) errorMessage += ` Details: ${rowError.details}`;
-        if (rowError.hint) errorMessage += ` Hint: ${rowError.hint}`;
-        if (rowError.code) errorMessage += ` Code: ${rowError.code}`;
-        errors.push(errorMessage);
-        console.error(`Detailed error for row:`, rowError); // Log the full error object
       }
+    } catch (overallError: any) {
+      errorCount = importData.length; // Assume all failed if the loop itself crashed
+      const errorMessage = `Overall import process failed: ${overallError.message}`;
+      errors.push(errorMessage);
+      console.error(`Overall import error:`, overallError);
     }
+
 
     if (errorCount > 0) {
       return new Response(JSON.stringify({
