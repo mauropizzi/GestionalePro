@@ -58,11 +58,32 @@ function mapPuntoServizioData(rowData: any) {
 
   const isValidUuid = (uuid: any) => typeof uuid === 'string' && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid.trim());
 
-  const id_cliente_raw = getFieldValue(rowData, ['ID Cliente', 'id_cliente', 'idCliente'], toString);
-  const fornitore_id_raw = getFieldValue(rowData, ['ID Fornitore', 'fornitore_id', 'fornitoreId'], toString);
+  let id_cliente = getFieldValue(rowData, ['ID Cliente', 'id_cliente', 'idCliente'], toString);
+  id_cliente = (id_cliente && isValidUuid(id_cliente)) ? id_cliente : null;
 
-  const id_cliente = (id_cliente_raw && isValidUuid(id_cliente_raw)) ? id_cliente_raw : null;
-  const fornitore_id = (fornitore_id_raw && isValidUuid(fornitore_id_raw)) ? fornitore_id_raw : null;
+  let fornitore_id = getFieldValue(rowData, ['ID Fornitore', 'fornitore_id', 'fornitoreId'], toString);
+  fornitore_id = (fornitore_id && isValidUuid(fornitore_id)) ? fornitore_id : null;
+
+  // Explicitly get latitude and longitude from their expected columns
+  let latitude = getFieldValue(rowData, ['Latitudine', 'latitude'], toNumber);
+  let longitude = getFieldValue(rowData, ['Longitudine', 'longitude'], toNumber);
+
+  let note = getFieldValue(rowData, ['Note', 'note'], toString);
+
+  // Heuristic to detect and correct shifted coordinates
+  if (latitude === null && longitude === null) {
+    const potentialShiftedLat = toNumber(rowData['Note'] || rowData['note']);
+    const potentialShiftedLon = toNumber(rowData['fornitore_id'] || rowData['fornitoreId']);
+
+    // Check if potential shifted values look like valid coordinates
+    if (potentialShiftedLat !== null && potentialShiftedLon !== null && Math.abs(potentialShiftedLat) <= 90 && Math.abs(potentialShiftedLon) <= 180) {
+      latitude = potentialShiftedLat;
+      longitude = potentialShiftedLon;
+      // Clear the fields where the coordinates were mistakenly placed
+      note = null;
+      fornitore_id = null; // This might overwrite a valid fornitore_id if it was present and not a coordinate
+    }
+  }
 
   return {
     nome_punto_servizio: nome_punto_servizio,
@@ -75,14 +96,14 @@ function mapPuntoServizioData(rowData: any) {
     telefono_referente: getFieldValue(rowData, ['Telefono Referente', 'telefono_referente', 'telefonoReferente'], toString),
     telefono: getFieldValue(rowData, ['Telefono', 'telefono'], toString),
     email: getFieldValue(rowData, ['Email', 'email'], toString),
-    note: getFieldValue(rowData, ['Note', 'note'], toString),
+    note: note, // Use the potentially cleared note
     tempo_intervento: getFieldValue(rowData, ['Tempo Intervento', 'tempo_intervento', 'tempoIntervento'], toString),
-    fornitore_id: fornitore_id,
+    fornitore_id: fornitore_id, // Use the potentially cleared fornitore_id
     codice_cliente: getFieldValue(rowData, ['Codice Cliente', 'codice_cliente', 'codiceCliente'], toString),
     codice_sicep: getFieldValue(rowData, ['Codice SICEP', 'codice_sicep', 'codiceSicep'], toString),
     codice_fatturazione: getFieldValue(rowData, ['Codice Fatturazione', 'codice_fatturazione', 'codiceFatturazione'], toString),
-    latitude: getFieldValue(rowData, ['Latitudine', 'latitude'], toNumber),
-    longitude: getFieldValue(rowData, ['Longitudine', 'longitude'], toNumber),
+    latitude: latitude,
+    longitude: longitude,
     nome_procedura: getFieldValue(rowData, ['Nome Procedura', 'nome_procedura', 'nomeProcedura'], toString),
   };
 }
