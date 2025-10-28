@@ -29,6 +29,75 @@ interface ParsedDataRow {
   [key: string]: any;
 }
 
+// Mappatura dei nomi delle colonne per una visualizzazione più leggibile
+const columnHeaderMap: { [key: string]: string } = {
+  // Clienti
+  ragioneSociale: "Ragione Sociale",
+  codiceFiscale: "Codice Fiscale",
+  partitaIva: "Partita IVA",
+  indirizzo: "Indirizzo",
+  citta: "Città",
+  cap: "CAP",
+  provincia: "Provincia",
+  telefono: "Telefono",
+  email: "Email",
+  pec: "PEC",
+  sdi: "SDI",
+  attivo: "Attivo",
+  note: "Note",
+  createdAt: "Data Creazione",
+  updatedAt: "Data Aggiornamento",
+
+  // Punti Servizio
+  nomePuntoServizio: "Nome Punto Servizio",
+  idCliente: "ID Cliente",
+  referente: "Referente",
+  telefonoReferente: "Telefono Referente",
+  tempoIntervento: "Tempo Intervento",
+  fornitoreId: "ID Fornitore",
+  codiceCliente: "Codice Cliente",
+  codiceSicep: "Codice SICEP",
+  codiceFatturazione: "Codice Fatturazione",
+  latitude: "Latitudine",
+  longitude: "Longitudine",
+  nomeProcedura: "Nome Procedura",
+
+  // Fornitori
+  tipoServizio: "Tipo Servizio",
+
+  // Personale
+  nome: "Nome",
+  cognome: "Cognome",
+  ruolo: "Ruolo",
+  dataNascita: "Data Nascita",
+  luogoNascita: "Luogo Nascita",
+  dataAssunzione: "Data Assunzione",
+  dataCessazione: "Data Cessazione",
+
+  // Operatori Network
+  // (già coperti da nome, cognome, telefono, email, idCliente)
+
+  // Procedure
+  nomeProcedura: "Nome Procedura",
+  descrizione: "Descrizione",
+  versione: "Versione",
+  dataUltimaRevisione: "Data Ultima Revisione",
+  responsabile: "Responsabile",
+  documentoUrl: "URL Documento",
+
+  // Tariffe
+  clientId: "ID Cliente",
+  tipoServizio: "Tipo Servizio",
+  importo: "Importo",
+  supplierRate: "Costo Fornitore",
+  unitaMisura: "Unità di Misura",
+  puntoServizioId: "ID Punto Servizio",
+  fornitoreId: "ID Fornitore",
+  dataInizioValidita: "Data Inizio Validità",
+  dataFineValidita: "Data Fine Validita",
+};
+
+
 export default function ImportExportPage() {
   const { profile: currentUserProfile, isLoading: isSessionLoading } = useSession();
   const [file, setFile] = useState<File | null>(null);
@@ -296,7 +365,7 @@ export default function ImportExportPage() {
                   <TableHeader>
                     <TableRow>
                       {Object.keys(parsedData[0]).map((key) => (
-                        <TableHead key={key}>{key}</TableHead>
+                        <TableHead key={key}>{columnHeaderMap[key] || key}</TableHead>
                       ))}
                     </TableRow>
                   </TableHeader>
