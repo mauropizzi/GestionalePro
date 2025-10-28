@@ -110,9 +110,7 @@ export default function ImportExportPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            // Non è necessario un token di autorizzazione qui se la funzione è configurata per non richiederlo
-            // o se si usa la chiave anonima per invocare funzioni non protette da RLS.
-            // L'Edge Function stessa userà la chiave del ruolo di servizio.
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2FoYWVkeHB3a2hoZXF3c2pjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNzgyNTU5LCJleHAiOjIwNzY4NTQyNTl9._QR-tTUw-NPhCcv9boDDQAsewgyDzMhwiXNIlxIBCjQ", // Aggiunto l'apikey
           },
           body: JSON.stringify({
             anagraficaType: selectedAnagrafica,
@@ -161,6 +159,7 @@ export default function ImportExportPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2FoYWVkeHB3a2hoZXF3c2pjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNzgyNTU5LCJleHAiOjIwNzY4NTQyNTl9._QR-tTUw-NPhCcv9boDDQAsewgyDzMhwiXNIlxIBCjQ", // Aggiunto l'apikey
           },
           body: JSON.stringify({ anagraficaType }),
         }
