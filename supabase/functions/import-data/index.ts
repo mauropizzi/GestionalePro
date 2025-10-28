@@ -71,7 +71,10 @@ function mapPuntoServizioData(rowData: any) {
 
 
 serve(async (req) => {
+  console.log("import-data function invoked."); // Log molto precoce
+
   if (req.method === 'OPTIONS') {
+    console.log("Handling OPTIONS request for import-data.");
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -195,7 +198,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Unhandled error in import-data function:', error);
+    console.error('Unhandled error in import-data function:', error); // Log di errore di livello superiore
     return new Response(JSON.stringify({ error: (error as Error).message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
