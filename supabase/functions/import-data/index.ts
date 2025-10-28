@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Helper function to clean and map incoming data to database schema
+// Helper function to clean and map incoming client data to database schema
 function mapClientData(rowData: any) {
   const ragione_sociale = rowData['Ragione Sociale'] || rowData['ragione_sociale'];
   if (!ragione_sociale || typeof ragione_sociale !== 'string' || ragione_sociale.trim() === '') {
@@ -30,6 +30,43 @@ function mapClientData(rowData: any) {
     note: (rowData['Note'] || rowData['note'] || '').trim() || null,
   };
 }
+
+// Helper function to clean and map incoming service point data to database schema
+function mapPuntoServizioData(rowData: any) {
+  const nome_punto_servizio = rowData['Nome Punto Servizio'] || rowData['nome_punto_servizio'];
+  if (!nome_punto_servizio || typeof nome_punto_servizio !== 'string' || nome_punto_servizio.trim() === '') {
+    throw new Error('Nome Punto Servizio is required and cannot be empty.');
+  }
+
+  // Assuming client_id and fornitore_id might come as names and need to be resolved to UUIDs
+  // For now, we'll assume they come as UUIDs or null.
+  // If they come as names, additional logic to fetch IDs from 'clienti' and 'fornitori' tables would be needed.
+  const id_cliente = rowData['ID Cliente'] || rowData['id_cliente'] || null;
+  const fornitore_id = rowData['ID Fornitore'] || rowData['fornitore_id'] || null;
+
+  return {
+    nome_punto_servizio: nome_punto_servizio.trim(),
+    id_cliente: (id_cliente && typeof id_cliente === 'string' && id_cliente.trim() !== '') ? id_cliente.trim() : null,
+    indirizzo: (rowData['Indirizzo'] || rowData['indirizzo'] || '').trim() || null,
+    citta: (rowData['Città'] || rowData['citta'] || '').trim() || null,
+    cap: (rowData['CAP'] || rowData['cap'] || '').trim() || null,
+    provincia: (rowData['Provincia'] || rowData['provincia'] || '').trim() || null,
+    referente: (rowData['Referente'] || rowData['referente'] || '').trim() || null,
+    telefono_referente: (rowData['Telefono Referente'] || rowData['telefono_referente'] || '').trim() || null,
+    telefono: (rowData['Telefono'] || rowData['telefono'] || '').trim() || null,
+    email: (rowData['Email'] || rowData['email'] || '').trim() || null,
+    note: (rowData['Note'] || rowData['note'] || '').trim() || null,
+    tempo_intervento: (rowData['Tempo Intervento'] || rowData['tempo_intervento'] || '').trim() || null,
+    fornitore_id: (fornitore_id && typeof fornitore_id === 'string' && fornitore_id.trim() !== '') ? fornitore_id.trim() : null,
+    codice_cliente: (rowData['Codice Cliente'] || rowData['codice_cliente'] || '').trim() || null,
+    codice_sicep: (rowData['Codice SICEP'] || rowData['codice_sicep'] || '').trim() || null,
+    codice_fatturazione: (rowData['Codice Fatturazione'] || rowData['codice_fatturazione'] || '').trim() || null,
+    latitude: typeof rowData['Latitudine'] === 'number' ? rowData['Latitudine'] : null,
+    longitude: typeof rowData['Longitudine'] === 'number' ? rowData['Longitudine'] : null,
+    nome_procedura: (rowData['Nome Procedura'] || rowData['nome_procedura'] || '').trim() || null,
+  };
+}
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -59,9 +96,8 @@ serve(async (req) => {
       try {
         if (anagraficaType === 'clienti') {
           const clientToProcess = mapClientData(row);
-          console.log('Processing client:', clientToProcess); // Log the processed data
+          console.log('Processing client:', clientToProcess);
 
-          // Check if client already exists by ragione_sociale or partita_iva
           const { data: existingClients, error: fetchError } = await supabaseAdmin
             .from('clienti')
             .select('id')
@@ -71,22 +107,47 @@ serve(async (req) => {
           if (fetchError) throw fetchError;
 
           if (existingClients && existingClients.length > 0) {
-            // Update existing client
             const { error: updateError } = await supabaseAdmin
               .from('clienti')
               .update({ ...clientToProcess, updated_at: new Date().toISOString() })
               .eq('id', existingClients[0].id);
             if (updateError) throw updateError;
           } else {
-            // Insert new client
             const { error: insertError } = await supabaseAdmin
               .from('clienti')
               .insert({ ...clientToProcess, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
             if (insertError) throw insertError;
           }
           successCount++;
+        } else if (anagraficaType === 'punti_servizio') {
+          const puntoServizioToProcess = mapPuntoServizioData(row);
+          console.log('Processing punto_servizio:', puntoServizioToProcess);
+
+          // Check if punto_servizio already exists by nome_punto_servizio
+          const { data: existingPuntiServizio, error: fetchError } = await supabaseAdmin
+            .from('punti_servizio')
+            .select('id')
+            .eq('nome_punto_servizio', puntoServizioToProcess.nome_punto_servizio)
+            .limit(1);
+
+          if (fetchError) throw fetchError;
+
+          if (existingPuntiServizio && existingPuntiServizio.length > 0) {
+            // Update existing punto_servizio
+            const { error: updateError } = await supabaseAdmin
+              .from('punti_servizio')
+              .update({ ...puntoServizioToProcess, updated_at: new Date().toISOString() })
+              .eq('id', existingPuntiServizio[0].id);
+            if (updateError) throw updateError;
+          } else {
+            // Insert new punto_servizio
+            const { error: insertError } = await supabaseAdmin
+              .from('punti_servizio')
+              .insert({ ...puntoServizioToProcess, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+            if (insertError) throw insertError;
+          }
+          successCount++;
         } else {
-          // TODO: Implement logic for other anagrafica types (fornitori, punti_servizio, etc.)
           throw new Error(`Import logic not implemented for anagrafica type: ${anagraficaType}`);
         }
       } catch (rowError: any) {
