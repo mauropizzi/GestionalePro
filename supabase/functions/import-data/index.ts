@@ -9,39 +9,39 @@ const corsHeaders = {
 
 // Helper function to clean and map incoming client data to database schema
 function mapClientData(rowData: any) {
-  const ragione_sociale = rowData['Ragione Sociale'] || rowData['ragione_sociale'];
+  const ragione_sociale = rowData['Ragione Sociale'] || rowData['ragione_sociale'] || rowData['ragioneSociale'];
   if (!ragione_sociale || typeof ragione_sociale !== 'string' || ragione_sociale.trim() === '') {
     throw new Error('Ragione Sociale is required and cannot be empty.');
   }
 
   return {
     ragione_sociale: ragione_sociale.trim(),
-    codice_fiscale: (rowData['Codice Fiscale'] || rowData['codice_fiscale'] || '').trim() || null,
-    partita_iva: (rowData['Partita IVA'] || rowData['partita_iva'] || '').trim() || null,
-    indirizzo: (rowData['Indirizzo'] || rowData['indirizzo'] || '').trim() || null,
-    citta: (rowData['Città'] || rowData['citta'] || '').trim() || null,
-    cap: (rowData['CAP'] || rowData['cap'] || '').trim() || null,
-    provincia: (rowData['Provincia'] || rowData['provincia'] || '').trim() || null,
-    telefono: (rowData['Telefono'] || rowData['telefono'] || '').trim() || null,
-    email: (rowData['Email'] || rowData['email'] || '').trim() || null,
-    pec: (rowData['PEC'] || rowData['pec'] || '').trim() || null,
-    sdi: (rowData['SDI'] || rowData['sdi'] || '').trim() || null,
-    attivo: rowData['Attivo'] === 'TRUE' || rowData['attivo'] === true || rowData['Attivo'] === 1, // Handle boolean conversion
-    note: (rowData['Note'] || rowData['note'] || '').trim() || null,
+    codice_fiscale: (rowData['Codice Fiscale'] || rowData['codice_fiscale'] || rowData['codiceFiscale'])?.trim() || null,
+    partita_iva: (rowData['Partita IVA'] || rowData['partita_iva'] || rowData['partitaIva'])?.trim() || null,
+    indirizzo: (rowData['Indirizzo'] || rowData['indirizzo'] || rowData['indirizzo'])?.trim() || null,
+    citta: (rowData['Città'] || rowData['citta'] || rowData['citta'])?.trim() || null,
+    cap: (rowData['CAP'] || rowData['cap'] || rowData['cap'])?.trim() || null,
+    provincia: (rowData['Provincia'] || rowData['provincia'] || rowData['provincia'])?.trim() || null,
+    telefono: (rowData['Telefono'] || rowData['telefono'] || rowData['telefono'])?.trim() || null,
+    email: (rowData['Email'] || rowData['email'] || rowData['email'])?.trim() || null,
+    pec: (rowData['PEC'] || rowData['pec'] || rowData['pec'])?.trim() || null,
+    sdi: (rowData['SDI'] || rowData['sdi'] || rowData['sdi'])?.trim() || null,
+    attivo: rowData['Attivo'] === 'TRUE' || rowData['attivo'] === true || rowData['Attivo'] === 1 || rowData['attivo'] === 'true', // Handle boolean conversion
+    note: (rowData['Note'] || rowData['note'] || rowData['note'])?.trim() || null,
   };
 }
 
 // Helper function to clean and map incoming service point data to database schema
 function mapPuntoServizioData(rowData: any) {
-  const nome_punto_servizio = rowData['Nome Punto Servizio'] || rowData['nome_punto_servizio'];
+  const nome_punto_servizio = rowData['Nome Punto Servizio'] || rowData['nome_punto_servizio'] || rowData['nomePuntoServizio'];
   if (!nome_punto_servizio || typeof nome_punto_servizio !== 'string' || nome_punto_servizio.trim() === '') {
     throw new Error('Nome Punto Servizio is required and cannot be empty.');
   }
 
   const isValidUuid = (uuid: any) => typeof uuid === 'string' && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid.trim());
 
-  const id_cliente_raw = rowData['ID Cliente'] || rowData['id_cliente'];
-  const fornitore_id_raw = rowData['ID Fornitore'] || rowData['fornitore_id'];
+  const id_cliente_raw = rowData['ID Cliente'] || rowData['id_cliente'] || rowData['idCliente'];
+  const fornitore_id_raw = rowData['ID Fornitore'] || rowData['fornitore_id'] || rowData['fornitoreId'];
 
   const id_cliente = isValidUuid(id_cliente_raw) ? id_cliente_raw.trim() : null;
   const fornitore_id = isValidUuid(fornitore_id_raw) ? fornitore_id_raw.trim() : null;
@@ -49,29 +49,29 @@ function mapPuntoServizioData(rowData: any) {
   return {
     nome_punto_servizio: nome_punto_servizio.trim(),
     id_cliente: id_cliente,
-    indirizzo: (rowData['Indirizzo'] || rowData['indirizzo'] || '').trim() || null,
-    citta: (rowData['Città'] || rowData['citta'] || '').trim() || null,
-    cap: (rowData['CAP'] || rowData['cap'] || '').trim() || null,
-    provincia: (rowData['Provincia'] || rowData['provincia'] || '').trim() || null,
-    referente: (rowData['Referente'] || rowData['referente'] || '').trim() || null,
-    telefono_referente: (rowData['Telefono Referente'] || rowData['telefono_referente'] || '').trim() || null,
-    telefono: (rowData['Telefono'] || rowData['telefono'] || '').trim() || null,
-    email: (rowData['Email'] || rowData['email'] || '').trim() || null,
-    note: (rowData['Note'] || rowData['note'] || '').trim() || null,
-    tempo_intervento: (rowData['Tempo Intervento'] || rowData['tempo_intervento'] || '').trim() || null,
+    indirizzo: (rowData['Indirizzo'] || rowData['indirizzo'] || rowData['indirizzo'])?.trim() || null,
+    citta: (rowData['Città'] || rowData['citta'] || rowData['citta'])?.trim() || null,
+    cap: (rowData['CAP'] || rowData['cap'] || rowData['cap'])?.trim() || null,
+    provincia: (rowData['Provincia'] || rowData['provincia'] || rowData['provincia'])?.trim() || null,
+    referente: (rowData['Referente'] || rowData['referente'] || rowData['referente'])?.trim() || null,
+    telefono_referente: (rowData['Telefono Referente'] || rowData['telefono_referente'] || rowData['telefonoReferente'])?.trim() || null,
+    telefono: (rowData['Telefono'] || rowData['telefono'] || rowData['telefono'])?.trim() || null,
+    email: (rowData['Email'] || rowData['email'] || rowData['email'])?.trim() || null,
+    note: (rowData['Note'] || rowData['note'] || rowData['note'])?.trim() || null,
+    tempo_intervento: (rowData['Tempo Intervento'] || rowData['tempo_intervento'] || rowData['tempoIntervento'])?.trim() || null,
     fornitore_id: fornitore_id,
-    codice_cliente: (rowData['Codice Cliente'] || rowData['codice_cliente'] || '').trim() || null,
-    codice_sicep: (rowData['Codice SICEP'] || rowData['codice_sicep'] || '').trim() || null,
-    codice_fatturazione: (rowData['Codice Fatturazione'] || rowData['codice_fatturazione'] || '').trim() || null,
-    latitude: typeof rowData['Latitudine'] === 'number' ? rowData['Latitudine'] : null,
-    longitude: typeof rowData['Longitudine'] === 'number' ? rowData['Longitudine'] : null,
-    nome_procedura: (rowData['Nome Procedura'] || rowData['nome_procedura'] || '').trim() || null,
+    codice_cliente: (rowData['Codice Cliente'] || rowData['codice_cliente'] || rowData['codiceCliente'])?.trim() || null,
+    codice_sicep: (rowData['Codice SICEP'] || rowData['codice_sicep'] || rowData['codiceSicep'])?.trim() || null,
+    codice_fatturazione: (rowData['Codice Fatturazione'] || rowData['codice_fatturazione'] || rowData['codiceFatturazione'])?.trim() || null,
+    latitude: typeof rowData['Latitudine'] === 'number' ? rowData['Latitudine'] : (typeof rowData['latitude'] === 'number' ? rowData['latitude'] : null),
+    longitude: typeof rowData['Longitudine'] === 'number' ? rowData['Longitudine'] : (typeof rowData['longitude'] === 'number' ? rowData['longitude'] : null),
+    nome_procedura: (rowData['Nome Procedura'] || rowData['nome_procedura'] || rowData['nomeProcedura'])?.trim() || null,
   };
 }
 
 
 serve(async (req) => {
-  console.log("import-data function invoked."); // Log molto precoce
+  console.log("import-data function invoked.");
 
   if (req.method === 'OPTIONS') {
     console.log("Handling OPTIONS request for import-data.");
@@ -100,7 +100,7 @@ serve(async (req) => {
     let errorCount = 0;
     const errors: string[] = [];
 
-    try { // Top-level try-catch for the entire loop
+    try {
       for (const row of importData) {
         try {
           if (anagraficaType === 'clienti') {
@@ -171,11 +171,11 @@ serve(async (req) => {
           if (rowError.hint) errorMessage += ` Hint: ${rowError.hint}`;
           if (rowError.code) errorMessage += ` Code: ${rowError.code}`;
           errors.push(errorMessage);
-          console.error(`Detailed error for row:`, rowError); // Log the full error object
+          console.error(`Detailed error for row:`, rowError);
         }
       }
     } catch (overallError: any) {
-      errorCount = importData.length; // Assume all failed if the loop itself crashed
+      errorCount = importData.length;
       const errorMessage = `Overall import process failed: ${overallError.message}`;
       errors.push(errorMessage);
       console.error(`Overall import error:`, overallError);
@@ -188,7 +188,7 @@ serve(async (req) => {
         errors,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 207, // Multi-Status
+        status: 207,
       });
     }
 
@@ -198,7 +198,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Unhandled error in import-data function:', error); // Log di errore di livello superiore
+    console.error('Unhandled error in import-data function:', error);
     return new Response(JSON.stringify({ error: (error as Error).message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
