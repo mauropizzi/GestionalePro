@@ -7,65 +7,83 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to get a field value, trying multiple keys and applying a type conversion
+const getFieldValue = (rowData: any, keys: string[], typeConverter: (value: any) => any) => {
+  for (const key of keys) {
+    const value = rowData[key];
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
+      return typeConverter(value);
+    }
+  }
+  return null;
+};
+
+// Type converters
+const toString = (value: any) => String(value).trim();
+const toNumber = (value: any) => {
+  const num = Number(value);
+  return isNaN(num) ? null : num;
+};
+
 // Helper function to clean and map incoming client data to database schema
 function mapClientData(rowData: any) {
-  const ragione_sociale = rowData['Ragione Sociale'] || rowData['ragione_sociale'] || rowData['ragioneSociale'];
-  if (!ragione_sociale || typeof ragione_sociale !== 'string' || ragione_sociale.trim() === '') {
+  const ragione_sociale = getFieldValue(rowData, ['Ragione Sociale', 'ragione_sociale', 'ragioneSociale'], toString);
+  if (!ragione_sociale) {
     throw new Error('Ragione Sociale is required and cannot be empty.');
   }
 
   return {
-    ragione_sociale: ragione_sociale.trim(),
-    codice_fiscale: (rowData['Codice Fiscale'] || rowData['codice_fiscale'] || rowData['codiceFiscale'])?.trim() || null,
-    partita_iva: (rowData['Partita IVA'] || rowData['partita_iva'] || rowData['partitaIva'])?.trim() || null,
-    indirizzo: (rowData['Indirizzo'] || rowData['indirizzo'] || rowData['indirizzo'])?.trim() || null,
-    citta: (rowData['Città'] || rowData['citta'] || rowData['citta'])?.trim() || null,
-    cap: (rowData['CAP'] || rowData['cap'] || rowData['cap'])?.trim() || null,
-    provincia: (rowData['Provincia'] || rowData['provincia'] || rowData['provincia'])?.trim() || null,
-    telefono: (rowData['Telefono'] || rowData['telefono'] || rowData['telefono'])?.trim() || null,
-    email: (rowData['Email'] || rowData['email'] || rowData['email'])?.trim() || null,
-    pec: (rowData['PEC'] || rowData['pec'] || rowData['pec'])?.trim() || null,
-    sdi: (rowData['SDI'] || rowData['sdi'] || rowData['sdi'])?.trim() || null,
-    attivo: rowData['Attivo'] === 'TRUE' || rowData['attivo'] === true || rowData['Attivo'] === 1 || rowData['attivo'] === 'true', // Handle boolean conversion
-    note: (rowData['Note'] || rowData['note'] || rowData['note'])?.trim() || null,
+    ragione_sociale: ragione_sociale,
+    codice_fiscale: getFieldValue(rowData, ['Codice Fiscale', 'codice_fiscale', 'codiceFiscale'], toString),
+    partita_iva: getFieldValue(rowData, ['Partita IVA', 'partita_iva', 'partitaIva'], toString),
+    indirizzo: getFieldValue(rowData, ['Indirizzo', 'indirizzo'], toString),
+    citta: getFieldValue(rowData, ['Città', 'citta'], toString),
+    cap: getFieldValue(rowData, ['CAP', 'cap'], toString),
+    provincia: getFieldValue(rowData, ['Provincia', 'provincia'], toString),
+    telefono: getFieldValue(rowData, ['Telefono', 'telefono'], toString),
+    email: getFieldValue(rowData, ['Email', 'email'], toString),
+    pec: getFieldValue(rowData, ['PEC', 'pec'], toString),
+    sdi: getFieldValue(rowData, ['SDI', 'sdi'], toString),
+    attivo: getFieldValue(rowData, ['Attivo', 'attivo'], (val: any) => val === 'TRUE' || val === true || val === 1 || val === 'true'),
+    note: getFieldValue(rowData, ['Note', 'note'], toString),
   };
 }
 
 // Helper function to clean and map incoming service point data to database schema
 function mapPuntoServizioData(rowData: any) {
-  const nome_punto_servizio = rowData['Nome Punto Servizio'] || rowData['nome_punto_servizio'] || rowData['nomePuntoServizio'];
-  if (!nome_punto_servizio || typeof nome_punto_servizio !== 'string' || nome_punto_servizio.trim() === '') {
+  const nome_punto_servizio = getFieldValue(rowData, ['Nome Punto Servizio', 'nome_punto_servizio', 'nomePuntoServizio'], toString);
+  if (!nome_punto_servizio) {
     throw new Error('Nome Punto Servizio is required and cannot be empty.');
   }
 
   const isValidUuid = (uuid: any) => typeof uuid === 'string' && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid.trim());
 
-  const id_cliente_raw = rowData['ID Cliente'] || rowData['id_cliente'] || rowData['idCliente'];
-  const fornitore_id_raw = rowData['ID Fornitore'] || rowData['fornitore_id'] || rowData['fornitoreId'];
+  const id_cliente_raw = getFieldValue(rowData, ['ID Cliente', 'id_cliente', 'idCliente'], toString);
+  const fornitore_id_raw = getFieldValue(rowData, ['ID Fornitore', 'fornitore_id', 'fornitoreId'], toString);
 
-  const id_cliente = (id_cliente_raw && typeof id_cliente_raw === 'string' && isValidUuid(id_cliente_raw.trim())) ? id_cliente_raw.trim() : null;
-  const fornitore_id = (fornitore_id_raw && typeof fornitore_id_raw === 'string' && isValidUuid(fornitore_id_raw.trim())) ? fornitore_id_raw.trim() : null;
+  const id_cliente = (id_cliente_raw && isValidUuid(id_cliente_raw)) ? id_cliente_raw : null;
+  const fornitore_id = (fornitore_id_raw && isValidUuid(fornitore_id_raw)) ? fornitore_id_raw : null;
 
   return {
-    nome_punto_servizio: nome_punto_servizio.trim(),
+    nome_punto_servizio: nome_punto_servizio,
     id_cliente: id_cliente,
-    indirizzo: (rowData['Indirizzo'] || rowData['indirizzo'] || rowData['indirizzo'])?.trim() || null,
-    citta: (rowData['Città'] || rowData['citta'] || rowData['citta'])?.trim() || null,
-    cap: (rowData['CAP'] || rowData['cap'] || rowData['cap'])?.trim() || null,
-    provincia: (rowData['Provincia'] || rowData['provincia'] || rowData['provincia'])?.trim() || null,
-    referente: (rowData['Referente'] || rowData['referente'] || rowData['referente'])?.trim() || null,
-    telefono_referente: (rowData['Telefono Referente'] || rowData['telefono_referente'] || rowData['telefonoReferente'])?.trim() || null,
-    telefono: (rowData['Telefono'] || rowData['telefono'] || rowData['telefono'])?.trim() || null,
-    email: (rowData['Email'] || rowData['email'] || rowData['email'])?.trim() || null,
-    note: (rowData['Note'] || rowData['note'] || rowData['note'])?.trim() || null,
-    tempo_intervento: (rowData['Tempo Intervento'] || rowData['tempo_intervento'] || rowData['tempoIntervento'])?.trim() || null,
+    indirizzo: getFieldValue(rowData, ['Indirizzo', 'indirizzo'], toString),
+    citta: getFieldValue(rowData, ['Città', 'citta'], toString),
+    cap: getFieldValue(rowData, ['CAP', 'cap'], toString),
+    provincia: getFieldValue(rowData, ['Provincia', 'provincia'], toString),
+    referente: getFieldValue(rowData, ['Referente', 'referente'], toString),
+    telefono_referente: getFieldValue(rowData, ['Telefono Referente', 'telefono_referente', 'telefonoReferente'], toString),
+    telefono: getFieldValue(rowData, ['Telefono', 'telefono'], toString),
+    email: getFieldValue(rowData, ['Email', 'email'], toString),
+    note: getFieldValue(rowData, ['Note', 'note'], toString),
+    tempo_intervento: getFieldValue(rowData, ['Tempo Intervento', 'tempo_intervento', 'tempoIntervento'], toString),
     fornitore_id: fornitore_id,
-    codice_cliente: (rowData['Codice Cliente'] || rowData['codice_cliente'] || rowData['codiceCliente'])?.trim() || null,
-    codice_sicep: (rowData['Codice SICEP'] || rowData['codice_sicep'] || rowData['codiceSicep'])?.trim() || null,
-    codice_fatturazione: (rowData['Codice Fatturazione'] || rowData['codice_fatturazione'] || rowData['codiceFatturazione'])?.trim() || null,
-    latitude: typeof rowData['Latitudine'] === 'number' ? rowData['Latitudine'] : (typeof rowData['latitude'] === 'number' ? rowData['latitude'] : null),
-    longitude: typeof rowData['Longitudine'] === 'number' ? rowData['Longitudine'] : (typeof rowData['longitude'] === 'number' ? rowData['longitude'] : null),
-    nome_procedura: (rowData['Nome Procedura'] || rowData['nome_procedura'] || rowData['nomeProcedura'])?.trim() || null,
+    codice_cliente: getFieldValue(rowData, ['Codice Cliente', 'codice_cliente', 'codiceCliente'], toString),
+    codice_sicep: getFieldValue(rowData, ['Codice SICEP', 'codice_sicep', 'codiceSicep'], toString),
+    codice_fatturazione: getFieldValue(rowData, ['Codice Fatturazione', 'codice_fatturazione', 'codiceFatturazione'], toString),
+    latitude: getFieldValue(rowData, ['Latitudine', 'latitude'], toNumber),
+    longitude: getFieldValue(rowData, ['Longitudine', 'longitude'], toNumber),
+    nome_procedura: getFieldValue(rowData, ['Nome Procedura', 'nome_procedura', 'nomeProcedura'], toString),
   };
 }
 

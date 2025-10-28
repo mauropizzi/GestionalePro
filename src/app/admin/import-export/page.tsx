@@ -54,16 +54,16 @@ const columnHeaderMap: { [key: string]: string } = {
   referente: "Referente",
   telefonoReferente: "Telefono Referente",
   tempoIntervento: "Tempo Intervento",
-  fornitoreId: "ID Fornitore",
+  fornitoreId: "ID Fornitore", // Mantenuto qui
   codiceCliente: "Codice Cliente",
   codiceSicep: "Codice SICEP",
   codiceFatturazione: "Codice Fatturazione",
   latitude: "Latitudine",
   longitude: "Longitudine",
-  nomeProcedura: "Nome Procedura",
+  nomeProcedura: "Nome Procedura", // Mantenuto qui
 
   // Fornitori
-  tipoServizio: "Tipo Servizio",
+  tipoServizio: "Tipo Servizio", // Mantenuto qui
 
   // Personale
   nome: "Nome",
@@ -78,21 +78,16 @@ const columnHeaderMap: { [key: string]: string } = {
   // (già coperti da nome, cognome, telefono, email, idCliente)
 
   // Procedure
-  nomeProcedura: "Nome Procedura",
-  descrizione: "Descrizione",
-  versione: "Versione",
-  dataUltimaRevisione: "Data Ultima Revisione",
-  responsabile: "Responsabile",
-  documentoUrl: "URL Documento",
+  // nomeProcedura: "Nome Procedura", // Rimosso duplicato
 
   // Tariffe
   clientId: "ID Cliente",
-  tipoServizio: "Tipo Servizio",
+  // tipoServizio: "Tipo Servizio", // Rimosso duplicato
   importo: "Importo",
   supplierRate: "Costo Fornitore",
   unitaMisura: "Unità di Misura",
   puntoServizioId: "ID Punto Servizio",
-  fornitoreId: "ID Fornitore",
+  // fornitoreId: "ID Fornitore", // Rimosso duplicato
   dataInizioValidita: "Data Inizio Validità",
   dataFineValidita: "Data Fine Validita",
 };
