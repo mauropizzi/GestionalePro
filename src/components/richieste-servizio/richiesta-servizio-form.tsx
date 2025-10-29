@@ -345,7 +345,7 @@ export function RichiestaServizioForm({
                     type="number"
                     {...field}
                     value={field.value ?? ""} // Ensure value is not null/undefined
-                    onChange={e => field.onChange(parseInt(e.target.value))}
+                    onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value))}
                   />
                 </FormControl>
                 <FormMessage />
@@ -447,7 +447,7 @@ export function RichiestaServizioForm({
                       type="number"
                       {...field}
                       value={field.value ?? ""} // Ensure value is not null/undefined
-                      onChange={e => field.onChange(parseFloat(e.target.value))}
+                      onChange={e => field.onChange(e.target.value === "" ? undefined : parseFloat(e.target.value))}
                     />
                   </FormControl>
                   <FormMessage />
