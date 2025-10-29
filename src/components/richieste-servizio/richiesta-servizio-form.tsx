@@ -32,14 +32,14 @@ import {
   RichiestaServizioFormSchema,
   SERVICE_TYPES,
   INSPECTION_TYPES,
-  APERTURA_CHIUSURA_TYPES, // Importa i nuovi tipi
+  APERTURA_CHIUSURA_TYPES,
   calculateTotalHours,
   calculateTotalInspections,
-  calculateAperturaChiusuraCount, // Importa la nuova funzione di calcolo
+  calculateAperturaChiusuraCount,
   IspezioniFormSchema,
-  AperturaChiusuraFormSchema, // Importa il nuovo tipo di schema
-  AperturaChiusuraType, // Importa il tipo AperturaChiusuraType
-  BonificaFormSchema, // Importa il nuovo tipo di schema
+  AperturaChiusuraFormSchema,
+  AperturaChiusuraType,
+  BonificaFormSchema,
 } from "@/lib/richieste-servizio-utils";
 import { DailySchedulesFormField } from "./daily-schedules-form-field";
 
@@ -439,6 +439,7 @@ export function RichiestaServizioForm({
                   <DailySchedulesFormField
                     value={field.value}
                     onChange={field.onChange}
+                    isBonificaService={selectedServiceType === "BONIFICA"} // Pass the new prop
                   />
                 </FormControl>
                 <FormDescription>
