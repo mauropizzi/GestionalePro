@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { RichiestaServizioFormSchema, daysOfWeek, dailyScheduleSchema, ServiceType, AperturaChiusuraType } from "@/lib/richieste-servizio-utils";
+import { RichiestaServizioFormSchema, daysOfWeek, dailyScheduleSchema, ServiceType, AperturaChiusuraType, GestioneChiaviType } from "@/lib/richieste-servizio-utils";
 import { z } from "zod"; // Import z
 import { cn } from "@/lib/utils";
 
@@ -20,10 +20,11 @@ interface DailySchedulesFormFieldProps {
   value: z.infer<typeof dailyScheduleSchema>[];
   onChange: (value: z.infer<typeof dailyScheduleSchema>[]) => void;
   selectedServiceType: ServiceType;
-  tipoAperturaChiusura?: AperturaChiusuraType | null; // Nuova prop
+  tipoAperturaChiusura?: AperturaChiusuraType | null;
+  tipoGestioneChiavi?: GestioneChiaviType | null; // Nuova prop
 }
 
-export function DailySchedulesFormField({ value, onChange, selectedServiceType, tipoAperturaChiusura }: DailySchedulesFormFieldProps) {
+export function DailySchedulesFormField({ value, onChange, selectedServiceType, tipoAperturaChiusura, tipoGestioneChiavi }: DailySchedulesFormFieldProps) {
   const { control, getValues, setValue } = useFormContext<RichiestaServizioFormSchema>();
   const schedules = getValues("daily_schedules");
 
@@ -31,8 +32,9 @@ export function DailySchedulesFormField({ value, onChange, selectedServiceType, 
   const isBonifica = selectedServiceType === "BONIFICA";
   const isSoloAperturaChiusura = selectedServiceType === "APERTURA_CHIUSURA" &&
     (tipoAperturaChiusura === "SOLO_APERTURA" || tipoAperturaChiusura === "SOLO_CHIUSURA");
+  const isGestioneChiavi = selectedServiceType === "GESTIONE_CHIAVI"; // Nuova condizione
 
-  const isSingleTimeService = isBonifica || isSoloAperturaChiusura; // Condizione unificata
+  const isSingleTimeService = isBonifica || isSoloAperturaChiusura || isGestioneChiavi; // Condizione unificata
 
   // Effect to initialize groupWeekdays state based on current schedules
   useEffect(() => {
@@ -112,6 +114,7 @@ export function DailySchedulesFormField({ value, onChange, selectedServiceType, 
   const getOraInizioLabel = () => {
     if (isBonifica) return "Ora Bonifica";
     if (isSoloAperturaChiusura) return "Ora Attività";
+    if (isGestioneChiavi) return "Ora Attività"; // New label for Gestione Chiavi
     return "Ora Inizio";
   };
 

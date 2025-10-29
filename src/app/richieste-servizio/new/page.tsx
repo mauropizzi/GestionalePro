@@ -18,10 +18,12 @@ import {
   calculateTotalHours,
   calculateTotalInspections,
   calculateAperturaChiusuraCount,
-  calculateBonificaCount, // Importa la nuova funzione di calcolo
+  calculateBonificaCount,
+  calculateGestioneChiaviCount, // Importa la nuova funzione di calcolo
   defaultDailySchedules,
   AperturaChiusuraType,
-  BonificaType, // Importa il tipo BonificaType
+  BonificaType,
+  GestioneChiaviType, // Importa il tipo GestioneChiaviType
 } from "@/lib/richieste-servizio-utils";
 import { DailySchedule } from "@/types/richieste-servizio";
 import { RichiestaServizioForm } from "@/components/richieste-servizio/richiesta-servizio-form";
@@ -129,12 +131,20 @@ export default function NewRichiestaServizioPage() {
         values.tipo_apertura_chiusura as AperturaChiusuraType,
         values.numero_agenti
       );
-    } else if (values.tipo_servizio === "BONIFICA") { // Nuova logica per BONIFICA
+    } else if (values.tipo_servizio === "BONIFICA") {
       totalCalculatedValue = calculateBonificaCount(
         dataInizioServizio,
         dataFineServizio,
         values.daily_schedules,
         values.tipo_bonifica as BonificaType,
+        values.numero_agenti
+      );
+    } else if (values.tipo_servizio === "GESTIONE_CHIAVI") { // Nuova logica per GESTIONE_CHIAVI
+      totalCalculatedValue = calculateGestioneChiaviCount(
+        dataInizioServizio,
+        dataFineServizio,
+        values.daily_schedules,
+        values.tipo_gestione_chiavi as GestioneChiaviType,
         values.numero_agenti
       );
     }
@@ -172,8 +182,10 @@ export default function NewRichiestaServizioPage() {
       };
     } else if (values.tipo_servizio === "APERTURA_CHIUSURA") {
       richiestaData.tipo_apertura_chiusura = values.tipo_apertura_chiusura;
-    } else if (values.tipo_servizio === "BONIFICA") { // Aggiungi tipo_bonifica a richiestaData
+    } else if (values.tipo_servizio === "BONIFICA") {
       richiestaData.tipo_bonifica = values.tipo_bonifica;
+    } else if (values.tipo_servizio === "GESTIONE_CHIAVI") { // Aggiungi tipo_gestione_chiavi a richiestaData
+      richiestaData.tipo_gestione_chiavi = values.tipo_gestione_chiavi;
     }
 
     const { data: newRichiesta, error: richiestaError } = await supabase
@@ -189,7 +201,8 @@ export default function NewRichiestaServizioPage() {
     }
 
     const isSingleTimeService = values.tipo_servizio === "BONIFICA" ||
-      (values.tipo_servizio === "APERTURA_CHIUSURA" && (values.tipo_apertura_chiusura === "SOLO_APERTURA" || values.tipo_apertura_chiusura === "SOLO_CHIUSURA"));
+      (values.tipo_servizio === "APERTURA_CHIUSURA" && (values.tipo_apertura_chiusura === "SOLO_APERTURA" || values.tipo_apertura_chiusura === "SOLO_CHIUSURA")) ||
+      values.tipo_servizio === "GESTIONE_CHIAVI"; // Include new service type
 
     const schedulesToInsert = values.daily_schedules.map((schedule: DailySchedule) => ({
       ...schedule,

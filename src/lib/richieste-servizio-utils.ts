@@ -10,7 +10,8 @@ export const SERVICE_TYPES = [
   { value: "SERVIZIO_FIDUCIARIO", label: "Servizio Fiduciario" },
   { value: "ISPEZIONI", label: "Ispezioni" },
   { value: "APERTURA_CHIUSURA", label: "Apertura/Chiusura" },
-  { value: "BONIFICA", label: "Bonifica" }, // Nuovo tipo di servizio
+  { value: "BONIFICA", label: "Bonifica" },
+  { value: "GESTIONE_CHIAVI", label: "Gestione Chiavi" }, // Nuovo tipo di servizio
 ] as const; // Use 'as const' for better type inference
 
 export type ServiceType = (typeof SERVICE_TYPES)[number]["value"];
@@ -40,6 +41,16 @@ export const BONIFICA_TYPES = [
 ] as const;
 
 export type BonificaType = (typeof BONIFICA_TYPES)[number]["value"];
+
+// Define GESTIONE_CHIAVI_TYPES as an array of objects
+export const GESTIONE_CHIAVI_TYPES = [
+  { value: "RITIRO_CHIAVI", label: "Ritiro Chiavi" },
+  { value: "CONSEGNA_CHIAVI", label: "Consegna Chiavi" },
+  { value: "VERIFICA_CHIAVI", label: "Verifica Chiavi" },
+] as const;
+
+export type GestioneChiaviType = (typeof GESTIONE_CHIAVI_TYPES)[number]["value"];
+
 
 export const dailyScheduleSchema = z.object({
   id: z.string().optional(),
@@ -132,12 +143,24 @@ const bonificaBaseSchema = baseRichiestaServizioObjectSchema.extend({
   tipo_bonifica: z.enum(BONIFICA_TYPES.map(t => t.value) as [string, ...string[]], { required_error: "Il tipo di bonifica è richiesto." }), // Campo specifico per Bonifica
 });
 
+// Define schema for GESTIONE_CHIAVI
+const gestioneChiaviBaseSchema = baseRichiestaServizioObjectSchema.extend({
+  tipo_servizio: z.literal(SERVICE_TYPES.find(t => t.value === "GESTIONE_CHIAVI")!.value),
+  data_inizio_servizio: z.date({ required_error: "La data di inizio servizio è richiesta." }),
+  data_fine_servizio: z.date({ required_error: "La data di fine servizio è richiesta." }),
+  numero_agenti: z.coerce.number().min(1, "Il numero di agenti deve essere almeno 1."),
+  daily_schedules: z.array(dailyScheduleSchema).min(8, "Devi definire gli orari per tutti i giorni della settimana e per i festivi."),
+  tipo_gestione_chiavi: z.enum(GESTIONE_CHIAVI_TYPES.map(t => t.value) as [string, ...string[]], { required_error: "Il tipo di gestione chiavi è richiesto." }), // Campo specifico per Gestione Chiavi
+});
+
+
 export const richiestaServizioFormSchema = z.discriminatedUnion("tipo_servizio", [
   piantonamentoArmatoBaseSchema,
   servizioFiduciarioBaseSchema,
   ispezioniBaseSchema,
   aperturaChiusuraBaseSchema,
-  bonificaBaseSchema, // Aggiunto il nuovo schema per Bonifica
+  bonificaBaseSchema,
+  gestioneChiaviBaseSchema, // Aggiunto il nuovo schema per Gestione Chiavi
 ]).superRefine((data, ctx) => { // Spostato qui il superRefine per la bonifica
   if (data.tipo_servizio === "BONIFICA") {
     data.daily_schedules.forEach((schedule, index) => {
@@ -191,6 +214,32 @@ export const richiestaServizioFormSchema = z.discriminatedUnion("tipo_servizio",
         }
       }
     });
+  } else if (data.tipo_servizio === "GESTIONE_CHIAVI") { // Nuova logica per GESTIONE_CHIAVI
+    data.daily_schedules.forEach((schedule, index) => {
+      if (schedule.attivo) {
+        if (schedule.h24) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Per il servizio Gestione Chiavi, il giorno ${schedule.giorno_settimana} non può essere H24.`,
+            path: [`daily_schedules`, index, `h24`],
+          });
+        }
+        if (!schedule.ora_inizio) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Per il servizio Gestione Chiavi, il giorno ${schedule.giorno_settimana} deve avere un orario.`,
+            path: [`daily_schedules`, index, `ora_inizio`],
+          });
+        }
+        if (schedule.ora_fine !== null) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Per il servizio Gestione Chiavi, il giorno ${schedule.giorno_settimana} deve avere solo un orario di inizio.`,
+            path: [`daily_schedules`, index, `ora_fine`],
+          });
+        }
+      }
+    });
   }
 });
 // IMPORTANT: Conditional refinements for date/time ranges (e.g., data_fine_servizio > data_inizio_servizio,
@@ -200,7 +249,8 @@ export const richiestaServizioFormSchema = z.discriminatedUnion("tipo_servizio",
 export type RichiestaServizioFormSchema = z.infer<typeof richiestaServizioFormSchema>;
 export type IspezioniFormSchema = z.infer<typeof ispezioniBaseSchema>;
 export type AperturaChiusuraFormSchema = z.infer<typeof aperturaChiusuraBaseSchema>;
-export type BonificaFormSchema = z.infer<typeof bonificaBaseSchema>; // Nuovo tipo esportato
+export type BonificaFormSchema = z.infer<typeof bonificaBaseSchema>;
+export type GestioneChiaviFormSchema = z.infer<typeof gestioneChiaviBaseSchema>; // Nuovo tipo esportato
 
 export const calculateTotalHours = (
   serviceStartDate: Date,
@@ -333,6 +383,35 @@ export const calculateBonificaCount = (
 ): number => {
   // Per ora, assumiamo che ogni giorno attivo con bonifica standard o urgente conti come 1 attività.
   // Questa logica può essere raffinata in base a requisiti specifici (es. durata, complessità).
+  let countPerDay = 1; // Default 1 attività per giorno attivo
+
+  let totalCount = 0;
+  let currentDate = new Date(serviceStartDate);
+  currentDate.setHours(0, 0, 0, 0);
+
+  const endServiceDateNormalized = new Date(serviceEndDate);
+  endServiceDateNormalized.setHours(0, 0, 0, 0);
+
+  while (currentDate <= endServiceDateNormalized) {
+    const dayOfWeek = format(currentDate, 'EEEE', { locale: it });
+    const schedule = dailySchedules.find(s => s.giorno_settimana.toLowerCase() === dayOfWeek.toLowerCase());
+
+    if (schedule && schedule.attivo) {
+      totalCount += countPerDay;
+    }
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  return parseFloat((totalCount * numAgents).toFixed(2));
+};
+
+export const calculateGestioneChiaviCount = (
+  serviceStartDate: Date,
+  serviceEndDate: Date,
+  dailySchedules: z.infer<typeof dailyScheduleSchema>[],
+  tipoGestioneChiavi: GestioneChiaviType,
+  numAgents: number
+): number => {
+  // Simile a Bonifica, ogni giorno attivo conta come 1 attività.
   let countPerDay = 1; // Default 1 attività per giorno attivo
 
   let totalCount = 0;

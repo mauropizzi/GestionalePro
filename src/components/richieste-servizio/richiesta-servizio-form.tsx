@@ -20,11 +20,14 @@ import {
   calculateTotalInspections,
   calculateAperturaChiusuraCount,
   calculateBonificaCount,
+  calculateGestioneChiaviCount, // New import
   IspezioniFormSchema,
   AperturaChiusuraFormSchema,
   BonificaFormSchema,
+  GestioneChiaviFormSchema, // New import
   AperturaChiusuraType,
   BonificaType,
+  GestioneChiaviType, // New import
 } from "@/lib/richieste-servizio-utils";
 import { DailySchedulesFormField } from "./daily-schedules-form-field";
 import { ServiceDetailsSection } from "./service-details-section";
@@ -51,13 +54,14 @@ export function RichiestaServizioForm({
   isSubmitting,
 }: RichiestaServizioFormProps) {
   const selectedServiceType = form.watch("tipo_servizio");
-  const tipoAperturaChiusura = form.watch("tipo_apertura_chiusura"); // Watch this value
+  const tipoAperturaChiusura = form.watch("tipo_apertura_chiusura");
+  const tipoGestioneChiavi = form.watch("tipo_gestione_chiavi"); // Watch this value
   const formValues = form.watch();
 
   let calculatedValue: number | null = null;
   let calculationLabel: string = "";
 
-  // Effect to set default values for ISPEZIONI, APERTURA_CHIUSURA, BONIFICA when service type changes
+  // Effect to set default values for ISPEZIONI, APERTURA_CHIUSURA, BONIFICA, GESTIONE_CHIAVI when service type changes
   useEffect(() => {
     if (selectedServiceType === "ISPEZIONI") {
       if (form.getValues("cadenza_ore") === undefined || form.getValues("cadenza_ore") === null || form.getValues("cadenza_ore") <= 0) {
@@ -73,6 +77,10 @@ export function RichiestaServizioForm({
     } else if (selectedServiceType === "BONIFICA") {
       if (!form.getValues("tipo_bonifica")) {
         form.setValue("tipo_bonifica", "BONIFICA_STANDARD", { shouldDirty: true });
+      }
+    } else if (selectedServiceType === "GESTIONE_CHIAVI") { // New logic for GESTIONE_CHIAVI
+      if (!form.getValues("tipo_gestione_chiavi")) {
+        form.setValue("tipo_gestione_chiavi", "RITIRO_CHIAVI", { shouldDirty: true });
       }
     }
   }, [selectedServiceType, form]);
@@ -128,6 +136,19 @@ export function RichiestaServizioForm({
       );
       calculationLabel = "Numero totale bonifiche stimate:";
     }
+  } else if (selectedServiceType === "GESTIONE_CHIAVI") { // New logic for GESTIONE_CHIAVI
+    const { data_inizio_servizio, data_fine_servizio, numero_agenti, daily_schedules, tipo_gestione_chiavi } = formValues as GestioneChiaviFormSchema;
+
+    if (data_inizio_servizio && data_fine_servizio && daily_schedules && tipo_gestione_chiavi && numero_agenti !== undefined) {
+      calculatedValue = calculateGestioneChiaviCount(
+        data_inizio_servizio,
+        data_fine_servizio,
+        daily_schedules,
+        tipo_gestione_chiavi as GestioneChiaviType,
+        numero_agenti
+      );
+      calculationLabel = "Numero totale attività gestione chiavi stimate:";
+    }
   }
 
   return (
@@ -150,7 +171,8 @@ export function RichiestaServizioForm({
           selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
           selectedServiceType === "ISPEZIONI" ||
           selectedServiceType === "APERTURA_CHIUSURA" ||
-          selectedServiceType === "BONIFICA") && (
+          selectedServiceType === "BONIFICA" ||
+          selectedServiceType === "GESTIONE_CHIAVI") && ( // Include new service type
           <FormField
             control={form.control}
             name="daily_schedules"
@@ -162,7 +184,8 @@ export function RichiestaServizioForm({
                     value={field.value}
                     onChange={field.onChange}
                     selectedServiceType={selectedServiceType}
-                    tipoAperturaChiusura={tipoAperturaChiusura} // Passa il tipo di apertura/chiusura
+                    tipoAperturaChiusura={tipoAperturaChiusura}
+                    tipoGestioneChiavi={tipoGestioneChiavi} // Pass the new prop
                   />
                 </FormControl>
                 <FormDescription>

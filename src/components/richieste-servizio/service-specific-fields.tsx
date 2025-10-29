@@ -19,52 +19,21 @@ import {
 } from "@/components/ui/select";
 import {
   RichiestaServizioFormSchema,
+  ServiceType,
   INSPECTION_TYPES,
   APERTURA_CHIUSURA_TYPES,
   BONIFICA_TYPES,
-  IspezioniFormSchema,
-  AperturaChiusuraFormSchema,
-  BonificaFormSchema,
+  GESTIONE_CHIAVI_TYPES, // New import
 } from "@/lib/richieste-servizio-utils";
 
 interface ServiceSpecificFieldsProps {
   form: UseFormReturn<RichiestaServizioFormSchema>;
-  selectedServiceType: RichiestaServizioFormSchema["tipo_servizio"];
+  selectedServiceType: ServiceType;
 }
 
 export function ServiceSpecificFields({ form, selectedServiceType }: ServiceSpecificFieldsProps) {
-  const shouldRender =
-    selectedServiceType === "PIANTONAMENTO_ARMATO" ||
-    selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
-    selectedServiceType === "ISPEZIONI" ||
-    selectedServiceType === "APERTURA_CHIUSURA" ||
-    selectedServiceType === "BONIFICA";
-
-  if (!shouldRender) {
-    return null;
-  }
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <FormField
-        control={form.control}
-        name="numero_agenti"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Numero Agenti</FormLabel>
-            <FormControl>
-              <Input
-                type="number"
-                {...field}
-                value={field.value ?? ""}
-                onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value))}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
       {selectedServiceType === "ISPEZIONI" && (
         <>
           <FormField
@@ -76,9 +45,9 @@ export function ServiceSpecificFields({ form, selectedServiceType }: ServiceSpec
                 <FormControl>
                   <Input
                     type="number"
+                    step="0.5"
                     {...field}
-                    value={field.value ?? ""}
-                    onChange={e => field.onChange(e.target.value === "" ? undefined : parseFloat(e.target.value))}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
                   />
                 </FormControl>
                 <FormMessage />
@@ -94,7 +63,7 @@ export function ServiceSpecificFields({ form, selectedServiceType }: ServiceSpec
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleziona un tipo di ispezione" />
+                      <SelectValue placeholder="Seleziona il tipo di ispezione" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -118,11 +87,11 @@ export function ServiceSpecificFields({ form, selectedServiceType }: ServiceSpec
           name="tipo_apertura_chiusura"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Tipo Attività</FormLabel>
+              <FormLabel>Tipo di Attività</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleziona tipo attività" />
+                    <SelectValue placeholder="Seleziona il tipo di attività" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -145,15 +114,42 @@ export function ServiceSpecificFields({ form, selectedServiceType }: ServiceSpec
           name="tipo_bonifica"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Tipo Bonifica</FormLabel>
+              <FormLabel>Tipo di Bonifica</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleziona tipo bonifica" />
+                    <SelectValue placeholder="Seleziona il tipo di bonifica" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
                   {BONIFICA_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
+
+      {selectedServiceType === "GESTIONE_CHIAVI" && ( // New conditional rendering for GESTIONE_CHIAVI
+        <FormField
+          control={form.control}
+          name="tipo_gestione_chiavi"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Tipo di Attività Chiavi</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleziona il tipo di attività chiavi" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {GESTIONE_CHIAVI_TYPES.map((type) => (
                     <SelectItem key={type.value} value={type.value}>
                       {type.label}
                     </SelectItem>
