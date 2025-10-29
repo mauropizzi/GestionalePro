@@ -290,28 +290,51 @@ export function RichiestaServizioForm({
           />
         )}
 
-        {/* Numero Agenti */}
+        {/* Numero Agenti and Cadenza Ore (conditionally rendered and grouped) */}
         {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
           selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
           selectedServiceType === "ISPEZIONI") && (
-          <FormField
-            control={form.control}
-            name="numero_agenti"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Numero Agenti</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    {...field}
-                    value={field.value ?? ""}
-                    onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value))}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="numero_agenti"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Numero Agenti</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      {...field}
+                      value={field.value ?? ""}
+                      onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {selectedServiceType === "ISPEZIONI" && (
+              <FormField
+                control={form.control}
+                name="cadenza_ore"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cadenza (ore)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={e => field.onChange(e.target.value === "" ? undefined : parseFloat(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             )}
-          />
+          </div>
         )}
 
         {/* Daily Schedules */}
@@ -365,30 +388,6 @@ export function RichiestaServizioForm({
               </FormItem>
             )}
           />
-        )}
-
-        {/* Cadenza Ore (only for ISPEZIONI) */}
-        {selectedServiceType === "ISPEZIONI" && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <FormField
-              control={form.control}
-              name="cadenza_ore"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cadenza (ore)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      value={field.value ?? ""}
-                      onChange={e => field.onChange(e.target.value === "" ? undefined : parseFloat(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
         )}
 
         {/* Calculated Value Display */}
