@@ -12,27 +12,29 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { RichiestaServizioFormSchema, daysOfWeek, dailyScheduleSchema } from "@/lib/richieste-servizio-utils";
+import { RichiestaServizioFormSchema, daysOfWeek, dailyScheduleSchema, ServiceType } from "@/lib/richieste-servizio-utils";
 import { z } from "zod"; // Import z
 import { cn } from "@/lib/utils";
 
 interface DailySchedulesFormFieldProps {
   value: z.infer<typeof dailyScheduleSchema>[];
   onChange: (value: z.infer<typeof dailyScheduleSchema>[]) => void;
+  selectedServiceType: ServiceType; // Aggiunto il prop
 }
 
-export function DailySchedulesFormField({ value, onChange }: DailySchedulesFormFieldProps) {
+export function DailySchedulesFormField({ value, onChange, selectedServiceType }: DailySchedulesFormFieldProps) {
   const { control, getValues, setValue } = useFormContext<RichiestaServizioFormSchema>();
   const schedules = getValues("daily_schedules");
 
   const [groupWeekdays, setGroupWeekdays] = useState(false);
+  const isBonifica = selectedServiceType === "BONIFICA"; // Determina se il servizio è Bonifica
 
   // Effect to initialize groupWeekdays state based on current schedules
   useEffect(() => {
     if (schedules && schedules.length >= 5) {
       const firstWeekday = schedules[0]; // Lunedì
       const allWeekdaysMatch = schedules.slice(1, 5).every( // Martedì to Venerdì
-        (daySchedule) =>
+        (daySchedule: z.infer<typeof dailyScheduleSchema>) => // <-- Correzione qui
           daySchedule.h24 === firstWeekday.h24 &&
           daySchedule.ora_inizio === firstWeekday.ora_inizio &&
           daySchedule.ora_fine === firstWeekday.ora_fine &&
@@ -67,6 +69,28 @@ export function DailySchedulesFormField({ value, onChange }: DailySchedulesFormF
     }
   }, [groupWeekdays, schedules[0]?.h24, schedules[0]?.ora_inizio, schedules[0]?.ora_fine, schedules[0]?.attivo, setValue, schedules]);
 
+  // Effect to force H24 to false and set default times for BONIFICA
+  useEffect(() => {
+    if (isBonifica) {
+      let changed = false;
+      const newSchedules = schedules.map((schedule: z.infer<typeof dailyScheduleSchema>) => { // <-- Correzione qui
+        if (schedule.h24) {
+          changed = true;
+          return {
+            ...schedule,
+            h24: false,
+            ora_inizio: schedule.ora_inizio || "09:00", // Set default if null
+            ora_fine: schedule.ora_fine || "18:00",   // Set default if null
+          };
+        }
+        return schedule;
+      });
+      if (changed) {
+        setValue("daily_schedules", newSchedules, { shouldDirty: true, shouldValidate: true });
+      }
+    }
+  }, [isBonifica, schedules, setValue]);
+
 
   const handleGroupWeekdaysToggle = (checked: boolean) => {
     setGroupWeekdays(checked);
@@ -92,6 +116,7 @@ export function DailySchedulesFormField({ value, onChange }: DailySchedulesFormF
           id="group-weekdays"
           checked={groupWeekdays}
           onCheckedChange={handleGroupWeekdaysToggle}
+          disabled={isBonifica} // Disabilita se il servizio è Bonifica
         />
         <Label htmlFor="group-weekdays" className="text-sm font-medium">Raggruppa Giorni Feriali (Lunedì-Venerdì)</Label>
       </div>
@@ -137,6 +162,7 @@ export function DailySchedulesFormField({ value, onChange }: DailySchedulesFormF
                           });
                         }}
                         id={`h24-feriali`}
+                        disabled={isBonifica} // Disabilita se il servizio è Bonifica
                       />
                       <Label htmlFor={`h24-feriali`} className="text-xs">H24</Label>
                     </div>
@@ -220,6 +246,7 @@ export function DailySchedulesFormField({ value, onChange }: DailySchedulesFormF
                             });
                           }}
                           id={`h24-${day}`}
+                          disabled={isBonifica} // Disabilita se il servizio è Bonifica
                         />
                         <Label htmlFor={`h24-${day}`} className="text-xs">H24</Label>
                       </div>
@@ -305,6 +332,7 @@ export function DailySchedulesFormField({ value, onChange }: DailySchedulesFormF
                           });
                         }}
                         id={`h24-${day}`}
+                        disabled={isBonifica} // Disabilita se il servizio è Bonifica
                       />
                       <Label htmlFor={`h24-${day}`} className="text-xs">H24</Label>
                     </div>

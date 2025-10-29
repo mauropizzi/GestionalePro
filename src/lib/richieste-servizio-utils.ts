@@ -138,7 +138,28 @@ export const richiestaServizioFormSchema = z.discriminatedUnion("tipo_servizio",
   ispezioniBaseSchema,
   aperturaChiusuraBaseSchema,
   bonificaBaseSchema, // Aggiunto il nuovo schema per Bonifica
-]);
+]).superRefine((data, ctx) => { // Spostato qui il superRefine per la bonifica
+  if (data.tipo_servizio === "BONIFICA") {
+    data.daily_schedules.forEach((schedule, index) => {
+      if (schedule.attivo) {
+        if (schedule.h24) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Per il servizio Bonifica, il giorno ${schedule.giorno_settimana} non può essere H24.`,
+            path: [`daily_schedules`, index, `h24`],
+          });
+        }
+        if (!schedule.ora_inizio || !schedule.ora_fine) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Per il servizio Bonifica, il giorno ${schedule.giorno_settimana} deve avere un orario di inizio e fine.`,
+            path: [`daily_schedules`, index, `ora_inizio`],
+          });
+        }
+      }
+    });
+  }
+});
 // IMPORTANT: Conditional refinements for date/time ranges (e.g., data_fine_servizio > data_inizio_servizio,
 // ora_fine_fascia > ora_inizio_fascia) must now be implemented at the form level
 // using `form.superRefine` or within the `onSubmit` handler.

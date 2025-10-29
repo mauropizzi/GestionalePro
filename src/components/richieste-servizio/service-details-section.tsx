@@ -69,7 +69,7 @@ export function ServiceDetailsSection({
         render={({ field }) => (
           <FormItem>
             <FormLabel>Tipo di Servizio</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Select onValueChange={field.onChange} defaultValue={field.value as string}> {/* Correzione qui */}
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleziona un tipo di servizio" />

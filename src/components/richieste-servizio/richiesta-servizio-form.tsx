@@ -160,6 +160,7 @@ export function RichiestaServizioForm({
                   <DailySchedulesFormField
                     value={field.value}
                     onChange={field.onChange}
+                    selectedServiceType={selectedServiceType} // Passa il tipo di servizio
                   />
                 </FormControl>
                 <FormDescription>
