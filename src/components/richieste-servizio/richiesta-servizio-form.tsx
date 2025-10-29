@@ -341,7 +341,12 @@ export function RichiestaServizioForm({
               <FormItem>
                 <FormLabel>Numero Agenti</FormLabel>
                 <FormControl>
-                  <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} />
+                  <Input
+                    type="number"
+                    {...field}
+                    value={field.value ?? ""} // Ensure value is not null/undefined
+                    onChange={e => field.onChange(parseInt(e.target.value))}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -438,7 +443,12 @@ export function RichiestaServizioForm({
                 <FormItem>
                   <FormLabel>Cadenza (ore)</FormLabel>
                   <FormControl>
-                    <Input type="number" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                    <Input
+                      type="number"
+                      {...field}
+                      value={field.value ?? ""} // Ensure value is not null/undefined
+                      onChange={e => field.onChange(parseFloat(e.target.value))}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
