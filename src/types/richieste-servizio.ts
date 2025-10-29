@@ -1,4 +1,4 @@
-import { ServiceType, InspectionType, AperturaChiusuraType } from "@/lib/richieste-servizio-utils";
+import { ServiceType, InspectionType } from "@/lib/richieste-servizio-utils";
 
 export interface Client {
   id: string;
@@ -52,5 +52,4 @@ export interface RichiestaServizio {
   created_at: string;
   updated_at: string;
   inspection_details?: InspectionDetails[] | null; // Corretto a array di oggetti o null
-  tipo_apertura_chiusura?: AperturaChiusuraType | null; // Nuovo campo
 }
