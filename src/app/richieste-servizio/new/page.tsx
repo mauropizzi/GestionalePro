@@ -9,17 +9,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { format, setHours, setMinutes } from "date-fns";
+import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   RichiestaServizioFormSchema,
   richiestaServizioFormSchema,
   calculateTotalHours,
-  calculateNumberOfInspections,
   defaultDailySchedules,
 } from "@/lib/richieste-servizio-utils";
-import { DailySchedule } from "@/types/richieste-servizio"; // Importa DailySchedule
+import { DailySchedule } from "@/types/richieste-servizio";
 import { RichiestaServizioForm } from "@/components/richieste-servizio/richiesta-servizio-form";
 
 interface Client {
@@ -52,12 +51,12 @@ export default function NewRichiestaServizioPage() {
       fornitore_id: null,
       tipo_servizio: "PIANTONAMENTO_ARMATO", // Initial default service type
       note: null,
-      // Common scheduling fields for PIANTONAMENTO_ARMATO / SERVIZIO_FIDUCIARIO
       data_inizio_servizio: new Date(),
       data_fine_servizio: new Date(),
       numero_agenti: 1,
       daily_schedules: defaultDailySchedules,
       // ISPEZIONI specific fields are omitted here as default type is PIANTONAMENTO_ARMATO
+      // These will be set by useEffect in RichiestaServizioForm if type changes to ISPEZIONI
     } as RichiestaServizioFormSchema, // Cast to ensure correct type for defaultValues
   });
 
@@ -106,7 +105,6 @@ export default function NewRichiestaServizioPage() {
     let richiestaData: any;
     let inspectionDetailsToInsert: any = null;
 
-    // Use only the date part for service start/end, times will be derived from daily_schedules
     const dataInizioServizio = values.data_inizio_servizio;
     const dataFineServizio = values.data_fine_servizio;
 
@@ -134,7 +132,7 @@ export default function NewRichiestaServizioPage() {
 
     if (values.tipo_servizio === "ISPEZIONI") {
       inspectionDetailsToInsert = {
-        data_servizio: format(values.data_inizio_servizio, "yyyy-MM-dd"), // Use data_inizio_servizio for inspection date
+        data_servizio: format(values.data_inizio_servizio, "yyyy-MM-dd"),
         ora_inizio_fascia: values.ora_inizio_fascia,
         ora_fine_fascia: values.ora_fine_fascia,
         cadenza_ore: values.cadenza_ore,
@@ -156,7 +154,6 @@ export default function NewRichiestaServizioPage() {
       return;
     }
 
-    // Insert daily schedules for all service types now
     const schedulesToInsert = values.daily_schedules.map((schedule: DailySchedule) => ({
       ...schedule,
       richiesta_servizio_id: newRichiesta.id,
@@ -172,7 +169,6 @@ export default function NewRichiestaServizioPage() {
 
     if (schedulesError) {
       toast.error("Errore durante il salvataggio degli orari giornalieri: " + schedulesError.message);
-      // Consider rolling back the main request if this fails
     }
 
     if (values.tipo_servizio === "ISPEZIONI" && inspectionDetailsToInsert) {
@@ -182,7 +178,6 @@ export default function NewRichiestaServizioPage() {
 
       if (inspectionError) {
         toast.error("Errore durante il salvataggio dei dettagli dell'ispezione: " + inspectionError.message);
-        // Consider rolling back the main request if this fails
       }
     }
 

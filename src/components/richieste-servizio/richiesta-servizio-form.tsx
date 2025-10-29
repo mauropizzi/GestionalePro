@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import {
   Form,
@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Clock, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { format, setHours, setMinutes } from "date-fns";
 import { it } from "date-fns/locale";
@@ -34,7 +34,7 @@ import {
   INSPECTION_TYPES,
   calculateTotalHours,
   calculateNumberOfInspections,
-  IspezioniFormSchema, // Import IspezioniFormSchema
+  IspezioniFormSchema,
 } from "@/lib/richieste-servizio-utils";
 import { DailySchedulesFormField } from "./daily-schedules-form-field";
 
@@ -56,26 +56,43 @@ export function RichiestaServizioForm({
   isSubmitting,
 }: RichiestaServizioFormProps) {
   const selectedServiceType = form.watch("tipo_servizio");
-
   const formValues = form.watch();
 
   let calculatedValue: number | null = null;
   let calculationLabel: string = "";
+
+  // Effect to set default values for ISPEZIONI when service type changes
+  useEffect(() => {
+    if (selectedServiceType === "ISPEZIONI") {
+      // Check if values are already set or are invalid, then set defaults
+      if (!form.getValues("ora_inizio_fascia")) {
+        form.setValue("ora_inizio_fascia", "08:00", { shouldDirty: true });
+      }
+      if (!form.getValues("ora_fine_fascia")) {
+        form.setValue("ora_fine_fascia", "17:00", { shouldDirty: true });
+      }
+      if (form.getValues("cadenza_ore") === undefined || form.getValues("cadenza_ore") === null || form.getValues("cadenza_ore") <= 0) {
+        form.setValue("cadenza_ore", 1, { shouldDirty: true });
+      }
+      if (!form.getValues("tipo_ispezione")) {
+        form.setValue("tipo_ispezione", INSPECTION_TYPES[0].value, { shouldDirty: true });
+      }
+    }
+  }, [selectedServiceType, form]);
 
   if (selectedServiceType === "PIANTONAMENTO_ARMATO" || selectedServiceType === "SERVIZIO_FIDUCIARIO") {
     const { data_inizio_servizio, data_fine_servizio, numero_agenti, daily_schedules } = formValues;
 
     if (data_inizio_servizio && data_fine_servizio && daily_schedules && numero_agenti !== undefined) {
       calculatedValue = calculateTotalHours(
-        data_inizio_servizio, // Pass only the date
-        data_fine_servizio,   // Pass only the date
+        data_inizio_servizio,
+        data_fine_servizio,
         daily_schedules,
         numero_agenti
       );
       calculationLabel = "Ore totali stimate:";
     }
   } else if (selectedServiceType === "ISPEZIONI") {
-    // Narrow the type of formValues for ISPEZIONI
     const ispezioniValues = formValues as IspezioniFormSchema;
     const { ora_inizio_fascia, ora_fine_fascia, cadenza_ore } = ispezioniValues;
 
@@ -88,7 +105,6 @@ export function RichiestaServizioForm({
       calculationLabel = "Numero di ispezioni stimate:";
     }
   }
-
 
   return (
     <Form {...form}>
@@ -164,7 +180,7 @@ export function RichiestaServizioForm({
                   <SelectContent>
                     {puntiServizio.map((punto) => (
                       <SelectItem key={punto.id} value={punto.id}>
-                        {punto.nome_punto_servizio} {/* Corrected to nome_punto_servizio */}
+                        {punto.nome_punto_servizio}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -295,7 +311,7 @@ export function RichiestaServizioForm({
 
         {/* Numero Agenti */}
         {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
-          selectedServiceType === "SERVIZIO_FIDUCIARIO" || // Also show for ISPEZIONI as per schema
+          selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
           selectedServiceType === "ISPEZIONI") && (
           <FormField
             control={form.control}
@@ -307,7 +323,7 @@ export function RichiestaServizioForm({
                   <Input
                     type="number"
                     {...field}
-                    value={field.value ?? ""} // Ensure value is not null/undefined
+                    value={field.value ?? ""}
                     onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value))}
                   />
                 </FormControl>
@@ -409,7 +425,7 @@ export function RichiestaServizioForm({
                     <Input
                       type="number"
                       {...field}
-                      value={field.value ?? ""} // Ensure value is not null/undefined
+                      value={field.value ?? ""}
                       onChange={e => field.onChange(e.target.value === "" ? undefined : parseFloat(e.target.value))}
                     />
                   </FormControl>

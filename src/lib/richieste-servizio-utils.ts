@@ -108,8 +108,8 @@ export type RichiestaServizioFormSchema = z.infer<typeof richiestaServizioFormSc
 export type IspezioniFormSchema = z.infer<typeof ispezioniBaseSchema>; // Nuovo tipo esportato
 
 export const calculateTotalHours = (
-  serviceStartDate: Date, // Changed to serviceStartDate (date only)
-  serviceEndDate: Date,   // Changed to serviceEndDate (date only)
+  serviceStartDate: Date,
+  serviceEndDate: Date,
   dailySchedules: z.infer<typeof dailyScheduleSchema>[],
   numAgents: number
 ): number => {

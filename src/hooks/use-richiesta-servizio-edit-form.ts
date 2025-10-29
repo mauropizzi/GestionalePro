@@ -6,17 +6,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { format, parseISO, setHours, setMinutes } from "date-fns";
+import { format, parseISO } from "date-fns";
 import {
   RichiestaServizioFormSchema,
   richiestaServizioFormSchema,
   calculateTotalHours,
-  calculateNumberOfInspections,
   defaultDailySchedules,
   ServiceType,
   InspectionType,
+  INSPECTION_TYPES, // Import INSPECTION_TYPES
 } from "@/lib/richieste-servizio-utils";
-import { Client, PuntoServizio, RichiestaServizio, DailySchedule, Fornitore, InspectionDetails } from "@/types/richieste-servizio";
+import { Client, PuntoServizio, RichiestaServizio, DailySchedule, Fornitore } from "@/types/richieste-servizio";
 
 export function useRichiestaServizioEditForm(richiestaId: string) {
   const [isLoading, setIsLoading] = useState(true);
@@ -35,12 +35,12 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
       fornitore_id: null,
       tipo_servizio: "PIANTONAMENTO_ARMATO", // Initial default service type
       note: null,
-      // Common scheduling fields for PIANTONAMENTO_ARMATO / SERVIZIO_FIDUCIARIO
       data_inizio_servizio: new Date(),
       data_fine_servizio: new Date(),
       numero_agenti: 1,
       daily_schedules: defaultDailySchedules,
       // ISPEZIONI specific fields are omitted here as default type is PIANTONAMENTO_ARMATO
+      // These will be set by useEffect in RichiestaServizioForm if type changes to ISPEZIONI
     } as RichiestaServizioFormSchema, // Cast to ensure correct type for defaultValues
   });
 
@@ -128,8 +128,8 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
           daily_schedules: mergedSchedules,
         };
 
-        if (richiestaData.tipo_servizio === "ISPEZIONI" && richiestaData.inspection_details) {
-          const inspectionDetail = richiestaData.inspection_details;
+        if (richiestaData.tipo_servizio === "ISPEZIONI" && richiestaData.inspection_details?.[0]) {
+          const inspectionDetail = richiestaData.inspection_details[0];
           form.reset({
             ...baseFormValues,
             tipo_servizio: "ISPEZIONI",
@@ -142,7 +142,6 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
           form.reset({
             ...baseFormValues,
             tipo_servizio: richiestaData.tipo_servizio as Exclude<ServiceType, "ISPEZIONI">,
-            // ISPEZIONI specific fields are omitted here
           } as RichiestaServizioFormSchema);
         }
       }
@@ -159,7 +158,6 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
     let richiestaDataToUpdate: any;
     let inspectionDetailsToSave: any = null;
 
-    // Use only the date part for service start/end, times will be derived from daily_schedules
     const dataInizioServizio = values.data_inizio_servizio;
     const dataFineServizio = values.data_fine_servizio;
 
@@ -185,7 +183,7 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
 
     if (values.tipo_servizio === "ISPEZIONI") {
       inspectionDetailsToSave = {
-        data_servizio: format(values.data_inizio_servizio, "yyyy-MM-dd"), // Use data_inizio_servizio for inspection date
+        data_servizio: format(values.data_inizio_servizio, "yyyy-MM-dd"),
         ora_inizio_fascia: values.ora_inizio_fascia,
         ora_fine_fascia: values.ora_fine_fascia,
         cadenza_ore: values.cadenza_ore,
@@ -205,7 +203,6 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
       return;
     }
 
-    // Update or insert daily schedules for all service types
     for (const schedule of values.daily_schedules) {
       const scheduleToSave = {
         richiesta_servizio_id: richiestaId,
@@ -218,7 +215,6 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
       };
 
       if (schedule.id) {
-        // Update existing schedule
         const { error } = await supabase
           .from("richieste_servizio_orari_giornalieri")
           .update(scheduleToSave)
@@ -227,7 +223,6 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
           toast.error(`Errore nell'aggiornamento orario per ${schedule.giorno_settimana}: ` + error.message);
         }
       } else {
-        // Insert new schedule
         const { error } = await supabase
           .from("richieste_servizio_orari_giornalieri")
           .insert({ ...scheduleToSave, created_at: now });
@@ -238,8 +233,7 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
     }
 
     if (values.tipo_servizio === "ISPEZIONI" && inspectionDetailsToSave) {
-      if (richiesta?.inspection_details?.[0]?.id) { // Access the first element of the array
-        // Update existing inspection details
+      if (richiesta?.inspection_details?.[0]?.id) {
         const { error: inspectionError } = await supabase
           .from("richieste_servizio_ispezioni")
           .update(inspectionDetailsToSave)
@@ -248,7 +242,6 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
           toast.error("Errore nell'aggiornamento dei dettagli dell'ispezione: " + inspectionError.message);
         }
       } else {
-        // Insert new inspection details
         const { error: inspectionError } = await supabase
           .from("richieste_servizio_ispezioni")
           .insert({ ...inspectionDetailsToSave, richiesta_servizio_id: richiestaId, created_at: now });
@@ -256,8 +249,7 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
           toast.error("Errore nell'inserimento dei dettagli dell'ispezione: " + inspectionError.message);
         }
       }
-    } else if (richiesta?.inspection_details?.[0]?.id) { // Access the first element of the array
-      // If service type changed from ISPEZIONI to something else, delete old inspection details
+    } else if (richiesta?.inspection_details?.[0]?.id) {
       await supabase.from("richieste_servizio_ispezioni").delete().eq("richiesta_servizio_id", richiestaId);
     }
 
