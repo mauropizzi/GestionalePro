@@ -13,22 +13,24 @@ import { ExportSection } from "./components/export-section";
 
 // Mappatura dei nomi delle colonne per una visualizzazione più leggibile
 const columnHeaderMap: { [key: string]: string } = {
-  // Clienti
-  ragioneSociale: "Ragione Sociale",
-  codiceFiscale: "Codice Fiscale",
-  partitaIva: "Partita IVA",
+  // Campi comuni
   indirizzo: "Indirizzo",
   citta: "Città",
   cap: "CAP",
   provincia: "Provincia",
   telefono: "Telefono",
   email: "Email",
-  pec: "PEC",
-  sdi: "SDI",
-  attivo: "Attivo",
   note: "Note",
   createdAt: "Data Creazione",
   updatedAt: "Data Aggiornamento",
+  attivo: "Attivo", // Comune a Clienti e Fornitori
+
+  // Clienti
+  ragioneSociale: "Ragione Sociale",
+  codiceFiscale: "Codice Fiscale",
+  partitaIva: "Partita IVA",
+  pec: "PEC",
+  sdi: "SDI",
 
   // Punti Servizio
   nomePuntoServizio: "Nome Punto Servizio",
@@ -43,6 +45,13 @@ const columnHeaderMap: { [key: string]: string } = {
   latitude: "Latitudine",
   longitude: "Longitudine",
   nomeProcedura: "Nome Procedura",
+  // Nuovi campi rubrica
+  numeroSulPosto: "Numero sul Posto",
+  reperibile1: "Reperibile 1",
+  reperibile2: "Reperibile 2",
+  reperibile3: "Reperibile 3",
+  responsabileContatto: "Responsabile Contatto",
+
 
   // Fornitori
   tipoServizio: "Tipo Servizio",
@@ -76,7 +85,9 @@ const templateHeaders: { [key: string]: string[] } = {
     "Nome Punto Servizio", "ID Cliente (UUID)", "Indirizzo", "Città", "CAP", "Provincia",
     "Referente", "Telefono Referente", "Telefono", "Email", "Note", "Tempo Intervento",
     "ID Fornitore (UUID)", "Codice Cliente", "Codice SICEP", "Codice Fatturazione",
-    "Latitudine", "Longitudine", "Nome Procedura"
+    "Latitudine", "Longitudine", "Nome Procedura",
+    // Nuovi campi rubrica
+    "Numero sul Posto", "Reperibile 1", "Reperibile 2", "Reperibile 3", "Responsabile Contatto"
   ],
   fornitori: [
     "Ragione Sociale", "Codice Fiscale", "Partita IVA", "Indirizzo", "Città", "CAP",
