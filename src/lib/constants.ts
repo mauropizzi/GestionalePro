@@ -35,3 +35,11 @@ export const RUBRICA_CLIENTI_RECAPITO_TYPES = [
   "Operativo",
   "Amministratore",
 ];
+
+export const RUBRICA_FORNITORI_RECAPITO_TYPES = [
+  "Centrale Operativa",
+  "Responsabile Operativo",
+  "Commerciale",
+  "Amministrazione",
+  "Amministratore",
+];

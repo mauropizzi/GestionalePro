@@ -60,6 +60,13 @@ const columnHeaderMap: { [key: string]: string } = {
   clientiTelefonoCellulare: "Telefono Cellulare Cliente",
   clientiEmailRecapito: "Email Recapito Cliente",
 
+  // Rubrica Fornitori (nuovi campi)
+  fornitoriTipoRecapito: "Tipo Recapito Fornitore",
+  fornitoriNomePersona: "Nome Persona Fornitore",
+  fornitoriTelefonoFisso: "Telefono Fisso Fornitore",
+  fornitoriTelefonoCellulare: "Telefono Cellulare Fornitore",
+  fornitoriEmailRecapito: "Email Recapito Fornitore",
+
 
   // Fornitori
   tipoServizio: "Tipo Servizio",
@@ -120,8 +127,12 @@ const templateHeaders: { [key: string]: string[] } = {
     "ID Punto Servizio (UUID)", "Tipo Recapito", "Nome Persona", "Telefono Fisso",
     "Telefono Cellulare", "Email Recapito", "Note"
   ],
-  rubrica_clienti: [ // Nuovo template per la rubrica clienti
+  rubrica_clienti: [
     "ID Cliente (UUID)", "Tipo Recapito", "Nome Persona", "Telefono Fisso",
+    "Telefono Cellulare", "Email Recapito", "Note"
+  ],
+  rubrica_fornitori: [ // Nuovo template per la rubrica fornitori
+    "ID Fornitore (UUID)", "Tipo Recapito", "Nome Persona", "Telefono Fisso",
     "Telefono Cellulare", "Email Recapito", "Note"
   ],
 };
@@ -165,7 +176,8 @@ export default function ImportExportPage() {
     { value: "procedure", label: "Procedure", icon: <FileText className="h-4 w-4 mr-2" /> },
     { value: "tariffe", label: "Tariffe", icon: <Euro className="h-4 w-4 mr-2" /> },
     { value: "rubrica_punti_servizio", label: "Rubrica Punti Servizio", icon: <Phone className="h-4 w-4 mr-2" /> },
-    { value: "rubrica_clienti", label: "Rubrica Clienti", icon: <Phone className="h-4 w-4 mr-2" /> }, // Aggiunto
+    { value: "rubrica_clienti", label: "Rubrica Clienti", icon: <Phone className="h-4 w-4 mr-2" /> },
+    { value: "rubrica_fornitori", label: "Rubrica Fornitori", icon: <Phone className="h-4 w-4 mr-2" /> }, // Aggiunto
   ];
 
   return (
