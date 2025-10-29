@@ -114,17 +114,17 @@ export type RichiestaServizioFormSchema = z.infer<typeof richiestaServizioFormSc
 export type IspezioniFormSchema = z.infer<typeof ispezioniBaseSchema>; // Nuovo tipo esportato
 
 export const calculateTotalHours = (
-  serviceStartDateTime: Date, // Full Date object including time
-  serviceEndDateTime: Date,   // Full Date object including time
+  serviceStartDateTime: Date,
+  serviceEndDateTime: Date,
   dailySchedules: z.infer<typeof dailyScheduleSchema>[],
   numAgents: number
 ): number => {
   let totalHours = 0;
   let currentDate = new Date(serviceStartDateTime);
-  currentDate.setHours(0, 0, 0, 0); // Normalize to start of day for iteration
+  currentDate.setHours(0, 0, 0, 0); // Normalize to start of local day for iteration
 
   const endServiceDate = new Date(serviceEndDateTime);
-  endServiceDate.setHours(0, 0, 0, 0); // Normalize to start of day for comparison
+  endServiceDate.setHours(0, 0, 0, 0); // Normalize to start of local day for comparison
 
   while (currentDate <= endServiceDate) {
     const dayOfWeek = format(currentDate, 'EEEE', { locale: it }); // e.g., "lunedì"
@@ -137,29 +137,37 @@ export const calculateTotalHours = (
         const [startH, startM] = schedule.ora_inizio.split(':').map(Number);
         const [endH, endM] = schedule.ora_fine.split(':').map(Number);
 
-        let dayStart = setMinutes(setHours(new Date(currentDate), startH), startM);
-        let dayEnd = setMinutes(setHours(new Date(currentDate), endH), endM);
+        // Calculate start and end times in minutes from midnight for the current day
+        let dayStartMinutes = startH * 60 + startM;
+        let dayEndMinutes = endH * 60 + endM;
 
         // Adjust for overall service start/end times on the first/last day of the service period
         if (currentDate.toDateString() === serviceStartDateTime.toDateString()) {
-          if (serviceStartDateTime > dayStart) {
-            dayStart = serviceStartDateTime;
+          const serviceStartHour = serviceStartDateTime.getHours();
+          const serviceStartMinute = serviceStartDateTime.getMinutes();
+          const actualServiceStartMinutes = serviceStartHour * 60 + serviceStartMinute;
+          if (actualServiceStartMinutes > dayStartMinutes) {
+            dayStartMinutes = actualServiceStartMinutes;
           }
         }
         if (currentDate.toDateString() === serviceEndDateTime.toDateString()) {
-          if (serviceEndDateTime < dayEnd) {
-            dayEnd = serviceEndDateTime;
+          const serviceEndHour = serviceEndDateTime.getHours();
+          const serviceEndMinute = serviceEndDateTime.getMinutes();
+          const actualServiceEndMinutes = serviceEndHour * 60 + serviceEndMinute;
+          if (actualServiceEndMinutes < dayEndMinutes) {
+            dayEndMinutes = actualServiceEndMinutes;
           }
         }
 
-        if (dayEnd > dayStart) {
-          totalHours += (dayEnd.getTime() - dayStart.getTime()) / (1000 * 60 * 60);
+        if (dayEndMinutes > dayStartMinutes) {
+          totalHours += (dayEndMinutes - dayStartMinutes) / 60; // Convert minutes difference to hours
         }
       }
     }
     currentDate.setDate(currentDate.getDate() + 1);
   }
-  return totalHours * numAgents;
+  // Round final result to two decimal places for display
+  return parseFloat((totalHours * numAgents).toFixed(2));
 };
 
 export const calculateNumberOfInspections = (
