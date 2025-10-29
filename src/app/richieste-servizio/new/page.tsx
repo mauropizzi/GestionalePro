@@ -16,7 +16,10 @@ import {
   RichiestaServizioFormSchema,
   richiestaServizioFormSchema,
   calculateTotalHours,
+  calculateTotalInspections,
+  calculateAperturaChiusuraCount, // Importa la nuova funzione
   defaultDailySchedules,
+  AperturaChiusuraType, // Importa il tipo
 } from "@/lib/richieste-servizio-utils";
 import { DailySchedule } from "@/types/richieste-servizio";
 import { RichiestaServizioForm } from "@/components/richieste-servizio/richiesta-servizio-form";
@@ -108,12 +111,31 @@ export default function NewRichiestaServizioPage() {
     const dataInizioServizio = values.data_inizio_servizio;
     const dataFineServizio = values.data_fine_servizio;
 
-    totalCalculatedValue = calculateTotalHours(
-      dataInizioServizio,
-      dataFineServizio,
-      values.daily_schedules,
-      values.numero_agenti
-    );
+    if (values.tipo_servizio === "ISPEZIONI") {
+      totalCalculatedValue = calculateTotalInspections(
+        dataInizioServizio,
+        dataFineServizio,
+        values.daily_schedules,
+        values.cadenza_ore,
+        values.numero_agenti
+      );
+    } else if (values.tipo_servizio === "APERTURA_CHIUSURA") {
+      totalCalculatedValue = calculateAperturaChiusuraCount(
+        dataInizioServizio,
+        dataFineServizio,
+        values.daily_schedules,
+        values.tipo_apertura_chiusura as AperturaChiusuraType, // Correzione qui
+        values.numero_agenti
+      );
+    }
+    else {
+      totalCalculatedValue = calculateTotalHours(
+        dataInizioServizio,
+        dataFineServizio,
+        values.daily_schedules,
+        values.numero_agenti
+      );
+    }
 
     richiestaData = {
       client_id: values.client_id,
@@ -138,6 +160,8 @@ export default function NewRichiestaServizioPage() {
         created_at: now,
         updated_at: now,
       };
+    } else if (values.tipo_servizio === "APERTURA_CHIUSURA") {
+      richiestaData.tipo_apertura_chiusura = values.tipo_apertura_chiusura;
     }
 
     const { data: newRichiesta, error: richiestaError } = await supabase
