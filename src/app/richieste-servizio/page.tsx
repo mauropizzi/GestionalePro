@@ -31,7 +31,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { ServiceType } from "@/lib/richieste-servizio-utils";
-import { InspectionDetails } from "@/types/richieste-servizio";
+import { DailySchedule, InspectionDetails } from "@/types/richieste-servizio"; // Import DailySchedule
 
 interface RichiestaServizio {
   id: string;
@@ -51,6 +51,7 @@ interface RichiestaServizio {
   punti_servizio?: { nome_punto_servizio: string } | null;
   fornitori?: { ragione_sociale: string } | null;
   inspection_details?: InspectionDetails[];
+  daily_schedules?: DailySchedule[]; // Aggiunto daily_schedules
 }
 
 export default function RichiesteServizioPage() {
@@ -81,7 +82,8 @@ export default function RichiesteServizioPage() {
         clienti ( ragione_sociale ),
         punti_servizio ( nome_punto_servizio ),
         fornitori ( ragione_sociale ),
-        inspection_details:richieste_servizio_ispezioni(*)
+        inspection_details:richieste_servizio_ispezioni(*),
+        daily_schedules:richieste_servizio_orari_giornalieri(*)
       `)
       .order("created_at", { ascending: false });
 
@@ -195,15 +197,26 @@ export default function RichiesteServizioPage() {
                     <TableCell className="text-xs">
                       {richiesta.tipo_servizio === "ISPEZIONI" && richiesta.inspection_details?.[0] ? (
                         <>
-                          <div>Data: {format(new Date(richiesta.inspection_details[0].data_servizio), "dd/MM/yyyy", { locale: it })}</div>
+                          <div>Data: {richiesta.inspection_details[0].data_servizio ? format(new Date(richiesta.inspection_details[0].data_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>
                           <div>Fascia: {richiesta.inspection_details[0].ora_inizio_fascia} - {richiesta.inspection_details[0].ora_fine_fascia}</div>
                           <div>Cadenza: {richiesta.inspection_details[0].cadenza_ore}h, Tipo: {richiesta.inspection_details[0].tipo_ispezione}</div>
                         </>
                       ) : (
                         <>
-                          <div>Inizio: {richiesta.data_inizio_servizio ? format(new Date(richiesta.data_inizio_servizio), "dd/MM/yyyy HH:mm", { locale: it }) : "N/A"}</div>
-                          <div>Fine: {richiesta.data_fine_servizio ? format(new Date(richiesta.data_fine_servizio), "dd/MM/yyyy HH:mm", { locale: it }) : "N/A"}</div>
+                          <div>Inizio: {richiesta.data_inizio_servizio ? format(new Date(richiesta.data_inizio_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>
+                          <div>Fine: {richiesta.data_fine_servizio ? format(new Date(richiesta.data_fine_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>
                           <div>Agenti: {richiesta.numero_agenti || "N/A"}</div>
+                          {richiesta.daily_schedules && richiesta.daily_schedules.length > 0 && (
+                            <div>
+                              Giorni attivi:{" "}
+                              <span className="font-bold">
+                                {richiesta.daily_schedules
+                                  .filter(s => s.attivo)
+                                  .map(s => s.giorno_settimana)
+                                  .join(", ")}
+                              </span>
+                            </div>
+                          )}
                         </>
                       )}
                     </TableCell>
