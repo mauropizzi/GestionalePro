@@ -1,21 +1,21 @@
 // @ts-nocheck
-// supabase/functions/import-data/mappers/rubrica-fornitori-mapper.ts
-import { getFieldValue, toString, isValidUuid } from '../utils/data-mapping.ts';
+// supabase/functions/import-data/utils/mappers/rubrica-punti-servizio-mapper.ts
+import { getFieldValue, toString, isValidUuid } from '../data-mapping.ts';
 
-export function mapRubricaFornitoriData(rowData: any) {
+export function mapRubricaPuntiServizioData(rowData: any) {
   const tipo_recapito = getFieldValue(rowData, ['Tipo Recapito', 'tipo_recapito', 'tipoRecapito'], toString);
   if (!tipo_recapito) {
     throw new Error('Tipo Recapito is required and cannot be empty.');
   }
 
-  let fornitore_id = getFieldValue(rowData, ['ID Fornitore', 'fornitore_id', 'fornitoreId', 'ID Fornitore (UUID)'], toString);
-  fornitore_id = (fornitore_id && isValidUuid(fornitore_id)) ? fornitore_id : null;
-  if (!fornitore_id) {
-    throw new Error('ID Fornitore is required and must be a valid UUID.');
+  let punto_servizio_id = getFieldValue(rowData, ['ID Punto Servizio', 'punto_servizio_id', 'puntoServizioId', 'ID Punto Servizio (UUID)'], toString);
+  punto_servizio_id = (punto_servizio_id && isValidUuid(punto_servizio_id)) ? punto_servizio_id : null;
+  if (!punto_servizio_id) {
+    throw new Error('ID Punto Servizio is required and must be a valid UUID.');
   }
 
   return {
-    fornitore_id: fornitore_id,
+    punto_servizio_id: punto_servizio_id,
     tipo_recapito: tipo_recapito,
     nome_persona: getFieldValue(rowData, ['Nome Persona', 'nome_persona', 'nomePersona'], toString),
     telefono_fisso: getFieldValue(rowData, ['Telefono Fisso', 'telefono_fisso', 'telefonoFisso'], toString),

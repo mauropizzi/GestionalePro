@@ -1,6 +1,6 @@
 // @ts-nocheck
-// supabase/functions/import-data/mappers/personale-mapper.ts
-import { getFieldValue, toString, toBoolean, toDateString } from '../utils/data-mapping.ts';
+// supabase/functions/import-data/utils/mappers/personale-mapper.ts
+import { getFieldValue, toString, toBoolean, toDateString } from '../data-mapping.ts';
 
 export function mapPersonaleData(rowData: any) {
   const nome = getFieldValue(rowData, ['Nome', 'nome'], toString);

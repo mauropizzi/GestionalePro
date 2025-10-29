@@ -223,24 +223,6 @@ export default function RichiesteServizioPage() {
                             )}
                             <div>Attività totali stimate: {richiesta.total_hours_calculated || 0}</div>
                           </>
-                        ) : richiesta.tipo_servizio === "BONIFICA" ? ( // New display for Bonifica
-                          <>
-                            <div>Inizio: {richiesta.data_inizio_servizio ? format(new Date(richiesta.data_inizio_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>
-                            <div>Fine: {richiesta.data_fine_servizio ? format(new Date(richiesta.data_fine_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>
-                            <div>Agenti: {richiesta.numero_agenti || "N/A"}</div>
-                            {richiesta.daily_schedules && richiesta.daily_schedules.length > 0 && (
-                              <div>
-                                Giorni attivi:{" "}
-                                <span className="font-bold">
-                                  {richiesta.daily_schedules
-                                    .filter(s => s.attivo)
-                                    .map(s => `${s.giorno_settimana} (${s.ora_inizio || 'N/A'})`)
-                                    .join(", ")}
-                                </span>
-                              </div>
-                            )}
-                            <div>Bonifiche totali stimate: {richiesta.total_hours_calculated || 0}</div>
-                          </>
                         ) : (
                           <>
                             <div>Inizio: {richiesta.data_inizio_servizio ? format(new Date(richiesta.data_inizio_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>

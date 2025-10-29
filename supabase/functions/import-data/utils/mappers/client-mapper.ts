@@ -1,6 +1,6 @@
 // @ts-nocheck
-// supabase/functions/import-data/mappers/client-mapper.ts
-import { getFieldValue, toString, toBoolean } from '../utils/data-mapping.ts';
+// supabase/functions/import-data/utils/mappers/client-mapper.ts
+import { getFieldValue, toString, toBoolean } from '../data-mapping.ts';
 
 export function mapClientData(rowData: any) {
   const ragione_sociale = getFieldValue(rowData, ['Ragione Sociale', 'ragione_sociale', 'ragioneSociale'], toString);

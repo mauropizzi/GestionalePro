@@ -12,14 +12,13 @@ import {
   richiestaServizioFormSchema,
   calculateTotalHours,
   calculateTotalInspections,
-  calculateAperturaChiusuraCount,
-  calculateBonificaCount, // Importa la nuova funzione
+  calculateAperturaChiusuraCount, // Importa la nuova funzione
   defaultDailySchedules,
   ServiceType,
   InspectionType,
-  INSPECTION_TYPES,
-  AperturaChiusuraType,
-  APERTURA_CHIUSURA_TYPES,
+  INSPECTION_TYPES, // Import INSPECTION_TYPES
+  AperturaChiusuraType, // Importa il nuovo tipo
+  APERTURA_CHIUSURA_TYPES, // Importa i nuovi tipi
 } from "@/lib/richieste-servizio-utils";
 import { Client, PuntoServizio, RichiestaServizio, DailySchedule, Fornitore } from "@/types/richieste-servizio";
 
@@ -44,6 +43,8 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
       data_fine_servizio: new Date(),
       numero_agenti: 1,
       daily_schedules: defaultDailySchedules,
+      // ISPEZIONI specific fields are omitted here as default type is PIANTONAMENTO_ARMATO
+      // These will be set by useEffect in RichiestaServizioForm if type changes to ISPEZIONI
     } as RichiestaServizioFormSchema, // Cast to ensure correct type for defaultValues
   });
 
@@ -145,22 +146,11 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
             tipo_servizio: "APERTURA_CHIUSURA",
             tipo_apertura_chiusura: richiestaData.tipo_apertura_chiusura as AperturaChiusuraType,
           } as RichiestaServizioFormSchema);
-        } else if (richiestaData.tipo_servizio === "BONIFICA") { // Handle Bonifica type
-          form.reset({
-            ...baseFormValues,
-            tipo_servizio: "BONIFICA",
-            // Ensure h24 is false and ora_fine is null for Bonifica schedules
-            daily_schedules: mergedSchedules.map(schedule => ({
-              ...schedule,
-              h24: false,
-              ora_fine: null,
-            })),
-          } as RichiestaServizioFormSchema);
         }
         else {
           form.reset({
             ...baseFormValues,
-            tipo_servizio: richiestaData.tipo_servizio as Exclude<ServiceType, "ISPEZIONI" | "APERTURA_CHIUSURA" | "BONIFICA">,
+            tipo_servizio: richiestaData.tipo_servizio as Exclude<ServiceType, "ISPEZIONI" | "APERTURA_CHIUSURA">,
           } as RichiestaServizioFormSchema);
         }
       }
@@ -193,14 +183,7 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
         dataInizioServizio,
         dataFineServizio,
         values.daily_schedules,
-        values.tipo_apertura_chiusura as AperturaChiusuraType,
-        values.numero_agenti
-      );
-    } else if (values.tipo_servizio === "BONIFICA") { // New calculation for Bonifica
-      totalCalculatedValue = calculateBonificaCount(
-        dataInizioServizio,
-        dataFineServizio,
-        values.daily_schedules,
+        values.tipo_apertura_chiusura as AperturaChiusuraType, // Correzione qui
         values.numero_agenti
       );
     }
@@ -236,7 +219,6 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
     } else if (values.tipo_servizio === "APERTURA_CHIUSURA") {
       richiestaDataToUpdate.tipo_apertura_chiusura = values.tipo_apertura_chiusura;
     }
-    // No specific fields to add for BONIFICA in richieste_servizio table itself
 
     const { error: richiestaError } = await supabase
       .from("richieste_servizio")
@@ -253,10 +235,9 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
       const scheduleToSave = {
         richiesta_servizio_id: richiestaId,
         giorno_settimana: schedule.giorno_settimana,
-        // For BONIFICA, h24 is false and ora_fine is null
-        h24: values.tipo_servizio === "BONIFICA" ? false : schedule.h24,
+        h24: schedule.h24,
         ora_inizio: schedule.h24 || !schedule.attivo ? null : schedule.ora_inizio,
-        ora_fine: values.tipo_servizio === "BONIFICA" ? null : (schedule.h24 || !schedule.attivo ? null : schedule.ora_fine),
+        ora_fine: schedule.h24 || !schedule.attivo ? null : schedule.ora_fine,
         attivo: schedule.attivo,
         updated_at: now,
       };

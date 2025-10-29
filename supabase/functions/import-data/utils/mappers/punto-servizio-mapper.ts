@@ -1,6 +1,6 @@
 // @ts-nocheck
-// supabase/functions/import-data/mappers/punto-servizio-mapper.ts
-import { getFieldValue, toString, toNumber, isValidUuid } from '../utils/data-mapping.ts';
+// supabase/functions/import-data/utils/mappers/punto-servizio-mapper.ts
+import { getFieldValue, toString, toNumber, isValidUuid } from '../data-mapping.ts';
 
 export function mapPuntoServizioData(rowData: any) {
   const nome_punto_servizio = getFieldValue(rowData, ['Nome Punto Servizio', 'nome_punto_servizio', 'nomePuntoServizio'], toString);
