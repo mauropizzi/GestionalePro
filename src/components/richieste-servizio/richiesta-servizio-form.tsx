@@ -73,24 +73,24 @@ export function RichiestaServizioForm({
   useEffect(() => {
     if (selectedServiceType === "ISPEZIONI") {
       if (form.getValues("cadenza_ore") === undefined || form.getValues("cadenza_ore") === null || form.getValues("cadenza_ore") <= 0) {
-        form.setValue("cadenza_ore", 1, { shouldDirty: true });
+        (form as any).setValue("cadenza_ore", 1, { shouldDirty: true });
       }
-      if (!form.getValues("tipo_ispezione")) {
-        form.setValue("tipo_ispezione", INSPECTION_TYPES[0].value, { shouldDirty: true });
+      if (!(form as any).getValues("tipo_ispezione")) {
+        (form as any).setValue("tipo_ispezione", INSPECTION_TYPES[0].value, { shouldDirty: true });
       }
       // Clear other specific fields
-      form.setValue("tipo_apertura_chiusura", null, { shouldDirty: true });
+      (form as any).setValue("tipo_apertura_chiusura", null, { shouldDirty: true });
     } else if (selectedServiceType === "APERTURA_CHIUSURA") {
-      if (!form.getValues("tipo_apertura_chiusura")) {
-        form.setValue("tipo_apertura_chiusura", APERTURA_CHIUSURA_TYPES[0].value, { shouldDirty: true });
+      if (!(form as any).getValues("tipo_apertura_chiusura")) {
+        (form as any).setValue("tipo_apertura_chiusura", APERTURA_CHIUSURA_TYPES[0].value, { shouldDirty: true });
       }
       // Clear other specific fields
-      form.setValue("cadenza_ore", null, { shouldDirty: true });
-      form.setValue("tipo_ispezione", null, { shouldDirty: true });
+      (form as any).setValue("cadenza_ore", null, { shouldDirty: true });
+      (form as any).setValue("tipo_ispezione", null, { shouldDirty: true });
     } else if (selectedServiceType === "BONIFICA") {
       // For Bonifica, ensure h24 is false and ora_fine is null for all active schedules
       const currentSchedules = form.getValues("daily_schedules");
-      const updatedSchedules = currentSchedules.map((schedule: z.infer<typeof dailyScheduleSchema>) => ({ // <-- Fixed: Added explicit type
+      const updatedSchedules = currentSchedules.map((schedule: z.infer<typeof dailyScheduleSchema>) => ({
         ...schedule,
         h24: false,
         ora_fine: null,
@@ -98,14 +98,14 @@ export function RichiestaServizioForm({
       }));
       form.setValue("daily_schedules", updatedSchedules, { shouldDirty: true });
       // Clear other specific fields
-      form.setValue("cadenza_ore", null, { shouldDirty: true });
-      form.setValue("tipo_ispezione", null, { shouldDirty: true });
-      form.setValue("tipo_apertura_chiusura", null, { shouldDirty: true });
+      (form as any).setValue("cadenza_ore", null, { shouldDirty: true });
+      (form as any).setValue("tipo_ispezione", null, { shouldDirty: true });
+      (form as any).setValue("tipo_apertura_chiusura", null, { shouldDirty: true });
     } else {
       // Clear all specific fields if not ISPEZIONI, APERTURA_CHIUSURA, or BONIFICA
-      form.setValue("cadenza_ore", null, { shouldDirty: true });
-      form.setValue("tipo_ispezione", null, { shouldDirty: true });
-      form.setValue("tipo_apertura_chiusura", null, { shouldDirty: true });
+      (form as any).setValue("cadenza_ore", null, { shouldDirty: true });
+      (form as any).setValue("tipo_ispezione", null, { shouldDirty: true });
+      (form as any).setValue("tipo_apertura_chiusura", null, { shouldDirty: true });
     }
   }, [selectedServiceType, form]);
 
@@ -197,7 +197,7 @@ export function RichiestaServizioForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Tipo di Servizio</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value || ""}> {/* <-- Fixed: Added || "" */}
+              <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Seleziona un tipo di servizio" />
