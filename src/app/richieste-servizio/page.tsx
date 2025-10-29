@@ -195,30 +195,32 @@ export default function RichiesteServizioPage() {
                     <TableCell>{richiesta.punti_servizio?.nome_punto_servizio || "N/A"}</TableCell>
                     <TableCell>{richiesta.fornitori?.ragione_sociale || "N/A"}</TableCell>
                     <TableCell className="text-xs">
-                      {richiesta.tipo_servizio === "ISPEZIONI" && richiesta.inspection_details?.[0] ? (
-                        <>
-                          <div>Data: {richiesta.inspection_details[0].data_servizio ? format(new Date(richiesta.inspection_details[0].data_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>
-                          <div>Fascia: {richiesta.inspection_details[0].ora_inizio_fascia} - {richiesta.inspection_details[0].ora_fine_fascia}</div>
-                          <div>Cadenza: {richiesta.inspection_details[0].cadenza_ore}h, Tipo: {richiesta.inspection_details[0].tipo_ispezione}</div>
-                        </>
-                      ) : (
-                        <>
-                          <div>Inizio: {richiesta.data_inizio_servizio ? format(new Date(richiesta.data_inizio_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>
-                          <div>Fine: {richiesta.data_fine_servizio ? format(new Date(richiesta.data_fine_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>
-                          <div>Agenti: {richiesta.numero_agenti || "N/A"}</div>
-                          {richiesta.daily_schedules && richiesta.daily_schedules.length > 0 && (
-                            <div>
-                              Giorni attivi:{" "}
-                              <span className="font-bold">
-                                {richiesta.daily_schedules
-                                  .filter(s => s.attivo)
-                                  .map(s => s.giorno_settimana)
-                                  .join(", ")}
-                              </span>
-                            </div>
-                          )}
-                        </>
-                      )}
+                      <div> {/* Wrapped content in a single div */}
+                        {richiesta.tipo_servizio === "ISPEZIONI" && richiesta.inspection_details?.[0] ? (
+                          <>
+                            <div>Data: {richiesta.inspection_details[0].data_servizio ? format(new Date(richiesta.inspection_details[0].data_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>
+                            <div>Fascia: {richiesta.inspection_details[0].ora_inizio_fascia} - {richiesta.inspection_details[0].ora_fine_fascia}</div>
+                            <div>Cadenza: {richiesta.inspection_details[0].cadenza_ore}h, Tipo: {richiesta.inspection_details[0].tipo_ispezione}</div>
+                          </>
+                        ) : (
+                          <>
+                            <div>Inizio: {richiesta.data_inizio_servizio ? format(new Date(richiesta.data_inizio_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>
+                            <div>Fine: {richiesta.data_fine_servizio ? format(new Date(richiesta.data_fine_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>
+                            <div>Agenti: {richiesta.numero_agenti || "N/A"}</div>
+                            {richiesta.daily_schedules && richiesta.daily_schedules.length > 0 && (
+                              <div>
+                                Giorni attivi:{" "}
+                                <span className="font-bold">
+                                  {richiesta.daily_schedules
+                                    .filter(s => s.attivo)
+                                    .map(s => s.giorno_settimana)
+                                    .join(", ")}
+                                </span>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
