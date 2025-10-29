@@ -39,18 +39,6 @@ const UNIQUE_KEYS_CONFIG = {
   rubrica_punti_servizio: [
     ['punto_servizio_id', 'tipo_recapito'],
   ],
-  rubrica_clienti: [
-    ['client_id', 'tipo_recapito'],
-  ],
-  rubrica_fornitori: [
-    ['fornitore_id', 'tipo_recapito'],
-  ],
-  richieste_servizio: [ // Unique key for service requests
-    ['client_id', 'punto_servizio_id', 'tipo_servizio', 'data_inizio_servizio', 'data_fine_servizio'],
-  ],
-  richieste_servizio_orari_giornalieri: [ // Unique key for daily schedules
-    ['richiesta_servizio_id', 'giorno_settimana'],
-  ],
 };
 
 /**
@@ -71,20 +59,6 @@ const FOREIGN_KEYS_CONFIG = {
   ],
   rubrica_punti_servizio: [
     { field: 'punto_servizio_id', refTable: 'punti_servizio' },
-  ],
-  rubrica_clienti: [
-    { field: 'client_id', refTable: 'clienti' },
-  ],
-  rubrica_fornitori: [
-    { field: 'fornitore_id', refTable: 'fornitori' },
-  ],
-  richieste_servizio: [ // Foreign keys for service requests
-    { field: 'client_id', refTable: 'clienti' },
-    { field: 'punto_servizio_id', refTable: 'punti_servizio' },
-    { field: 'fornitore_id', refTable: 'fornitori' },
-  ],
-  richieste_servizio_orari_giornalieri: [ // Foreign keys for daily schedules
-    { field: 'richiesta_servizio_id', refTable: 'richieste_servizio' },
   ],
 };
 

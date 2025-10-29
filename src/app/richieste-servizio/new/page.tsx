@@ -16,11 +16,7 @@ import {
   RichiestaServizioFormSchema,
   richiestaServizioFormSchema,
   calculateTotalHours,
-  calculateTotalInspections,
-  calculateAperturaChiusuraCount,
-  calculateBonificaCount, // Importa la nuova funzione
   defaultDailySchedules,
-  AperturaChiusuraType,
 } from "@/lib/richieste-servizio-utils";
 import { DailySchedule } from "@/types/richieste-servizio";
 import { RichiestaServizioForm } from "@/components/richieste-servizio/richiesta-servizio-form";
@@ -59,6 +55,8 @@ export default function NewRichiestaServizioPage() {
       data_fine_servizio: new Date(),
       numero_agenti: 1,
       daily_schedules: defaultDailySchedules,
+      // ISPEZIONI specific fields are omitted here as default type is PIANTONAMENTO_ARMATO
+      // These will be set by useEffect in RichiestaServizioForm if type changes to ISPEZIONI
     } as RichiestaServizioFormSchema, // Cast to ensure correct type for defaultValues
   });
 
@@ -110,38 +108,12 @@ export default function NewRichiestaServizioPage() {
     const dataInizioServizio = values.data_inizio_servizio;
     const dataFineServizio = values.data_fine_servizio;
 
-    if (values.tipo_servizio === "ISPEZIONI") {
-      totalCalculatedValue = calculateTotalInspections(
-        dataInizioServizio,
-        dataFineServizio,
-        values.daily_schedules,
-        values.cadenza_ore,
-        values.numero_agenti
-      );
-    } else if (values.tipo_servizio === "APERTURA_CHIUSURA") {
-      totalCalculatedValue = calculateAperturaChiusuraCount(
-        dataInizioServizio,
-        dataFineServizio,
-        values.daily_schedules,
-        values.tipo_apertura_chiusura as AperturaChiusuraType,
-        values.numero_agenti
-      );
-    } else if (values.tipo_servizio === "BONIFICA") { // New calculation for Bonifica
-      totalCalculatedValue = calculateBonificaCount(
-        dataInizioServizio,
-        dataFineServizio,
-        values.daily_schedules,
-        values.numero_agenti
-      );
-    }
-    else {
-      totalCalculatedValue = calculateTotalHours(
-        dataInizioServizio,
-        dataFineServizio,
-        values.daily_schedules,
-        values.numero_agenti
-      );
-    }
+    totalCalculatedValue = calculateTotalHours(
+      dataInizioServizio,
+      dataFineServizio,
+      values.daily_schedules,
+      values.numero_agenti
+    );
 
     richiestaData = {
       client_id: values.client_id,
@@ -166,10 +138,7 @@ export default function NewRichiestaServizioPage() {
         created_at: now,
         updated_at: now,
       };
-    } else if (values.tipo_servizio === "APERTURA_CHIUSURA") {
-      richiestaData.tipo_apertura_chiusura = values.tipo_apertura_chiusura;
     }
-    // No specific fields to add for BONIFICA in richieste_servizio table itself
 
     const { data: newRichiesta, error: richiestaError } = await supabase
       .from("richieste_servizio")
@@ -186,10 +155,8 @@ export default function NewRichiestaServizioPage() {
     const schedulesToInsert = values.daily_schedules.map((schedule: DailySchedule) => ({
       ...schedule,
       richiesta_servizio_id: newRichiesta.id,
-      // For BONIFICA, ora_fine should always be null
-      ora_fine: values.tipo_servizio === "BONIFICA" ? null : (schedule.h24 || !schedule.attivo ? null : schedule.ora_fine),
-      ora_inizio: schedule.h24 || !schedule.attivo ? null : schedule.ora_inizio, // ora_inizio can be null if not active or h24
-      h24: values.tipo_servizio === "BONIFICA" ? false : schedule.h24, // h24 is always false for Bonifica
+      ora_inizio: schedule.h24 || !schedule.attivo ? null : schedule.ora_inizio,
+      ora_fine: schedule.h24 || !schedule.attivo ? null : schedule.ora_fine,
       created_at: now,
       updated_at: now,
     }));
