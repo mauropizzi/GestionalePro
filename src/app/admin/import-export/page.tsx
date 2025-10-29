@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useSession } from "@/components/session-context-provider";
-import { ShieldAlert, Building2, Truck, Network, UserRound, MapPin, Euro, FileText } from "lucide-react";
+import { ShieldAlert, Building2, Truck, Network, UserRound, MapPin, Euro, FileText, Phone } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 // Import dei nuovi componenti modulari
@@ -45,12 +45,13 @@ const columnHeaderMap: { [key: string]: string } = {
   latitude: "Latitudine",
   longitude: "Longitudine",
   nomeProcedura: "Nome Procedura",
-  // Nuovi campi rubrica
-  numeroSulPosto: "Numero sul Posto",
-  reperibile1: "Reperibile 1",
-  reperibile2: "Reperibile 2",
-  reperibile3: "Reperibile 3",
-  responsabileContatto: "Responsabile Contatto",
+
+  // Rubrica Punti Servizio (nuovi campi)
+  tipoRecapito: "Tipo Recapito",
+  nomePersona: "Nome Persona",
+  telefonoFisso: "Telefono Fisso",
+  telefonoCellulare: "Telefono Cellulare",
+  emailRecapito: "Email Recapito",
 
 
   // Fornitori
@@ -85,8 +86,7 @@ const templateHeaders: { [key: string]: string[] } = {
     "Nome Punto Servizio", "ID Cliente (UUID)", "Indirizzo", "Città", "CAP", "Provincia",
     "Referente", "Telefono Referente", "Telefono", "Email", "Note", "Tempo Intervento",
     "ID Fornitore (UUID)", "Codice Cliente", "Codice SICEP", "Codice Fatturazione",
-    "Latitudine", "Longitudine", "Nome Procedura",
-    "Numero sul Posto", "Reperibile 1", "Reperibile 2", "Reperibile 3", "Responsabile Contatto" // Nuovi campi
+    "Latitudine", "Longitudine", "Nome Procedura"
   ],
   fornitori: [
     "Ragione Sociale", "Codice Fiscale", "Partita IVA", "Indirizzo", "Città", "CAP",
@@ -108,6 +108,10 @@ const templateHeaders: { [key: string]: string[] } = {
     "ID Cliente (UUID)", "Tipo Servizio", "Importo", "Costo Fornitore", "Unità di Misura",
     "ID Punto Servizio (UUID)", "ID Fornitore (UUID)", "Data Inizio Validità (YYYY-MM-DD)",
     "Data Fine Validità (YYYY-MM-DD)", "Note"
+  ],
+  rubrica_punti_servizio: [ // Nuovo template per la rubrica
+    "ID Punto Servizio (UUID)", "Tipo Recapito", "Nome Persona", "Telefono Fisso",
+    "Telefono Cellulare", "Email Recapito", "Note"
   ],
 };
 
@@ -149,6 +153,7 @@ export default function ImportExportPage() {
     { value: "operatori_network", label: "Operatori Network", icon: <Network className="h-4 w-4 mr-2" /> },
     { value: "procedure", label: "Procedure", icon: <FileText className="h-4 w-4 mr-2" /> },
     { value: "tariffe", label: "Tariffe", icon: <Euro className="h-4 w-4 mr-2" /> },
+    { value: "rubrica_punti_servizio", label: "Rubrica Punti Servizio", icon: <Phone className="h-4 w-4 mr-2" /> }, // Aggiunto
   ];
 
   return (

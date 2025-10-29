@@ -259,9 +259,9 @@ function mapTariffaData(rowData: any) {
 
 // Helper function to clean and map incoming rubrica_punti_servizio data to database schema
 function mapRubricaPuntiServizioData(rowData: any) {
-  const nome_contatto = getFieldValue(rowData, ['Nome Contatto', 'nome_contatto', 'nomeContatto'], toString);
-  if (!nome_contatto) {
-    throw new Error('Nome Contatto is required and cannot be empty.');
+  const tipo_recapito = getFieldValue(rowData, ['Tipo Recapito', 'tipo_recapito', 'tipoRecapito'], toString);
+  if (!tipo_recapito) {
+    throw new Error('Tipo Recapito is required and cannot be empty.');
   }
 
   let punto_servizio_id = getFieldValue(rowData, ['ID Punto Servizio', 'punto_servizio_id', 'puntoServizioId', 'ID Punto Servizio (UUID)'], toString);
@@ -272,16 +272,12 @@ function mapRubricaPuntiServizioData(rowData: any) {
 
   return {
     punto_servizio_id: punto_servizio_id,
-    nome_contatto: nome_contatto,
-    ruolo_contatto: getFieldValue(rowData, ['Ruolo Contatto', 'ruolo_contatto', 'ruoloContatto'], toString),
-    telefono: getFieldValue(rowData, ['Telefono', 'telefono'], toString),
-    email: getFieldValue(rowData, ['Email', 'email'], toString),
+    tipo_recapito: tipo_recapito,
+    nome_persona: getFieldValue(rowData, ['Nome Persona', 'nome_persona', 'nomePersona'], toString),
+    telefono_fisso: getFieldValue(rowData, ['Telefono Fisso', 'telefono_fisso', 'telefonoFisso'], toString),
+    telefono_cellulare: getFieldValue(rowData, ['Telefono Cellulare', 'telefono_cellulare', 'telefonoCellulare'], toString),
+    email_recapito: getFieldValue(rowData, ['Email Recapito', 'email_recapito', 'emailRecapito'], toString),
     note: getFieldValue(rowData, ['Note', 'note'], toString),
-    numero_sul_posto: getFieldValue(rowData, ['Numero sul Posto', 'numero_sul_posto', 'numeroSulPosto'], toString),
-    reperibile_1: getFieldValue(rowData, ['Reperibile 1', 'reperibile_1', 'reperibile1'], toString),
-    reperibile_2: getFieldValue(rowData, ['Reperibile 2', 'reperibile_2', 'reperibile2'], toString),
-    reperibile_3: getFieldValue(rowData, ['Reperibile 3', 'reperibile_3', 'reperibile3'], toString),
-    responsabile_contatto: getFieldValue(rowData, ['Responsabile Contatto', 'responsabile_contatto', 'responsabileContatto'], toString),
   };
 }
 
@@ -409,9 +405,9 @@ serve(async (req) => {
         } else if (anagraficaType === 'rubrica_punti_servizio') { // Nuovo tipo di anagrafica
           const { data, error } = await supabaseAdmin
             .from('rubrica_punti_servizio')
-            .select('id, punto_servizio_id, nome_contatto, ruolo_contatto, telefono, email, note, numero_sul_posto, reperibile_1, reperibile_2, reperibile_3, responsabile_contatto')
+            .select('id, punto_servizio_id, tipo_recapito, nome_persona, telefono_fisso, telefono_cellulare, email_recapito, note')
             .eq('punto_servizio_id', processedData.punto_servizio_id)
-            .eq('nome_contatto', processedData.nome_contatto)
+            .eq('tipo_recapito', processedData.tipo_recapito)
             .limit(1);
           if (error) throw error;
           existingRecords = data;

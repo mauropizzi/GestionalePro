@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -23,21 +23,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
-import { RUBRICA_CONTACT_ROLES } from "@/lib/constants"; // Importa i ruoli
+import { RUBRICA_RECAPITO_TYPES } from "@/lib/constants"; // Importa i nuovi tipi di recapito
 
 const rubricaContactFormSchema = z.object({
-  nome_contatto: z.string().min(1, "Il nome del contatto è richiesto."),
-  ruolo_contatto: z.enum(RUBRICA_CONTACT_ROLES as [string, ...string[]], {
-    required_error: "Il ruolo del contatto è richiesto.",
-  }).nullable(), // Reso nullable per permettere 'null' se non selezionato
-  telefono: z.string().nullable(),
-  email: z.string().email("Inserisci un indirizzo email valido.").nullable().or(z.literal("")),
+  tipo_recapito: z.enum(RUBRICA_RECAPITO_TYPES as [string, ...string[]], {
+    required_error: "Il tipo di recapito è richiesto.",
+  }),
+  nome_persona: z.string().nullable(),
+  telefono_fisso: z.string().nullable(),
+  telefono_cellulare: z.string().nullable(),
+  email_recapito: z.string().email("Inserisci un indirizzo email valido.").nullable().or(z.literal("")),
   note: z.string().nullable(),
-  numero_sul_posto: z.string().nullable(),
-  reperibile_1: z.string().nullable(),
-  reperibile_2: z.string().nullable(),
-  reperibile_3: z.string().nullable(),
-  responsabile_contatto: z.string().nullable(),
 });
 
 export type RubricaContactFormSchema = z.infer<typeof rubricaContactFormSchema>;
@@ -52,16 +48,12 @@ export function RubricaContactForm({ onSubmit, isLoading, defaultValues }: Rubri
   const form = useForm<RubricaContactFormSchema>({
     resolver: zodResolver(rubricaContactFormSchema),
     defaultValues: {
-      nome_contatto: defaultValues?.nome_contatto || "",
-      ruolo_contatto: defaultValues?.ruolo_contatto || null,
-      telefono: defaultValues?.telefono || null,
-      email: defaultValues?.email || null,
+      tipo_recapito: defaultValues?.tipo_recapito || RUBRICA_RECAPITO_TYPES[0], // Default al primo tipo
+      nome_persona: defaultValues?.nome_persona || null,
+      telefono_fisso: defaultValues?.telefono_fisso || null,
+      telefono_cellulare: defaultValues?.telefono_cellulare || null,
+      email_recapito: defaultValues?.email_recapito || null,
       note: defaultValues?.note || null,
-      numero_sul_posto: defaultValues?.numero_sul_posto || null,
-      reperibile_1: defaultValues?.reperibile_1 || null,
-      reperibile_2: defaultValues?.reperibile_2 || null,
-      reperibile_3: defaultValues?.reperibile_3 || null,
-      responsabile_contatto: defaultValues?.responsabile_contatto || null,
     },
   });
 
@@ -70,33 +62,20 @@ export function RubricaContactForm({ onSubmit, isLoading, defaultValues }: Rubri
       <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
         <FormField
           control={form.control}
-          name="nome_contatto"
+          name="tipo_recapito"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nome Contatto</FormLabel>
-              <FormControl>
-                <Input placeholder="Nome del contatto" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="ruolo_contatto"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Ruolo Contatto</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""}>
+            <FormItem className="md:col-span-2">
+              <FormLabel>Tipo di Recapito</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleziona un ruolo" />
+                    <SelectValue placeholder="Seleziona un tipo di recapito" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {RUBRICA_CONTACT_ROLES.map((role) => (
-                    <SelectItem key={role} value={role}>
-                      {role}
+                  {RUBRICA_RECAPITO_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -107,90 +86,51 @@ export function RubricaContactForm({ onSubmit, isLoading, defaultValues }: Rubri
         />
         <FormField
           control={form.control}
-          name="telefono"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Telefono</FormLabel>
-              <FormControl>
-                <Input placeholder="Numero di telefono" {...field} value={field.value ?? ""} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input type="email" placeholder="Email del contatto" {...field} value={field.value ?? ""} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="numero_sul_posto"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Numero sul Posto</FormLabel>
-              <FormControl>
-                <Input placeholder="Numero di telefono sul posto" {...field} value={field.value ?? ""} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="reperibile_1"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Reperibile 1</FormLabel>
-              <FormControl>
-                <Input placeholder="Numero reperibile 1" {...field} value={field.value ?? ""} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="reperibile_2"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Reperibile 2</FormLabel>
-              <FormControl>
-                <Input placeholder="Numero reperibile 2" {...field} value={field.value ?? ""} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="reperibile_3"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Reperibile 3</FormLabel>
-              <FormControl>
-                <Input placeholder="Numero reperibile 3" {...field} value={field.value ?? ""} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="responsabile_contatto"
+          name="nome_persona"
           render={({ field }) => (
             <FormItem className="md:col-span-2">
-              <FormLabel>Responsabile Contatto</FormLabel>
+              <FormLabel>Nome Persona (Opzionale)</FormLabel>
               <FormControl>
-                <Input placeholder="Nome del responsabile del contatto" {...field} value={field.value ?? ""} />
+                <Input placeholder="Nome della persona associata" {...field} value={field.value ?? ""} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="telefono_fisso"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Telefono Fisso</FormLabel>
+              <FormControl>
+                <Input placeholder="Numero di telefono fisso" {...field} value={field.value ?? ""} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="telefono_cellulare"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Telefono Cellulare</FormLabel>
+              <FormControl>
+                <Input placeholder="Numero di telefono cellulare" {...field} value={field.value ?? ""} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="email_recapito"
+          render={({ field }) => (
+            <FormItem className="md:col-span-2">
+              <FormLabel>Email Recapito</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="Email del recapito" {...field} value={field.value ?? ""} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -203,7 +143,7 @@ export function RubricaContactForm({ onSubmit, isLoading, defaultValues }: Rubri
             <FormItem className="md:col-span-2">
               <FormLabel>Note</FormLabel>
               <FormControl>
-                <Textarea placeholder="Aggiungi note sul contatto..." {...field} value={field.value ?? ""} />
+                <Textarea placeholder="Aggiungi note sul recapito..." {...field} value={field.value ?? ""} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -214,7 +154,7 @@ export function RubricaContactForm({ onSubmit, isLoading, defaultValues }: Rubri
             {isLoading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              "Salva Contatto"
+              "Salva Recapito"
             )}
           </Button>
         </div>

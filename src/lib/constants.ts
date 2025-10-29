@@ -20,3 +20,11 @@ export const RUBRICA_CONTACT_ROLES = [
   "Referente",
   "Altro",
 ];
+
+export const RUBRICA_RECAPITO_TYPES = [
+  "Numero sul Posto",
+  "Reperibile 1",
+  "Reperibile 2",
+  "Reperibile 3",
+  "Responsabile",
+];
