@@ -194,17 +194,17 @@ export default function RichiesteServizioPage() {
                     <TableCell>{richiesta.fornitori?.ragione_sociale || "N/A"}</TableCell>
                     <TableCell>
                       {richiesta.tipo_servizio === "ISPEZIONI" && richiesta.inspection_details?.[0] ? (
-                        <div className="text-xs">
+                        <span className="text-xs block"> {/* Changed div to span with block display */}
                           Data: {format(new Date(richiesta.inspection_details[0].data_servizio), "dd/MM/yyyy", { locale: it })}<br />
                           Fascia: {richiesta.inspection_details[0].ora_inizio_fascia} - {richiesta.inspection_details[0].ora_fine_fascia}<br />
                           Cadenza: {richiesta.inspection_details[0].cadenza_ore}h, Tipo: {richiesta.inspection_details[0].tipo_ispezione}
-                        </div>
+                        </span>
                       ) : (
-                        <div className="text-xs">
+                        <span className="text-xs block"> {/* Changed div to span with block display */}
                           Inizio: {richiesta.data_inizio_servizio ? format(new Date(richiesta.data_inizio_servizio), "dd/MM/yyyy HH:mm", { locale: it }) : "N/A"}<br />
                           Fine: {richiesta.data_fine_servizio ? format(new Date(richiesta.data_fine_servizio), "dd/MM/yyyy HH:mm", { locale: it }) : "N/A"}<br />
                           Agenti: {richiesta.numero_agenti || "N/A"}
-                        </div>
+                        </span>
                       )}
                     </TableCell>
                     <TableCell>
