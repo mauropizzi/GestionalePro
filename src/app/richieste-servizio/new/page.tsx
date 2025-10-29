@@ -16,6 +16,7 @@ import {
   RichiestaServizioFormSchema,
   richiestaServizioFormSchema,
   calculateTotalHours,
+  calculateTotalInspections, // Import the new function
   defaultDailySchedules,
 } from "@/lib/richieste-servizio-utils";
 import { DailySchedule } from "@/types/richieste-servizio";
@@ -108,12 +109,22 @@ export default function NewRichiestaServizioPage() {
     const dataInizioServizio = values.data_inizio_servizio;
     const dataFineServizio = values.data_fine_servizio;
 
-    totalCalculatedValue = calculateTotalHours(
-      dataInizioServizio,
-      dataFineServizio,
-      values.daily_schedules,
-      values.numero_agenti
-    );
+    if (values.tipo_servizio === "ISPEZIONI") {
+      totalCalculatedValue = calculateTotalInspections(
+        dataInizioServizio,
+        dataFineServizio,
+        values.daily_schedules,
+        values.cadenza_ore,
+        values.numero_agenti
+      );
+    } else {
+      totalCalculatedValue = calculateTotalHours(
+        dataInizioServizio,
+        dataFineServizio,
+        values.daily_schedules,
+        values.numero_agenti
+      );
+    }
 
     richiestaData = {
       client_id: values.client_id,

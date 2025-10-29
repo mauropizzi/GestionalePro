@@ -33,6 +33,7 @@ import {
   SERVICE_TYPES,
   INSPECTION_TYPES,
   calculateTotalHours,
+  calculateTotalInspections, // Import the new function
   IspezioniFormSchema,
 } from "@/lib/richieste-servizio-utils";
 import { DailySchedulesFormField } from "./daily-schedules-form-field";
@@ -73,7 +74,7 @@ export function RichiestaServizioForm({
     }
   }, [selectedServiceType, form]);
 
-  if (selectedServiceType === "PIANTONAMENTO_ARMATO" || selectedServiceType === "SERVIZIO_FIDUCIARIO" || selectedServiceType === "ISPEZIONI") {
+  if (selectedServiceType === "PIANTONAMENTO_ARMATO" || selectedServiceType === "SERVIZIO_FIDUCIARIO") {
     const { data_inizio_servizio, data_fine_servizio, numero_agenti, daily_schedules } = formValues;
 
     if (data_inizio_servizio && data_fine_servizio && daily_schedules && numero_agenti !== undefined) {
@@ -84,6 +85,20 @@ export function RichiestaServizioForm({
         numero_agenti
       );
       calculationLabel = "Ore totali stimate:";
+    }
+  } else if (selectedServiceType === "ISPEZIONI") {
+    // Asserzione di tipo per informare TypeScript che formValues è di tipo IspezioniFormSchema
+    const { data_inizio_servizio, data_fine_servizio, numero_agenti, daily_schedules, cadenza_ore } = formValues as IspezioniFormSchema;
+
+    if (data_inizio_servizio && data_fine_servizio && daily_schedules && cadenza_ore !== undefined && numero_agenti !== undefined) {
+      calculatedValue = calculateTotalInspections(
+        data_inizio_servizio,
+        data_fine_servizio,
+        daily_schedules,
+        cadenza_ore,
+        numero_agenti
+      );
+      calculationLabel = "Numero totale ispezioni stimate:";
     }
   }
 

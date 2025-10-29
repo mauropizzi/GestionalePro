@@ -149,6 +149,49 @@ export const calculateTotalHours = (
   return parseFloat((totalHours * numAgents).toFixed(2));
 };
 
+export const calculateTotalInspections = (
+  serviceStartDate: Date,
+  serviceEndDate: Date,
+  dailySchedules: z.infer<typeof dailyScheduleSchema>[],
+  cadenzaOre: number,
+  numAgents: number
+): number => {
+  if (cadenzaOre <= 0) return 0; // Avoid division by zero
+
+  let totalInspections = 0;
+  let currentDate = new Date(serviceStartDate);
+  currentDate.setHours(0, 0, 0, 0);
+
+  const endServiceDateNormalized = new Date(serviceEndDate);
+  endServiceDateNormalized.setHours(0, 0, 0, 0);
+
+  while (currentDate <= endServiceDateNormalized) {
+    const dayOfWeek = format(currentDate, 'EEEE', { locale: it });
+    const schedule = dailySchedules.find(s => s.giorno_settimana.toLowerCase() === dayOfWeek.toLowerCase());
+
+    if (schedule && schedule.attivo) {
+      let durationHours = 0;
+      if (schedule.h24) {
+        durationHours = 24;
+      } else if (schedule.ora_inizio && schedule.ora_fine) {
+        const [startH, startM] = schedule.ora_inizio.split(':').map(Number);
+        const [endH, endM] = schedule.ora_fine.split(':').map(Number);
+        const dayStartMinutes = startH * 60 + startM;
+        const dayEndMinutes = endH * 60 + endM;
+
+        if (dayEndMinutes > dayStartMinutes) {
+          durationHours = (dayEndMinutes - dayStartMinutes) / 60;
+        }
+      }
+      totalInspections += Math.floor(durationHours / cadenzaOre);
+    }
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  // Multiply by number of agents as per previous logic for total calculated value
+  return parseFloat((totalInspections * numAgents).toFixed(2));
+};
+
+
 export const defaultDailySchedules = [
   { giorno_settimana: "Lunedì", h24: false, ora_inizio: "09:00", ora_fine: "18:00", attivo: true },
   { giorno_settimana: "Martedì", h24: false, ora_inizio: "09:00", ora_fine: "18:00", attivo: true },

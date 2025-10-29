@@ -44,7 +44,7 @@ interface RichiestaServizio {
   numero_agenti: number | null;
   note: string | null;
   status: string;
-  total_hours_calculated: number | null;
+  total_hours_calculated: number | null; // This will now hold total inspections for ISPEZIONI
   created_at: string;
   updated_at: string;
   clienti?: { ragione_sociale: string } | null;
@@ -200,6 +200,7 @@ export default function RichiesteServizioPage() {
                           <>
                             <div>Data: {richiesta.inspection_details[0].data_servizio ? format(new Date(richiesta.inspection_details[0].data_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>
                             <div>Cadenza: {richiesta.inspection_details[0].cadenza_ore}h, Tipo: {richiesta.inspection_details[0].tipo_ispezione}</div>
+                            <div>Ispezioni totali: {richiesta.total_hours_calculated || 0}</div>
                           </>
                         ) : (
                           <>
@@ -217,6 +218,7 @@ export default function RichiesteServizioPage() {
                                 </span>
                               </div>
                             )}
+                            <div>Ore totali stimate: {richiesta.total_hours_calculated || 0}</div>
                           </>
                         )}
                       </div>
