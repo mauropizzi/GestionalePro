@@ -12,13 +12,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { RichiestaServizioFormSchema, daysOfWeek, dailyScheduleSchema } from "@/lib/richieste-servizio-utils";
+import { RichiestaServizioFormSchema, daysOfWeek, dailyScheduleSchema, bonificaDailyScheduleSchema } from "@/lib/richieste-servizio-utils";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
 
 interface DailySchedulesFormFieldProps {
-  value: z.infer<typeof dailyScheduleSchema>[];
-  onChange: (value: z.infer<typeof dailyScheduleSchema>[]) => void;
+  value: (z.infer<typeof dailyScheduleSchema> | z.infer<typeof bonificaDailyScheduleSchema>)[];
+  onChange: (value: (z.infer<typeof dailyScheduleSchema> | z.infer<typeof bonificaDailyScheduleSchema>)[]) => void;
   isBonificaService?: boolean; // New prop
 }
 
@@ -150,7 +150,7 @@ export function DailySchedulesFormField({ value, onChange, isBonificaService = f
                           attivo: checked,
                           h24: checked ? field.value.h24 : false,
                           ora_inizio: checked ? field.value.ora_inizio : null,
-                          ora_fine: checked ? field.value.ora_fine : null,
+                          ora_fine: checked ? null : field.value.ora_fine, // Set ora_fine to null for Bonifica
                         });
                       }}
                       id={`attivo-bonifica`}
@@ -166,7 +166,7 @@ export function DailySchedulesFormField({ value, onChange, isBonificaService = f
                             ...field.value,
                             h24: checked,
                             ora_inizio: checked ? null : "09:00",
-                            ora_fine: checked ? null : "18:00",
+                            ora_fine: null, // Always null for Bonifica when h24 is toggled
                           });
                         }}
                         id={`h24-bonifica`}
@@ -177,7 +177,7 @@ export function DailySchedulesFormField({ value, onChange, isBonificaService = f
                 </div>
               </div>
               {field.value.attivo && !field.value.h24 && (
-                <div className="grid grid-cols-2 gap-1 mt-0.5">
+                <div className="grid grid-cols-1 gap-1 mt-0.5"> {/* Changed to 1 column */}
                   <FormItem>
                     <FormLabel className="text-xs">Ora Inizio</FormLabel>
                     <FormControl>
@@ -186,19 +186,6 @@ export function DailySchedulesFormField({ value, onChange, isBonificaService = f
                         value={field.value.ora_inizio ?? ""}
                         onChange={(e) => {
                           field.onChange({ ...field.value, ora_inizio: e.target.value });
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                  <FormItem>
-                    <FormLabel className="text-xs">Ora Fine</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="time"
-                        value={field.value.ora_fine ?? ""}
-                        onChange={(e) => {
-                          field.onChange({ ...field.value, ora_fine: e.target.value });
                         }}
                       />
                     </FormControl>

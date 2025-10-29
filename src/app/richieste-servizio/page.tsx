@@ -227,7 +227,6 @@ export default function RichiesteServizioPage() {
                         ) : richiesta.tipo_servizio === "BONIFICA" ? (
                           <>
                             <div>Inizio: {richiesta.data_inizio_servizio ? format(new Date(richiesta.data_inizio_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>
-                            <div>Fine: {richiesta.data_fine_servizio ? format(new Date(richiesta.data_fine_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>
                             <div>Agenti: {richiesta.numero_agenti || "N/A"}</div>
                             {richiesta.daily_schedules && richiesta.daily_schedules.length > 0 && (
                               <div>
