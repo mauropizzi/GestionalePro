@@ -1,6 +1,6 @@
 // @ts-nocheck
 // supabase/functions/import-data/mappers/procedura-mapper.ts
-import { getFieldValue, toString, toBoolean, toDateString } from '../utils/data-mapping.ts';
+import { getFieldValue, toString, toNumber, toBoolean, toDateString, isValidUuid } from '../utils/data-mapping.ts';
 
 export function mapProceduraData(rowData: any) {
   const nome_procedura = getFieldValue(rowData, ['Nome Procedura', 'nome_procedura', 'nomeProcedura'], toString);

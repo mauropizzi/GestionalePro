@@ -1,6 +1,6 @@
 // @ts-nocheck
 // supabase/functions/import-data/mappers/rubrica-fornitori-mapper.ts
-import { getFieldValue, toString, isValidUuid } from '../utils/data-mapping.ts';
+import { getFieldValue, toString, toNumber, toBoolean, toDateString, isValidUuid } from '../utils/data-mapping.ts';
 
 export function mapRubricaFornitoriData(rowData: any) {
   const tipo_recapito = getFieldValue(rowData, ['Tipo Recapito', 'tipo_recapito', 'tipoRecapito'], toString);

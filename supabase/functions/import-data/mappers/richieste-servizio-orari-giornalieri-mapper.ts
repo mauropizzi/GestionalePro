@@ -26,7 +26,6 @@ export function mapRichiesteServizioOrariGiornalieriData(rowData: any) {
   const ora_inizio = getFieldValue(rowData, ['Ora Inizio', 'ora_inizio', 'oraInizio', 'Ora Inizio (HH:mm)'], toString);
   const ora_fine = getFieldValue(rowData, ['Ora Fine', 'ora_fine', 'oraFine', 'Ora Fine (HH:mm)'], toString);
 
-  // Validation logic similar to dailyScheduleSchema in frontend
   if (attivo) {
     if (h24) {
       if (ora_inizio !== null || ora_fine !== null) {
@@ -36,9 +35,6 @@ export function mapRichiesteServizioOrariGiornalieriData(rowData: any) {
       if (!ora_inizio) {
         throw new Error('If not H24, Ora Inizio is required.');
       }
-      // ora_fine can be null for BONIFICA, but for other types it should be present if ora_inizio is.
-      // This specific check might need to be more dynamic if we want to enforce it per service type.
-      // For now, we allow ora_fine to be null if ora_inizio is present, as per the Bonifica requirement.
     }
   } else {
     if (h24 !== false || ora_inizio !== null || ora_fine !== null) {

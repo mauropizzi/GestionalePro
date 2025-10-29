@@ -55,9 +55,5 @@ export function mapRichiestaServizioData(rowData: any) {
     mappedData.tipo_apertura_chiusura = tipo_apertura_chiusura;
   }
 
-  // Note: Inspection details are handled in a separate table (richieste_servizio_ispezioni)
-  // and daily schedules in richieste_servizio_orari_giornalieri.
-  // This mapper only handles the main 'richieste_servizio' table.
-
   return mappedData;
 }

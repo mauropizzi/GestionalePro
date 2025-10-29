@@ -1,6 +1,6 @@
 // @ts-nocheck
 // supabase/functions/import-data/mappers/operatore-network-mapper.ts
-import { getFieldValue, toString, isValidUuid } from '../utils/data-mapping.ts';
+import { getFieldValue, toString, toNumber, toBoolean, toDateString, isValidUuid } from '../utils/data-mapping.ts';
 
 export function mapOperatoreNetworkData(rowData: any) {
   const nome = getFieldValue(rowData, ['Nome', 'nome'], toString);
