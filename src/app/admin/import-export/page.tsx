@@ -53,10 +53,6 @@ const columnHeaderMap: { [key: string]: string } = {
   ruolo: "Ruolo",
   dataNascita: "Data Nascita",
   luogoNascita: "Luogo Nascita",
-  indirizzo: "Indirizzo",
-  citta: "Città",
-  cap: "CAP",
-  provincia: "Provincia",
   dataAssunzione: "Data Assunzione",
   dataCessazione: "Data Cessazione",
 
