@@ -20,14 +20,16 @@ import {
   calculateTotalInspections,
   calculateAperturaChiusuraCount,
   calculateBonificaCount,
-  calculateGestioneChiaviCount, // New import
+  calculateGestioneChiaviCount,
   IspezioniFormSchema,
   AperturaChiusuraFormSchema,
   BonificaFormSchema,
-  GestioneChiaviFormSchema, // New import
+  GestioneChiaviFormSchema,
   AperturaChiusuraType,
   BonificaType,
-  GestioneChiaviType, // New import
+  GestioneChiaviType,
+  APERTURA_CHIUSURA_TYPES, // Importa i tipi letterali
+  GESTIONE_CHIAVI_TYPES, // Importa i tipi letterali
 } from "@/lib/richieste-servizio-utils";
 import { DailySchedulesFormField } from "./daily-schedules-form-field";
 import { ServiceDetailsSection } from "./service-details-section";
@@ -54,8 +56,31 @@ export function RichiestaServizioForm({
   isSubmitting,
 }: RichiestaServizioFormProps) {
   const selectedServiceType = form.watch("tipo_servizio");
-  const tipoAperturaChiusura = form.watch("tipo_apertura_chiusura");
-  const tipoGestioneChiavi = form.watch("tipo_gestione_chiavi"); // Watch this value
+
+  let tipoAperturaChiusura: AperturaChiusuraType | null | undefined;
+  if (selectedServiceType === "APERTURA_CHIUSURA") {
+    const rawValue = (form.getValues() as AperturaChiusuraFormSchema).tipo_apertura_chiusura;
+    if (rawValue === "" || rawValue === null) {
+      tipoAperturaChiusura = null;
+    } else if (APERTURA_CHIUSURA_TYPES.some(type => type.value === rawValue)) {
+      tipoAperturaChiusura = rawValue as AperturaChiusuraType;
+    } else {
+      tipoAperturaChiusura = undefined; // Fallback for unexpected string values
+    }
+  }
+
+  let tipoGestioneChiavi: GestioneChiaviType | null | undefined;
+  if (selectedServiceType === "GESTIONE_CHIAVI") {
+    const rawValue = (form.getValues() as GestioneChiaviFormSchema).tipo_gestione_chiavi;
+    if (rawValue === "" || rawValue === null) {
+      tipoGestioneChiavi = null;
+    } else if (GESTIONE_CHIAVI_TYPES.some(type => type.value === rawValue)) {
+      tipoGestioneChiavi = rawValue as GestioneChiaviType;
+    } else {
+      tipoGestioneChiavi = undefined; // Fallback for unexpected string values
+    }
+  }
+
   const formValues = form.watch();
 
   let calculatedValue: number | null = null;
@@ -185,7 +210,7 @@ export function RichiestaServizioForm({
                     onChange={field.onChange}
                     selectedServiceType={selectedServiceType}
                     tipoAperturaChiusura={tipoAperturaChiusura}
-                    tipoGestioneChiavi={tipoGestioneChiavi} // Pass the new prop
+                    tipoGestioneChiavi={tipoGestioneChiavi}
                   />
                 </FormControl>
                 <FormDescription>
