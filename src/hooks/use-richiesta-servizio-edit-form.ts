@@ -37,9 +37,7 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
       note: null,
       // Common scheduling fields for PIANTONAMENTO_ARMATO / SERVIZIO_FIDUCIARIO
       data_inizio_servizio: new Date(),
-      ora_inizio_servizio: "09:00",
       data_fine_servizio: new Date(),
-      ora_fine_servizio: "18:00",
       numero_agenti: 1,
       daily_schedules: defaultDailySchedules,
       // ISPEZIONI specific fields are omitted here as default type is PIANTONAMENTO_ARMATO
@@ -125,9 +123,7 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
           fornitore_id: richiestaData.fornitore_id || null,
           note: richiestaData.note || null,
           data_inizio_servizio: richiestaData.data_inizio_servizio ? parseISO(richiestaData.data_inizio_servizio) : new Date(),
-          ora_inizio_servizio: richiestaData.data_inizio_servizio ? format(parseISO(richiestaData.data_inizio_servizio), "HH:mm") : "09:00",
           data_fine_servizio: richiestaData.data_fine_servizio ? parseISO(richiestaData.data_fine_servizio) : new Date(),
-          ora_fine_servizio: richiestaData.data_fine_servizio ? format(parseISO(richiestaData.data_fine_servizio), "HH:mm") : "18:00",
           numero_agenti: richiestaData.numero_agenti || 1,
           daily_schedules: mergedSchedules,
         };
@@ -163,8 +159,9 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
     let richiestaDataToUpdate: any;
     let inspectionDetailsToSave: any = null;
 
-    const dataInizioServizio = setMinutes(setHours(values.data_inizio_servizio, parseInt(values.ora_inizio_servizio.split(':')[0])), parseInt(values.ora_inizio_servizio.split(':')[1]));
-    const dataFineServizio = setMinutes(setHours(values.data_fine_servizio, parseInt(values.ora_fine_servizio.split(':')[0])), parseInt(values.ora_fine_servizio.split(':')[1]));
+    // Use only the date part for service start/end, times will be derived from daily_schedules
+    const dataInizioServizio = values.data_inizio_servizio;
+    const dataFineServizio = values.data_fine_servizio;
 
     totalCalculatedValue = calculateTotalHours(
       dataInizioServizio,
@@ -241,12 +238,12 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
     }
 
     if (values.tipo_servizio === "ISPEZIONI" && inspectionDetailsToSave) {
-      if (richiesta?.inspection_details?.id) {
+      if (richiesta?.inspection_details?.[0]?.id) { // Access the first element of the array
         // Update existing inspection details
         const { error: inspectionError } = await supabase
           .from("richieste_servizio_ispezioni")
           .update(inspectionDetailsToSave)
-          .eq("id", richiesta.inspection_details.id);
+          .eq("id", richiesta.inspection_details[0].id);
         if (inspectionError) {
           toast.error("Errore nell'aggiornamento dei dettagli dell'ispezione: " + inspectionError.message);
         }
@@ -259,7 +256,7 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
           toast.error("Errore nell'inserimento dei dettagli dell'ispezione: " + inspectionError.message);
         }
       }
-    } else if (richiesta?.inspection_details?.id) {
+    } else if (richiesta?.inspection_details?.[0]?.id) { // Access the first element of the array
       // If service type changed from ISPEZIONI to something else, delete old inspection details
       await supabase.from("richieste_servizio_ispezioni").delete().eq("richiesta_servizio_id", richiestaId);
     }

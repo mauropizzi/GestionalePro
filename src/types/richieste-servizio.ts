@@ -53,5 +53,5 @@ export interface RichiestaServizio {
   total_hours_calculated?: number | null; // Reso opzionale per ISPEZIONI
   created_at: string;
   updated_at: string;
-  inspection_details?: InspectionDetails | null; // Corretto a singolo oggetto o null
+  inspection_details?: InspectionDetails[] | null; // Corretto a array di oggetti o null
 }
