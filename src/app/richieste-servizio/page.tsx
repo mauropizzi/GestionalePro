@@ -119,8 +119,7 @@ export default function RichiesteServizioPage() {
     richiesta.fornitori?.ragione_sociale?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     richiesta.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (richiesta.tipo_servizio === "ISPEZIONI" && richiesta.inspection_details?.[0]?.tipo_ispezione?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (richiesta.tipo_servizio === "APERTURA_CHIUSURA" && richiesta.tipo_apertura_chiusura?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (richiesta.tipo_servizio === "BONIFICA" && "bonifica".includes(searchTerm.toLowerCase()))
+    (richiesta.tipo_servizio === "APERTURA_CHIUSURA" && richiesta.tipo_apertura_chiusura?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   if (isSessionLoading) {
@@ -208,24 +207,6 @@ export default function RichiesteServizioPage() {
                         ) : richiesta.tipo_servizio === "APERTURA_CHIUSURA" ? (
                           <>
                             <div>Tipo Attività: {richiesta.tipo_apertura_chiusura?.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || "N/A"}</div>
-                            <div>Inizio: {richiesta.data_inizio_servizio ? format(new Date(richiesta.data_inizio_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>
-                            <div>Fine: {richiesta.data_fine_servizio ? format(new Date(richiesta.data_fine_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>
-                            <div>Agenti: {richiesta.numero_agenti || "N/A"}</div>
-                            {richiesta.daily_schedules && richiesta.daily_schedules.length > 0 && (
-                              <div>
-                                Giorni attivi:{" "}
-                                <span className="font-bold">
-                                  {richiesta.daily_schedules
-                                    .filter(s => s.attivo)
-                                    .map(s => s.giorno_settimana)
-                                    .join(", ")}
-                                </span>
-                              </div>
-                            )}
-                            <div>Attività totali stimate: {richiesta.total_hours_calculated || 0}</div>
-                          </>
-                        ) : richiesta.tipo_servizio === "BONIFICA" ? (
-                          <>
                             <div>Inizio: {richiesta.data_inizio_servizio ? format(new Date(richiesta.data_inizio_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>
                             <div>Fine: {richiesta.data_fine_servizio ? format(new Date(richiesta.data_fine_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>
                             <div>Agenti: {richiesta.numero_agenti || "N/A"}</div>

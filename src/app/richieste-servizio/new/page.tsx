@@ -124,15 +124,7 @@ export default function NewRichiestaServizioPage() {
         dataInizioServizio,
         dataFineServizio,
         values.daily_schedules,
-        values.tipo_apertura_chiusura as AperturaChiusuraType,
-        values.numero_agenti
-      );
-    } else if (values.tipo_servizio === "BONIFICA") {
-      totalCalculatedValue = calculateAperturaChiusuraCount(
-        dataInizioServizio,
-        dataFineServizio,
-        values.daily_schedules,
-        "APERTURA_E_CHIUSURA", // Bonifica è calcolata come Apertura e Chiusura
+        values.tipo_apertura_chiusura as AperturaChiusuraType, // Correzione qui
         values.numero_agenti
       );
     }
