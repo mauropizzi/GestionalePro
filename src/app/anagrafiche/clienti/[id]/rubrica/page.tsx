@@ -35,7 +35,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { RubricaClientiContactForm, RubricaClientiContactFormSchema } from "@/components/clienti/rubrica-clienti-contact-form.tsx";
+import { RubricaClientiContactForm, RubricaClientiContactFormSchema } from "@/components/clienti/rubrica-clienti-contact-form";
 import { useSession } from "@/components/session-context-provider";
 
 interface RubricaClientiContact {
