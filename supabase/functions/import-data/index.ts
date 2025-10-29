@@ -257,6 +257,34 @@ function mapTariffaData(rowData: any) {
   };
 }
 
+// Helper function to clean and map incoming rubrica_punti_servizio data to database schema
+function mapRubricaPuntiServizioData(rowData: any) {
+  const nome_contatto = getFieldValue(rowData, ['Nome Contatto', 'nome_contatto', 'nomeContatto'], toString);
+  if (!nome_contatto) {
+    throw new Error('Nome Contatto is required and cannot be empty.');
+  }
+
+  let punto_servizio_id = getFieldValue(rowData, ['ID Punto Servizio', 'punto_servizio_id', 'puntoServizioId', 'ID Punto Servizio (UUID)'], toString);
+  punto_servizio_id = (punto_servizio_id && isValidUuid(punto_servizio_id)) ? punto_servizio_id : null;
+  if (!punto_servizio_id) {
+    throw new Error('ID Punto Servizio is required and must be a valid UUID.');
+  }
+
+  return {
+    punto_servizio_id: punto_servizio_id,
+    nome_contatto: nome_contatto,
+    ruolo_contatto: getFieldValue(rowData, ['Ruolo Contatto', 'ruolo_contatto', 'ruoloContatto'], toString),
+    telefono: getFieldValue(rowData, ['Telefono', 'telefono'], toString),
+    email: getFieldValue(rowData, ['Email', 'email'], toString),
+    note: getFieldValue(rowData, ['Note', 'note'], toString),
+    numero_sul_posto: getFieldValue(rowData, ['Numero sul Posto', 'numero_sul_posto', 'numeroSulPosto'], toString),
+    reperibile_1: getFieldValue(rowData, ['Reperibile 1', 'reperibile_1', 'reperibile1'], toString),
+    reperibile_2: getFieldValue(rowData, ['Reperibile 2', 'reperibile_2', 'reperibile2'], toString),
+    reperibile_3: getFieldValue(rowData, ['Reperibile 3', 'reperibile_3', 'reperibile3'], toString),
+    responsabile_contatto: getFieldValue(rowData, ['Responsabile Contatto', 'responsabile_contatto', 'responsabileContatto'], toString),
+  };
+}
+
 
 serve(async (req) => {
   console.log("import-data function invoked.");
@@ -314,6 +342,8 @@ serve(async (req) => {
           processedData = mapProceduraData(row);
         } else if (anagraficaType === 'tariffe') {
           processedData = mapTariffaData(row);
+        } else if (anagraficaType === 'rubrica_punti_servizio') { // Nuovo tipo di anagrafica
+          processedData = mapRubricaPuntiServizioData(row);
         } else {
           throw new Error(`Import logic not implemented for anagrafica type: ${anagraficaType}`);
         }
@@ -373,6 +403,15 @@ serve(async (req) => {
             .from('tariffe')
             .select('id, client_id, tipo_servizio, importo, supplier_rate, unita_misura, punto_servizio_id, fornitore_id, data_inizio_validita, data_fine_validita, note')
             .or(`(client_id.eq.${processedData.client_id},tipo_servizio.eq.${processedData.tipo_servizio},punto_servizio_id.eq.${processedData.punto_servizio_id}),(client_id.eq.${processedData.client_id},tipo_servizio.eq.${processedData.tipo_servizio},fornitore_id.eq.${processedData.fornitore_id})`) // Example: unique by client+service+point OR client+service+supplier
+            .limit(1);
+          if (error) throw error;
+          existingRecords = data;
+        } else if (anagraficaType === 'rubrica_punti_servizio') { // Nuovo tipo di anagrafica
+          const { data, error } = await supabaseAdmin
+            .from('rubrica_punti_servizio')
+            .select('id, punto_servizio_id, nome_contatto, ruolo_contatto, telefono, email, note, numero_sul_posto, reperibile_1, reperibile_2, reperibile_3, responsabile_contatto')
+            .eq('punto_servizio_id', processedData.punto_servizio_id)
+            .eq('nome_contatto', processedData.nome_contatto)
             .limit(1);
           if (error) throw error;
           existingRecords = data;
@@ -475,6 +514,18 @@ serve(async (req) => {
           if (fornitoreError || !fornitoreData) {
             rowStatus = 'INVALID_FK';
             message = `Errore: ID Fornitore '${processedData.fornitore_id}' non trovato.`;
+            errorCount++;
+          }
+        }
+        if (anagraficaType === 'rubrica_punti_servizio' && processedData.punto_servizio_id) { // Nuovo tipo di anagrafica
+          const { data: puntoServizioData, error: puntoServizioError } = await supabaseAdmin
+            .from('punti_servizio')
+            .select('id')
+            .eq('id', processedData.punto_servizio_id)
+            .single();
+          if (puntoServizioError || !puntoServizioData) {
+            rowStatus = 'INVALID_FK';
+            message = `Errore: ID Punto Servizio '${processedData.punto_servizio_id}' non trovato.`;
             errorCount++;
           }
         }

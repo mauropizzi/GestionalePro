@@ -35,7 +35,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { RubricaContactForm, RubricaContactFormSchema } from "@/components/punti-servizio/rubrica-contact-form.tsx";
+import { RubricaContactForm, RubricaContactFormSchema } from "@/components/punti-servizio/rubrica-contact-form";
 import { useSession } from "@/components/session-context-provider";
 
 interface RubricaContact {
@@ -46,6 +46,11 @@ interface RubricaContact {
   telefono: string | null;
   email: string | null;
   note: string | null;
+  numero_sul_posto: string | null; // Nuovo campo
+  reperibile_1: string | null;     // Nuovo campo
+  reperibile_2: string | null;     // Nuovo campo
+  reperibile_3: string | null;     // Nuovo campo
+  responsabile_contatto: string | null; // Nuovo campo
   created_at: string;
   updated_at: string;
 }
@@ -103,6 +108,11 @@ export default function PuntoServizioRubricaPage() {
       telefono: values.telefono === "" ? null : values.telefono,
       ruolo_contatto: values.ruolo_contatto === "" ? null : values.ruolo_contatto,
       note: values.note === "" ? null : values.note,
+      numero_sul_posto: values.numero_sul_posto === "" ? null : values.numero_sul_posto,
+      reperibile_1: values.reperibile_1 === "" ? null : values.reperibile_1,
+      reperibile_2: values.reperibile_2 === "" ? null : values.reperibile_2,
+      reperibile_3: values.reperibile_3 === "" ? null : values.reperibile_3,
+      responsabile_contatto: values.responsabile_contatto === "" ? null : values.responsabile_contatto,
       created_at: now,
       updated_at: now,
     };
@@ -116,7 +126,6 @@ export default function PuntoServizioRubricaPage() {
     } else {
       toast.success("Contatto aggiunto con successo!");
       fetchContacts();
-      // Close dialog if it was opened for adding
       setIsEditDialogOpen(false);
     }
     setIsSubmitting(false);
@@ -133,6 +142,11 @@ export default function PuntoServizioRubricaPage() {
       telefono: values.telefono === "" ? null : values.telefono,
       ruolo_contatto: values.ruolo_contatto === "" ? null : values.ruolo_contatto,
       note: values.note === "" ? null : values.note,
+      numero_sul_posto: values.numero_sul_posto === "" ? null : values.numero_sul_posto,
+      reperibile_1: values.reperibile_1 === "" ? null : values.reperibile_1,
+      reperibile_2: values.reperibile_2 === "" ? null : values.reperibile_2,
+      reperibile_3: values.reperibile_3 === "" ? null : values.reperibile_3,
+      responsabile_contatto: values.responsabile_contatto === "" ? null : values.responsabile_contatto,
       updated_at: now,
     };
 
@@ -169,10 +183,9 @@ export default function PuntoServizioRubricaPage() {
   };
 
   if (isSessionLoading) {
-    return null; // SessionContextProvider gestisce lo stato di caricamento
+    return null;
   }
 
-  // Access check for the page itself (any authenticated user can view)
   const hasViewAccess = currentUserProfile?.role && currentUserProfile.role !== "pending_approval";
   if (!hasViewAccess) {
     return (
@@ -243,6 +256,11 @@ export default function PuntoServizioRubricaPage() {
                   <TableHead>Ruolo</TableHead>
                   <TableHead>Telefono</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Numero sul Posto</TableHead>
+                  <TableHead>Reperibile 1</TableHead>
+                  <TableHead>Reperibile 2</TableHead>
+                  <TableHead>Reperibile 3</TableHead>
+                  <TableHead>Responsabile</TableHead>
                   <TableHead>Note</TableHead>
                   <TableHead className="text-right">Azioni</TableHead>
                 </TableRow>
@@ -254,7 +272,12 @@ export default function PuntoServizioRubricaPage() {
                     <TableCell>{contact.ruolo_contatto || "N/A"}</TableCell>
                     <TableCell>{contact.telefono || "N/A"}</TableCell>
                     <TableCell>{contact.email || "N/A"}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                    <TableCell>{contact.numero_sul_posto || "N/A"}</TableCell>
+                    <TableCell>{contact.reperibile_1 || "N/A"}</TableCell>
+                    <TableCell>{contact.reperibile_2 || "N/A"}</TableCell>
+                    <TableCell>{contact.reperibile_3 || "N/A"}</TableCell>
+                    <TableCell>{contact.responsabile_contatto || "N/A"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-[150px] truncate">
                       {contact.note || "N/A"}
                     </TableCell>
                     <TableCell className="text-right">

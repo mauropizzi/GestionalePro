@@ -86,8 +86,7 @@ const templateHeaders: { [key: string]: string[] } = {
     "Referente", "Telefono Referente", "Telefono", "Email", "Note", "Tempo Intervento",
     "ID Fornitore (UUID)", "Codice Cliente", "Codice SICEP", "Codice Fatturazione",
     "Latitudine", "Longitudine", "Nome Procedura",
-    // Nuovi campi rubrica
-    "Numero sul Posto", "Reperibile 1", "Reperibile 2", "Reperibile 3", "Responsabile Contatto"
+    "Numero sul Posto", "Reperibile 1", "Reperibile 2", "Reperibile 3", "Responsabile Contatto" // Nuovi campi
   ],
   fornitori: [
     "Ragione Sociale", "Codice Fiscale", "Partita IVA", "Indirizzo", "Città", "CAP",
