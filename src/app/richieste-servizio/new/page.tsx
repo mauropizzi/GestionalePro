@@ -188,11 +188,14 @@ export default function NewRichiestaServizioPage() {
       return;
     }
 
+    const isSingleTimeService = values.tipo_servizio === "BONIFICA" ||
+      (values.tipo_servizio === "APERTURA_CHIUSURA" && (values.tipo_apertura_chiusura === "SOLO_APERTURA" || values.tipo_apertura_chiusura === "SOLO_CHIUSURA"));
+
     const schedulesToInsert = values.daily_schedules.map((schedule: DailySchedule) => ({
       ...schedule,
       richiesta_servizio_id: newRichiesta.id,
       ora_inizio: schedule.h24 || !schedule.attivo ? null : schedule.ora_inizio,
-      ora_fine: (values.tipo_servizio === "BONIFICA" || schedule.h24 || !schedule.attivo) ? null : schedule.ora_fine, // Explicitly set ora_fine to null for BONIFICA
+      ora_fine: (isSingleTimeService || schedule.h24 || !schedule.attivo) ? null : schedule.ora_fine, // Explicitly set ora_fine to null for single time services
       created_at: now,
       updated_at: now,
     }));

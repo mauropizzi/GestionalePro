@@ -255,13 +255,16 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
       return;
     }
 
+    const isSingleTimeService = values.tipo_servizio === "BONIFICA" ||
+      (values.tipo_servizio === "APERTURA_CHIUSURA" && (values.tipo_apertura_chiusura === "SOLO_APERTURA" || values.tipo_apertura_chiusura === "SOLO_CHIUSURA"));
+
     for (const schedule of values.daily_schedules) {
       const scheduleToSave = {
         richiesta_servizio_id: richiestaId,
         giorno_settimana: schedule.giorno_settimana,
         h24: schedule.h24,
         ora_inizio: schedule.h24 || !schedule.attivo ? null : schedule.ora_inizio,
-        ora_fine: (values.tipo_servizio === "BONIFICA" || schedule.h24 || !schedule.attivo) ? null : schedule.ora_fine, // Explicitly set ora_fine to null for BONIFICA
+        ora_fine: (isSingleTimeService || schedule.h24 || !schedule.attivo) ? null : schedule.ora_fine, // Explicitly set ora_fine to null for single time services
         updated_at: now,
       };
 

@@ -165,6 +165,32 @@ export const richiestaServizioFormSchema = z.discriminatedUnion("tipo_servizio",
         }
       }
     });
+  } else if (data.tipo_servizio === "APERTURA_CHIUSURA" && (data.tipo_apertura_chiusura === "SOLO_APERTURA" || data.tipo_apertura_chiusura === "SOLO_CHIUSURA")) {
+    data.daily_schedules.forEach((schedule, index) => {
+      if (schedule.attivo) {
+        if (schedule.h24) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Per il servizio ${data.tipo_apertura_chiusura.replace(/_/g, ' ')}, il giorno ${schedule.giorno_settimana} non può essere H24.`,
+            path: [`daily_schedules`, index, `h24`],
+          });
+        }
+        if (!schedule.ora_inizio) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Per il servizio ${data.tipo_apertura_chiusura.replace(/_/g, ' ')}, il giorno ${schedule.giorno_settimana} deve avere un orario.`,
+            path: [`daily_schedules`, index, `ora_inizio`],
+          });
+        }
+        if (schedule.ora_fine !== null) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Per il servizio ${data.tipo_apertura_chiusura.replace(/_/g, ' ')}, il giorno ${schedule.giorno_settimana} deve avere solo un orario di inizio.`,
+            path: [`daily_schedules`, index, `ora_fine`],
+          });
+        }
+      }
+    });
   }
 });
 // IMPORTANT: Conditional refinements for date/time ranges (e.g., data_fine_servizio > data_inizio_servizio,

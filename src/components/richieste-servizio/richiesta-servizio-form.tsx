@@ -51,6 +51,7 @@ export function RichiestaServizioForm({
   isSubmitting,
 }: RichiestaServizioFormProps) {
   const selectedServiceType = form.watch("tipo_servizio");
+  const tipoAperturaChiusura = form.watch("tipo_apertura_chiusura"); // Watch this value
   const formValues = form.watch();
 
   let calculatedValue: number | null = null;
@@ -160,7 +161,8 @@ export function RichiestaServizioForm({
                   <DailySchedulesFormField
                     value={field.value}
                     onChange={field.onChange}
-                    selectedServiceType={selectedServiceType} // Passa il tipo di servizio
+                    selectedServiceType={selectedServiceType}
+                    tipoAperturaChiusura={tipoAperturaChiusura} // Passa il tipo di apertura/chiusura
                   />
                 </FormControl>
                 <FormDescription>
