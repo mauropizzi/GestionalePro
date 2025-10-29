@@ -33,7 +33,6 @@ export const APERTURA_CHIUSURA_TYPES = [
 
 export type AperturaChiusuraType = (typeof APERTURA_CHIUSURA_TYPES)[number]["value"];
 
-// Original daily schedule schema (for services requiring start AND end time)
 export const dailyScheduleSchema = z.object({
   id: z.string().optional(),
   giorno_settimana: z.string(),
@@ -48,7 +47,7 @@ export const dailyScheduleSchema = z.object({
   if (data.h24) {
     return data.ora_inizio === null && data.ora_fine === null;
   } else {
-    return data.ora_inizio !== null && data.ora_fine !== null; // Requires both start and end
+    return data.ora_inizio !== null && data.ora_fine !== null;
   }
 }, {
   message: "Specificare orari di inizio e fine o selezionare h24 se il giorno è attivo.",
@@ -66,29 +65,6 @@ export const dailyScheduleSchema = z.object({
   message: "L'ora di fine deve essere successiva all'ora di inizio.",
   path: ["ora_fine"],
 });
-
-// New daily schedule schema for Bonifica (only requires start time if active and not h24)
-export const bonificaDailyScheduleSchema = z.object({
-  id: z.string().optional(),
-  giorno_settimana: z.string(),
-  h24: z.boolean(),
-  ora_inizio: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)").nullable(),
-  ora_fine: z.string().nullable(), // ora_fine is always nullable for Bonifica
-  attivo: z.boolean(),
-}).refine(data => {
-  if (!data.attivo) {
-    return data.h24 === false && data.ora_inizio === null && data.ora_fine === null;
-  }
-  if (data.h24) {
-    return data.ora_inizio === null && data.ora_fine === null;
-  } else {
-    return data.ora_inizio !== null; // Only requires ora_inizio for Bonifica
-  }
-}, {
-  message: "Specificare un orario di inizio o selezionare h24 se il giorno è attivo.",
-  path: ["ora_inizio"],
-});
-
 
 // Define a base schema for common fields as a plain ZodObject
 const baseRichiestaServizioObjectSchema = z.object({
@@ -138,13 +114,13 @@ const aperturaChiusuraBaseSchema = baseRichiestaServizioObjectSchema.extend({
   tipo_apertura_chiusura: z.enum(APERTURA_CHIUSURA_TYPES.map(t => t.value) as [string, ...string[]], { required_error: "Il tipo di attività è richiesto." }),
 });
 
-// Define schema for BONIFICA (only requires start time)
+// Define schema for BONIFICA (similar to Apertura/Chiusura but fixed to "APERTURA_E_CHIUSURA" logic)
 const bonificaBaseSchema = baseRichiestaServizioObjectSchema.extend({
   tipo_servizio: z.literal(SERVICE_TYPES.find(t => t.value === "BONIFICA")!.value),
   data_inizio_servizio: z.date({ required_error: "La data di inizio servizio è richiesta." }),
   data_fine_servizio: z.date({ required_error: "La data di fine servizio è richiesta." }),
   numero_agenti: z.coerce.number().min(1, "Il numero di agenti deve essere almeno 1."),
-  daily_schedules: z.array(bonificaDailyScheduleSchema).min(8, "Devi definire gli orari per tutti i giorni della settimana e per i festivi."), // Use bonificaDailyScheduleSchema
+  daily_schedules: z.array(dailyScheduleSchema).min(8, "Devi definire gli orari per tutti i giorni della settimana e per i festivi."),
 });
 
 
@@ -253,8 +229,8 @@ export const calculateTotalInspections = (
 export const calculateAperturaChiusuraCount = (
   serviceStartDate: Date,
   serviceEndDate: Date,
-  dailySchedules: (z.infer<typeof dailyScheduleSchema> | z.infer<typeof bonificaDailyScheduleSchema>)[], // Allow both schemas
-  tipoAperturaChiusura: AperturaChiusuraType | "BONIFICA_SINGLE_START", // Add a specific type for Bonifica
+  dailySchedules: z.infer<typeof dailyScheduleSchema>[],
+  tipoAperturaChiusura: AperturaChiusuraType,
   numAgents: number
 ): number => {
   let countPerDay = 0;
@@ -262,10 +238,7 @@ export const calculateAperturaChiusuraCount = (
     countPerDay = 2;
   } else if (tipoAperturaChiusura === "SOLO_APERTURA" || tipoAperturaChiusura === "SOLO_CHIUSURA") {
     countPerDay = 1;
-  } else if (tipoAperturaChiusura === "BONIFICA_SINGLE_START") { // Handle Bonifica with single start time
-    countPerDay = 1;
-  }
-  else {
+  } else {
     return 0;
   }
 

@@ -7,13 +7,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { format, parseISO } from "date-fns";
-import * as z from "zod"; // Added missing import
 import {
   RichiestaServizioFormSchema,
   richiestaServizioFormSchema,
   calculateTotalHours,
   calculateTotalInspections,
-  calculateAperturaChiusuraCount,
+  calculateAperturaChiusuraCount, // Importa la nuova funzione
   defaultDailySchedules,
   ServiceType,
   InspectionType,
@@ -21,7 +20,6 @@ import {
   AperturaChiusuraType, // Importa il nuovo tipo
   APERTURA_CHIUSURA_TYPES, // Importa i nuovi tipi
   BonificaFormSchema, // Importa il nuovo tipo di schema
-  bonificaDailyScheduleSchema, // Import the new schema
 } from "@/lib/richieste-servizio-utils";
 import { Client, PuntoServizio, RichiestaServizio, DailySchedule, Fornitore } from "@/types/richieste-servizio";
 
@@ -198,8 +196,8 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
       totalCalculatedValue = calculateAperturaChiusuraCount(
         dataInizioServizio,
         dataFineServizio,
-        values.daily_schedules as z.infer<typeof bonificaDailyScheduleSchema>[], // Cast to bonificaDailyScheduleSchema[]
-        "BONIFICA_SINGLE_START", // Use the new type for Bonifica
+        values.daily_schedules,
+        "APERTURA_E_CHIUSURA", // Bonifica è calcolata come Apertura e Chiusura
         values.numero_agenti
       );
     }
@@ -253,7 +251,7 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
         giorno_settimana: schedule.giorno_settimana,
         h24: schedule.h24,
         ora_inizio: schedule.h24 || !schedule.attivo ? null : schedule.ora_inizio,
-        ora_fine: (schedule.h24 || !schedule.attivo || values.tipo_servizio === "BONIFICA") ? null : schedule.ora_fine, // Set ora_fine to null for Bonifica
+        ora_fine: schedule.h24 || !schedule.attivo ? null : schedule.ora_fine,
         attivo: schedule.attivo,
         updated_at: now,
       };

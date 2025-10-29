@@ -21,7 +21,7 @@ export interface DailySchedule {
   giorno_settimana: string;
   h24: boolean;
   ora_inizio: string | null;
-  ora_fine: string | null; // Made nullable
+  ora_fine: string | null;
   attivo: boolean;
   created_at?: string;
   updated_at?: string;

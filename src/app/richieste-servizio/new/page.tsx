@@ -17,10 +17,9 @@ import {
   richiestaServizioFormSchema,
   calculateTotalHours,
   calculateTotalInspections,
-  calculateAperturaChiusuraCount,
+  calculateAperturaChiusuraCount, // Importa la nuova funzione
   defaultDailySchedules,
-  AperturaChiusuraType,
-  bonificaDailyScheduleSchema, // Import the new schema
+  AperturaChiusuraType, // Importa il tipo
 } from "@/lib/richieste-servizio-utils";
 import { DailySchedule } from "@/types/richieste-servizio";
 import { RichiestaServizioForm } from "@/components/richieste-servizio/richiesta-servizio-form";
@@ -132,8 +131,8 @@ export default function NewRichiestaServizioPage() {
       totalCalculatedValue = calculateAperturaChiusuraCount(
         dataInizioServizio,
         dataFineServizio,
-        values.daily_schedules as z.infer<typeof bonificaDailyScheduleSchema>[], // Cast to bonificaDailyScheduleSchema[]
-        "BONIFICA_SINGLE_START", // Use the new type for Bonifica
+        values.daily_schedules,
+        "APERTURA_E_CHIUSURA", // Bonifica è calcolata come Apertura e Chiusura
         values.numero_agenti
       );
     }
@@ -189,7 +188,7 @@ export default function NewRichiestaServizioPage() {
       ...schedule,
       richiesta_servizio_id: newRichiesta.id,
       ora_inizio: schedule.h24 || !schedule.attivo ? null : schedule.ora_inizio,
-      ora_fine: (schedule.h24 || !schedule.attivo || values.tipo_servizio === "BONIFICA") ? null : schedule.ora_fine, // Set ora_fine to null for Bonifica
+      ora_fine: schedule.h24 || !schedule.attivo ? null : schedule.ora_fine,
       created_at: now,
       updated_at: now,
     }));
