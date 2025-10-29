@@ -2,285 +2,33 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
+// Import dei moduli helper
+import { mapClientData } from './utils/mappers/client-mapper.ts';
+import { mapPuntoServizioData } from './utils/mappers/punto-servizio-mapper.ts';
+import { mapFornitoreData } from './utils/mappers/fornitore-mapper.ts';
+import { mapPersonaleData } from './utils/mappers/personale-mapper.ts';
+import { mapOperatoreNetworkData } from './utils/mappers/operatore-network-mapper.ts';
+import { mapProceduraData } from './utils/mappers/procedura-mapper.ts';
+import { mapTariffaData } from './utils/mappers/tariffa-mapper.ts';
+import { mapRubricaPuntiServizioData } from './utils/mappers/rubrica-punti-servizio-mapper.ts';
+import { checkExistingRecord, validateForeignKeys } from './utils/db-operations.ts';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Helper function to get a field value, trying multiple keys and applying a type conversion
-const getFieldValue = (rowData: any, keys: string[], typeConverter: (value: any) => any) => {
-  for (const key of keys) {
-    const value = rowData[key];
-    if (value !== undefined && value !== null && String(value).trim() !== '') {
-      return typeConverter(value);
-    }
-  }
-  return null;
+// Mappa i tipi di anagrafica ai rispettivi mapper
+const dataMappers = {
+  clienti: mapClientData,
+  punti_servizio: mapPuntoServizioData,
+  fornitori: mapFornitoreData,
+  personale: mapPersonaleData,
+  operatori_network: mapOperatoreNetworkData,
+  procedure: mapProceduraData,
+  tariffe: mapTariffaData,
+  rubrica_punti_servizio: mapRubricaPuntiServizioData,
 };
-
-// Type converters
-const toString = (value: any) => String(value).trim();
-const toNumber = (value: any) => {
-  const num = Number(value);
-  return isNaN(num) ? null : num;
-};
-const toBoolean = (value: any) => {
-  if (typeof value === 'boolean') return value;
-  const s = String(value).trim().toLowerCase();
-  if (s === 'true' || s === '1') return true;
-  if (s === 'false' || s === '0') return false;
-  return null; // Or undefined, depending on desired strictness
-};
-const toDateString = (value: any) => {
-  if (!value) return null;
-  // Attempt to parse various date formats
-  try {
-    const date = new Date(value);
-    if (!isNaN(date.getTime())) {
-      return date.toISOString().split('T')[0]; // YYYY-MM-DD
-    }
-  } catch (e) {
-    // Fallback for Excel numeric dates (days since 1900)
-    if (typeof value === 'number' && value > 1) { // Excel dates are numbers, starting from 1 for Jan 1, 1900
-      const excelEpoch = new Date('1899-12-30T00:00:00Z'); // Excel's epoch is Dec 30, 1899
-      const date = new Date(excelEpoch.getTime() + value * 24 * 60 * 60 * 1000);
-      if (!isNaN(date.getTime())) {
-        return date.toISOString().split('T')[0];
-      }
-    }
-  }
-  return null;
-};
-
-const isValidUuid = (uuid: any) => typeof uuid === 'string' && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid.trim());
-
-// Helper function to clean and map incoming client data to database schema
-function mapClientData(rowData: any) {
-  const ragione_sociale = getFieldValue(rowData, ['Ragione Sociale', 'ragione_sociale', 'ragioneSociale'], toString);
-  if (!ragione_sociale) {
-    throw new Error('Ragione Sociale is required and cannot be empty.');
-  }
-
-  return {
-    ragione_sociale: ragione_sociale,
-    codice_fiscale: getFieldValue(rowData, ['Codice Fiscale', 'codice_fiscale', 'codiceFiscale'], toString),
-    partita_iva: getFieldValue(rowData, ['Partita IVA', 'partita_iva', 'partitaIva'], toString),
-    indirizzo: getFieldValue(rowData, ['Indirizzo', 'indirizzo'], toString),
-    citta: getFieldValue(rowData, ['Città', 'citta'], toString),
-    cap: getFieldValue(rowData, ['CAP', 'cap'], toString),
-    provincia: getFieldValue(rowData, ['Provincia', 'provincia'], toString),
-    telefono: getFieldValue(rowData, ['Telefono', 'telefono'], toString),
-    email: getFieldValue(rowData, ['Email', 'email'], toString),
-    pec: getFieldValue(rowData, ['PEC', 'pec'], toString),
-    sdi: getFieldValue(rowData, ['SDI', 'sdi'], toString),
-    attivo: getFieldValue(rowData, ['Attivo', 'attivo', 'Attivo (TRUE/FALSE)'], toBoolean),
-    note: getFieldValue(rowData, ['Note', 'note'], toString),
-  };
-}
-
-// Helper function to clean and map incoming service point data to database schema
-function mapPuntoServizioData(rowData: any) {
-  const nome_punto_servizio = getFieldValue(rowData, ['Nome Punto Servizio', 'nome_punto_servizio', 'nomePuntoServizio'], toString);
-  if (!nome_punto_servizio) {
-    throw new Error('Nome Punto Servizio is required and cannot be empty.');
-  }
-
-  let id_cliente = getFieldValue(rowData, ['ID Cliente', 'id_cliente', 'idCliente', 'ID Cliente (UUID)'], toString);
-  id_cliente = (id_cliente && isValidUuid(id_cliente)) ? id_cliente : null;
-
-  let fornitore_id = getFieldValue(rowData, ['ID Fornitore', 'fornitore_id', 'fornitoreId', 'ID Fornitore (UUID)'], toString);
-  fornitore_id = (fornitore_id && isValidUuid(fornitore_id)) ? fornitore_id : null;
-
-  // Explicitly get latitude and longitude from their expected columns
-  let latitude = getFieldValue(rowData, ['Latitudine', 'latitude'], toNumber);
-  let longitude = getFieldValue(rowData, ['Longitudine', 'longitude'], toNumber);
-
-  let note = getFieldValue(rowData, ['Note', 'note'], toString);
-
-  // Heuristic to detect and correct shifted coordinates if not found in dedicated columns
-  if (latitude === null && longitude === null) {
-    const potentialShiftedLat = toNumber(rowData['Note'] || rowData['note']);
-    const potentialShiftedLon = toNumber(rowData['fornitore_id'] || rowData['fornitoreId']); // Check original parsed keys
-
-    if (potentialShiftedLat !== null && potentialShiftedLon !== null && Math.abs(potentialShiftedLat) <= 90 && Math.abs(potentialShiftedLon) <= 180) {
-      latitude = potentialShiftedLat;
-      longitude = potentialShiftedLon;
-      // Clear the fields where the coordinates were mistakenly placed
-      note = null;
-      fornitore_id = null; // This might overwrite a valid fornitore_id if it was present and not a coordinate
-    }
-  }
-
-  return {
-    nome_punto_servizio: nome_punto_servizio,
-    id_cliente: id_cliente,
-    indirizzo: getFieldValue(rowData, ['Indirizzo', 'indirizzo'], toString),
-    citta: getFieldValue(rowData, ['Città', 'citta'], toString),
-    cap: getFieldValue(rowData, ['CAP', 'cap'], toString),
-    provincia: getFieldValue(rowData, ['Provincia', 'provincia'], toString),
-    referente: getFieldValue(rowData, ['Referente', 'referente'], toString),
-    telefono_referente: getFieldValue(rowData, ['Telefono Referente', 'telefono_referente', 'telefonoReferente'], toString),
-    telefono: getFieldValue(rowData, ['Telefono', 'telefono'], toString),
-    email: getFieldValue(rowData, ['Email', 'email'], toString),
-    note: note, // Use the potentially cleared note
-    tempo_intervento: getFieldValue(rowData, ['Tempo Intervento', 'tempo_intervento', 'tempoIntervento'], toString),
-    fornitore_id: fornitore_id, // Use the potentially cleared fornitore_id
-    codice_cliente: getFieldValue(rowData, ['Codice Cliente', 'codice_cliente', 'codiceCliente'], toString),
-    codice_sicep: getFieldValue(rowData, ['Codice SICEP', 'codice_sicep', 'codiceSicep'], toString),
-    codice_fatturazione: getFieldValue(rowData, ['Codice Fatturazione', 'codice_fatturazione', 'codiceFatturazione'], toString),
-    latitude: latitude,
-    longitude: longitude,
-    nome_procedura: getFieldValue(rowData, ['Nome Procedura', 'nome_procedura', 'nomeProcedura'], toString),
-  };
-}
-
-// Helper function to clean and map incoming supplier data to database schema
-function mapFornitoreData(rowData: any) {
-  const ragione_sociale = getFieldValue(rowData, ['Ragione Sociale', 'ragione_sociale', 'ragioneSociale'], toString);
-  if (!ragione_sociale) {
-    throw new Error('Ragione Sociale is required and cannot be empty.');
-  }
-
-  return {
-    ragione_sociale: ragione_sociale,
-    codice_fiscale: getFieldValue(rowData, ['Codice Fiscale', 'codice_fiscale', 'codiceFiscale'], toString),
-    partita_iva: getFieldValue(rowData, ['Partita IVA', 'partita_iva', 'partitaIva'], toString),
-    indirizzo: getFieldValue(rowData, ['Indirizzo', 'indirizzo'], toString),
-    citta: getFieldValue(rowData, ['Città', 'citta'], toString),
-    cap: getFieldValue(rowData, ['CAP', 'cap'], toString),
-    provincia: getFieldValue(rowData, ['Provincia', 'provincia'], toString),
-    telefono: getFieldValue(rowData, ['Telefono', 'telefono'], toString),
-    email: getFieldValue(rowData, ['Email', 'email'], toString),
-    pec: getFieldValue(rowData, ['PEC', 'pec'], toString),
-    tipo_servizio: getFieldValue(rowData, ['Tipo Servizio', 'tipo_servizio', 'tipoServizio'], toString),
-    attivo: getFieldValue(rowData, ['Attivo', 'attivo', 'Attivo (TRUE/FALSE)'], toBoolean),
-    note: getFieldValue(rowData, ['Note', 'note'], toString),
-  };
-}
-
-// Helper function to clean and map incoming personale data to database schema
-function mapPersonaleData(rowData: any) {
-  const nome = getFieldValue(rowData, ['Nome', 'nome'], toString);
-  const cognome = getFieldValue(rowData, ['Cognome', 'cognome'], toString);
-  if (!nome || !cognome) {
-    throw new Error('Nome and Cognome are required and cannot be empty.');
-  }
-
-  return {
-    nome: nome,
-    cognome: cognome,
-    codice_fiscale: getFieldValue(rowData, ['Codice Fiscale', 'codice_fiscale', 'codiceFiscale'], toString),
-    ruolo: getFieldValue(rowData, ['Ruolo', 'ruolo'], toString),
-    telefono: getFieldValue(rowData, ['Telefono', 'telefono'], toString),
-    email: getFieldValue(rowData, ['Email', 'email'], toString),
-    data_nascita: getFieldValue(rowData, ['Data Nascita', 'data_nascita', 'dataNascita', 'Data Nascita (YYYY-MM-DD)'], toDateString),
-    luogo_nascita: getFieldValue(rowData, ['Luogo Nascita', 'luogo_nascita', 'luogoNascita'], toString),
-    indirizzo: getFieldValue(rowData, ['Indirizzo', 'indirizzo'], toString),
-    cap: getFieldValue(rowData, ['CAP', 'cap'], toString),
-    citta: getFieldValue(rowData, ['Città', 'citta'], toString),
-    provincia: getFieldValue(rowData, ['Provincia', 'provincia'], toString),
-    data_assunzione: getFieldValue(rowData, ['Data Assunzione', 'data_assunzione', 'dataAssunzione', 'Data Assunzione (YYYY-MM-DD)'], toDateString),
-    data_cessazione: getFieldValue(rowData, ['Data Cessazione', 'data_cessazione', 'dataCessazione', 'Data Cessazione (YYYY-MM-DD)'], toDateString),
-    attivo: getFieldValue(rowData, ['Attivo', 'attivo', 'Attivo (TRUE/FALSE)'], toBoolean),
-    note: getFieldValue(rowData, ['Note', 'note'], toString),
-  };
-}
-
-// Helper function to clean and map incoming network operator data to database schema
-function mapOperatoreNetworkData(rowData: any) {
-  const nome = getFieldValue(rowData, ['Nome', 'nome'], toString);
-  const cognome = getFieldValue(rowData, ['Cognome', 'cognome'], toString);
-  if (!nome || !cognome) {
-    throw new Error('Nome and Cognome are required and cannot be empty.');
-  }
-
-  let cliente_id = getFieldValue(rowData, ['ID Cliente', 'id_cliente', 'idCliente', 'ID Cliente (UUID)'], toString);
-  cliente_id = (cliente_id && isValidUuid(cliente_id)) ? cliente_id : null;
-
-  return {
-    nome: nome,
-    cognome: cognome,
-    cliente_id: cliente_id,
-    telefono: getFieldValue(rowData, ['Telefono', 'telefono'], toString),
-    email: getFieldValue(rowData, ['Email', 'email'], toString),
-    note: getFieldValue(rowData, ['Note', 'note'], toString),
-  };
-}
-
-// Helper function to clean and map incoming procedure data to database schema
-function mapProceduraData(rowData: any) {
-  const nome_procedura = getFieldValue(rowData, ['Nome Procedura', 'nome_procedura', 'nomeProcedura'], toString);
-  if (!nome_procedura) {
-    throw new Error('Nome Procedura is required and cannot be empty.');
-  }
-
-  return {
-    nome_procedura: nome_procedura,
-    descrizione: getFieldValue(rowData, ['Descrizione', 'descrizione'], toString),
-    versione: getFieldValue(rowData, ['Versione', 'versione'], toString),
-    data_ultima_revisione: getFieldValue(rowData, ['Data Ultima Revisione', 'data_ultima_revisione', 'dataUltimaRevisione', 'Data Ultima Revisione (YYYY-MM-DD)'], toDateString),
-    responsabile: getFieldValue(rowData, ['Responsabile', 'responsabile'], toString),
-    documento_url: getFieldValue(rowData, ['URL Documento', 'documento_url', 'documentoUrl'], toString),
-    attivo: getFieldValue(rowData, ['Attivo', 'attivo', 'Attivo (TRUE/FALSE)'], toBoolean),
-    note: getFieldValue(rowData, ['Note', 'note'], toString),
-  };
-}
-
-// Helper function to clean and map incoming tariffa data to database schema
-function mapTariffaData(rowData: any) {
-  const tipo_servizio = getFieldValue(rowData, ['Tipo Servizio', 'tipo_servizio', 'tipoServizio'], toString);
-  const importo = getFieldValue(rowData, ['Importo', 'importo'], toNumber);
-  if (!tipo_servizio || importo === null) {
-    throw new Error('Tipo Servizio and Importo are required.');
-  }
-
-  let client_id = getFieldValue(rowData, ['ID Cliente', 'client_id', 'clientId', 'ID Cliente (UUID)'], toString);
-  client_id = (client_id && isValidUuid(client_id)) ? client_id : null;
-
-  let punto_servizio_id = getFieldValue(rowData, ['ID Punto Servizio', 'punto_servizio_id', 'puntoServizioId', 'ID Punto Servizio (UUID)'], toString);
-  punto_servizio_id = (punto_servizio_id && isValidUuid(punto_servizio_id)) ? punto_servizio_id : null;
-
-  let fornitore_id = getFieldValue(rowData, ['ID Fornitore', 'fornitore_id', 'fornitoreId', 'ID Fornitore (UUID)'], toString);
-  fornitore_id = (fornitore_id && isValidUuid(fornitore_id)) ? fornitore_id : null;
-
-  return {
-    client_id: client_id,
-    tipo_servizio: tipo_servizio,
-    importo: importo,
-    supplier_rate: getFieldValue(rowData, ['Costo Fornitore', 'supplier_rate', 'supplierRate'], toNumber),
-    unita_misura: getFieldValue(rowData, ['Unità di Misura', 'unita_misura', 'unitaMisura'], toString),
-    punto_servizio_id: punto_servizio_id,
-    fornitore_id: fornitore_id,
-    data_inizio_validita: getFieldValue(rowData, ['Data Inizio Validità', 'data_inizio_validita', 'dataInizioValidita', 'Data Inizio Validità (YYYY-MM-DD)'], toDateString),
-    data_fine_validita: getFieldValue(rowData, ['Data Fine Validità', 'data_fine_validita', 'dataFineValidita', 'Data Fine Validità (YYYY-MM-DD)'], toDateString),
-    note: getFieldValue(rowData, ['Note', 'note'], toString),
-  };
-}
-
-// Helper function to clean and map incoming rubrica_punti_servizio data to database schema
-function mapRubricaPuntiServizioData(rowData: any) {
-  const tipo_recapito = getFieldValue(rowData, ['Tipo Recapito', 'tipo_recapito', 'tipoRecapito'], toString);
-  if (!tipo_recapito) {
-    throw new Error('Tipo Recapito is required and cannot be empty.');
-  }
-
-  let punto_servizio_id = getFieldValue(rowData, ['ID Punto Servizio', 'punto_servizio_id', 'puntoServizioId', 'ID Punto Servizio (UUID)'], toString);
-  punto_servizio_id = (punto_servizio_id && isValidUuid(punto_servizio_id)) ? punto_servizio_id : null;
-  if (!punto_servizio_id) {
-    throw new Error('ID Punto Servizio is required and must be a valid UUID.');
-  }
-
-  return {
-    punto_servizio_id: punto_servizio_id,
-    tipo_recapito: tipo_recapito,
-    nome_persona: getFieldValue(rowData, ['Nome Persona', 'nome_persona', 'nomePersona'], toString),
-    telefono_fisso: getFieldValue(rowData, ['Telefono Fisso', 'telefono_fisso', 'telefonoFisso'], toString),
-    telefono_cellulare: getFieldValue(rowData, ['Telefono Cellulare', 'telefono_cellulare', 'telefonoCellulare'], toString),
-    email_recapito: getFieldValue(rowData, ['Email Recapito', 'email_recapito', 'emailRecapito'], toString),
-    note: getFieldValue(rowData, ['Note', 'note'], toString),
-  };
-}
-
 
 serve(async (req) => {
   console.log("import-data function invoked.");
@@ -315,6 +63,11 @@ serve(async (req) => {
     const errors: string[] = [];
     const report: any[] = [];
 
+    const mapper = dataMappers[anagraficaType];
+    if (!mapper) {
+      throw new Error(`Import logic not implemented for anagrafica type: ${anagraficaType}`);
+    }
+
     for (const [rowIndex, row] of importData.entries()) {
       let processedData: any = {};
       let rowStatus = 'UNKNOWN';
@@ -323,209 +76,25 @@ serve(async (req) => {
       let existingRecordId: string | null = null;
 
       try {
-        // Step 1: Map and validate basic data types and required fields
-        if (anagraficaType === 'clienti') {
-          processedData = mapClientData(row);
-        } else if (anagraficaType === 'punti_servizio') {
-          processedData = mapPuntoServizioData(row);
-        } else if (anagraficaType === 'fornitori') {
-          processedData = mapFornitoreData(row);
-        } else if (anagraficaType === 'personale') {
-          processedData = mapPersonaleData(row);
-        } else if (anagraficaType === 'operatori_network') {
-          processedData = mapOperatoreNetworkData(row);
-        } else if (anagraficaType === 'procedure') {
-          processedData = mapProceduraData(row);
-        } else if (anagraficaType === 'tariffe') {
-          processedData = mapTariffaData(row);
-        } else if (anagraficaType === 'rubrica_punti_servizio') { // Nuovo tipo di anagrafica
-          processedData = mapRubricaPuntiServizioData(row);
-        } else {
-          throw new Error(`Import logic not implemented for anagrafica type: ${anagraficaType}`);
-        }
+        // Step 1: Map and validate basic data types and required fields using the specific mapper
+        processedData = mapper(row);
 
         // Step 2: Check for duplicates and existing records
-        let existingRecords: any[] = [];
-        if (anagraficaType === 'clienti') {
-          const { data, error } = await supabaseAdmin
-            .from('clienti')
-            .select('id, ragione_sociale, partita_iva, codice_fiscale, indirizzo, citta, cap, provincia, telefono, email, pec, sdi, attivo, note')
-            .or(`ragione_sociale.eq.${processedData.ragione_sociale},partita_iva.eq.${processedData.partita_iva}`)
-            .limit(1);
-          if (error) throw error;
-          existingRecords = data;
-        } else if (anagraficaType === 'punti_servizio') {
-          const { data, error } = await supabaseAdmin
-            .from('punti_servizio')
-            .select('id, nome_punto_servizio, id_cliente, indirizzo, citta, cap, provincia, referente, telefono_referente, telefono, email, note, tempo_intervento, fornitore_id, codice_cliente, codice_sicep, codice_fatturazione, latitude, longitude, nome_procedura')
-            .eq('nome_punto_servizio', processedData.nome_punto_servizio)
-            .limit(1);
-          if (error) throw error;
-          existingRecords = data;
-        } else if (anagraficaType === 'fornitori') {
-          const { data, error } = await supabaseAdmin
-            .from('fornitori')
-            .select('id, ragione_sociale, partita_iva, codice_fiscale, indirizzo, cap, citta, provincia, telefono, email, pec, tipo_servizio, attivo, note')
-            .or(`ragione_sociale.eq.${processedData.ragione_sociale},partita_iva.eq.${processedData.partita_iva}`)
-            .limit(1);
-          if (error) throw error;
-          existingRecords = data;
-        } else if (anagraficaType === 'personale') {
-          const { data, error } = await supabaseAdmin
-            .from('personale')
-            .select('id, nome, cognome, codice_fiscale, ruolo, telefono, email, data_nascita, luogo_nascita, indirizzo, cap, citta, provincia, data_assunzione, data_cessazione, attivo, note')
-            .or(`(nome.eq.${processedData.nome},cognome.eq.${processedData.cognome}),codice_fiscale.eq.${processedData.codice_fiscale}`)
-            .limit(1);
-          if (error) throw error;
-          existingRecords = data;
-        } else if (anagraficaType === 'operatori_network') {
-          const { data, error } = await supabaseAdmin
-            .from('operatori_network')
-            .select('id, nome, cognome, cliente_id, telefono, email, note')
-            .or(`(nome.eq.${processedData.nome},cognome.eq.${processedData.cognome}),email.eq.${processedData.email}`)
-            .limit(1);
-          if (error) throw error;
-          existingRecords = data;
-        } else if (anagraficaType === 'procedure') {
-          const { data, error } = await supabaseAdmin
-            .from('procedure')
-            .select('id, nome_procedura, descrizione, versione, data_ultima_revisione, responsabile, documento_url, attivo, note')
-            .eq('nome_procedura', processedData.nome_procedura)
-            .limit(1);
-          if (error) throw error;
-          existingRecords = data;
-        } else if (anagraficaType === 'tariffe') {
-          const { data, error } = await supabaseAdmin
-            .from('tariffe')
-            .select('id, client_id, tipo_servizio, importo, supplier_rate, unita_misura, punto_servizio_id, fornitore_id, data_inizio_validita, data_fine_validita, note')
-            .or(`(client_id.eq.${processedData.client_id},tipo_servizio.eq.${processedData.tipo_servizio},punto_servizio_id.eq.${processedData.punto_servizio_id}),(client_id.eq.${processedData.client_id},tipo_servizio.eq.${processedData.tipo_servizio},fornitore_id.eq.${processedData.fornitore_id})`) // Example: unique by client+service+point OR client+service+supplier
-            .limit(1);
-          if (error) throw error;
-          existingRecords = data;
-        } else if (anagraficaType === 'rubrica_punti_servizio') { // Nuovo tipo di anagrafica
-          const { data, error } = await supabaseAdmin
-            .from('rubrica_punti_servizio')
-            .select('id, punto_servizio_id, tipo_recapito, nome_persona, telefono_fisso, telefono_cellulare, email_recapito, note')
-            .eq('punto_servizio_id', processedData.punto_servizio_id)
-            .eq('tipo_recapito', processedData.tipo_recapito)
-            .limit(1);
-          if (error) throw error;
-          existingRecords = data;
-        }
+        const { status, message: checkMessage, updatedFields: fields, id } = await checkExistingRecord(supabaseAdmin, anagraficaType, processedData);
+        rowStatus = status;
+        message = checkMessage;
+        updatedFields = fields;
+        existingRecordId = id;
 
-
-        if (existingRecords && existingRecords.length > 0) {
-          existingRecordId = existingRecords[0].id;
-          rowStatus = 'DUPLICATE'; // Default to DUPLICATE, then check for UPDATE
-          message = 'Record esistente.';
-
-          // Check for updates
-          const existingRecord = existingRecords[0];
-          let hasChanges = false;
-          for (const key in processedData) {
-            if (processedData[key] !== existingRecord[key] && key !== 'created_at' && key !== 'updated_at') {
-              hasChanges = true;
-              updatedFields.push(key);
-            }
-          }
-
-          if (hasChanges) {
-            rowStatus = 'UPDATE';
-            message = `Aggiornerà ${updatedFields.length} campi.`;
-          } else {
-            message = 'Record esistente, nessun cambiamento rilevato.';
-          }
-        } else {
-          rowStatus = 'NEW';
-          message = 'Nuovo record da inserire.';
-        }
-
-        // Step 3: Validate Foreign Keys (only for relevant types)
-        if (anagraficaType === 'punti_servizio' && processedData.id_cliente) {
-          const { data: clientData, error: clientError } = await supabaseAdmin
-            .from('clienti')
-            .select('id')
-            .eq('id', processedData.id_cliente)
-            .single();
-          if (clientError || !clientData) {
+        // Step 3: Validate Foreign Keys (only if not already an error)
+        if (rowStatus !== 'ERROR' && rowStatus !== 'INVALID_FK') {
+          const { isValid, message: fkMessage } = await validateForeignKeys(supabaseAdmin, anagraficaType, processedData);
+          if (!isValid) {
             rowStatus = 'INVALID_FK';
-            message = `Errore: ID Cliente '${processedData.id_cliente}' non trovato.`;
+            message = fkMessage;
             errorCount++;
           }
         }
-        if (anagraficaType === 'punti_servizio' && processedData.fornitore_id) {
-          const { data: fornitoreData, error: fornitoreError } = await supabaseAdmin
-            .from('fornitori')
-            .select('id')
-            .eq('id', processedData.fornitore_id)
-            .single();
-          if (fornitoreError || !fornitoreData) {
-            rowStatus = 'INVALID_FK';
-            message = `Errore: ID Fornitore '${processedData.fornitore_id}' non trovato.`;
-            errorCount++;
-          }
-        }
-        if (anagraficaType === 'operatori_network' && processedData.cliente_id) {
-          const { data: clientData, error: clientError } = await supabaseAdmin
-            .from('clienti')
-            .select('id')
-            .eq('id', processedData.cliente_id)
-            .single();
-          if (clientError || !clientData) {
-            rowStatus = 'INVALID_FK';
-            message = `Errore: ID Cliente '${processedData.cliente_id}' non trovato.`;
-            errorCount++;
-          }
-        }
-        if (anagraficaType === 'tariffe' && processedData.client_id) {
-          const { data: clientData, error: clientError } = await supabaseAdmin
-            .from('clienti')
-            .select('id')
-            .eq('id', processedData.client_id)
-            .single();
-          if (clientError || !clientData) {
-            rowStatus = 'INVALID_FK';
-            message = `Errore: ID Cliente '${processedData.client_id}' non trovato.`;
-            errorCount++;
-          }
-        }
-        if (anagraficaType === 'tariffe' && processedData.punto_servizio_id) {
-          const { data: puntoServizioData, error: puntoServizioError } = await supabaseAdmin
-            .from('punti_servizio')
-            .select('id')
-            .eq('id', processedData.punto_servizio_id)
-            .single();
-          if (puntoServizioError || !puntoServizioData) {
-            rowStatus = 'INVALID_FK';
-            message = `Errore: ID Punto Servizio '${processedData.punto_servizio_id}' non trovato.`;
-            errorCount++;
-          }
-        }
-        if (anagraficaType === 'tariffe' && processedData.fornitore_id) {
-          const { data: fornitoreData, error: fornitoreError } = await supabaseAdmin
-            .from('fornitori')
-            .select('id')
-            .eq('id', processedData.fornitore_id)
-            .single();
-          if (fornitoreError || !fornitoreData) {
-            rowStatus = 'INVALID_FK';
-            message = `Errore: ID Fornitore '${processedData.fornitore_id}' non trovato.`;
-            errorCount++;
-          }
-        }
-        if (anagraficaType === 'rubrica_punti_servizio' && processedData.punto_servizio_id) { // Nuovo tipo di anagrafica
-          const { data: puntoServizioData, error: puntoServizioError } = await supabaseAdmin
-            .from('punti_servizio')
-            .select('id')
-            .eq('id', processedData.punto_servizio_id)
-            .single();
-          if (puntoServizioError || !puntoServizioData) {
-            rowStatus = 'INVALID_FK';
-            message = `Errore: ID Punto Servizio '${processedData.punto_servizio_id}' non trovato.`;
-            errorCount++;
-          }
-        }
-
 
       } catch (rowError: any) {
         rowStatus = 'ERROR';
@@ -536,7 +105,7 @@ serve(async (req) => {
 
       report.push({
         originalRow: row,
-        processedData: processedData, // Include processed data for potential debugging
+        processedData: processedData,
         status: rowStatus,
         message: message,
         updatedFields: updatedFields,
@@ -556,18 +125,18 @@ serve(async (req) => {
     successCount = 0;
     updateCount = 0;
     errorCount = 0;
-    duplicateCount = 0; // Reset counts for actual import
+    duplicateCount = 0;
 
     for (const rowReport of report) {
       if (rowReport.status === 'ERROR' || rowReport.status === 'INVALID_FK') {
         errorCount++;
         errors.push(`Riga con errore non importata: ${rowReport.message}`);
-        continue; // Skip rows with critical errors
+        continue;
       }
       if (rowReport.status === 'DUPLICATE' && rowReport.updatedFields.length === 0) {
         duplicateCount++;
         errors.push(`Riga duplicata e senza modifiche, saltata: ${rowReport.message}`);
-        continue; // Skip duplicates with no changes
+        continue;
       }
 
       const dataToSave = { ...rowReport.processedData };
@@ -613,7 +182,7 @@ serve(async (req) => {
         errors,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 207, // Multi-Status
+        status: 207,
       });
     }
 
