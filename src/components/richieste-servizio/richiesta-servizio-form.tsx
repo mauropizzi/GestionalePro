@@ -179,25 +179,29 @@ export function RichiestaServizioForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <ServiceDetailsSection
-          form={form}
-          clients={clients}
-          puntiServizio={puntiServizio}
-          fornitori={fornitori}
-          selectedServiceType={selectedServiceType}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Left Column: Service Details, Date Range, Service Specific Fields */}
+          <div className="space-y-8">
+            <ServiceDetailsSection
+              form={form}
+              clients={clients}
+              puntiServizio={puntiServizio}
+              fornitori={fornitori}
+              selectedServiceType={selectedServiceType}
+            />
 
-        <DateRangeSection form={form} selectedServiceType={selectedServiceType} />
+            <DateRangeSection form={form} selectedServiceType={selectedServiceType} />
 
-        <ServiceSpecificFields form={form} selectedServiceType={selectedServiceType} />
+            <ServiceSpecificFields form={form} selectedServiceType={selectedServiceType} />
+          </div>
 
-        {/* Daily Schedules */}
-        {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
-          selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
-          selectedServiceType === "ISPEZIONI" ||
-          selectedServiceType === "APERTURA_CHIUSURA" ||
-          selectedServiceType === "BONIFICA" ||
-          selectedServiceType === "GESTIONE_CHIAVI") && ( // Include new service type
+          {/* Right Column: Daily Schedules */}
+          {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
+            selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
+            selectedServiceType === "ISPEZIONI" ||
+            selectedServiceType === "APERTURA_CHIUSURA" ||
+            selectedServiceType === "BONIFICA" ||
+            selectedServiceType === "GESTIONE_CHIAVI") && ( // Include new service type
           <FormField
             control={form.control}
             name="daily_schedules"
@@ -221,6 +225,7 @@ export function RichiestaServizioForm({
             )}
           />
         )}
+        </div>
 
         <CalculatedValueDisplay
           calculatedValue={calculatedValue}
