@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useSession } from "@/components/session-context-provider";
-import { ShieldAlert, Upload, Download, Loader2, FileText, Users, Building2, Truck, Network, UserRound, MapPin, Euro } from "lucide-react";
+import { ShieldAlert, Upload, Download, Loader2, FileText, Users, Building2, Truck, Network, UserRound, MapPin, Euro, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 
 interface ParsedDataRow {
   [key: string]: any;
@@ -54,16 +55,16 @@ const columnHeaderMap: { [key: string]: string } = {
   referente: "Referente",
   telefonoReferente: "Telefono Referente",
   tempoIntervento: "Tempo Intervento",
-  fornitoreId: "ID Fornitore", // Mantenuto qui
+  fornitoreId: "ID Fornitore",
   codiceCliente: "Codice Cliente",
   codiceSicep: "Codice SICEP",
   codiceFatturazione: "Codice Fatturazione",
   latitude: "Latitudine",
   longitude: "Longitudine",
-  nomeProcedura: "Nome Procedura", // Mantenuto qui
+  nomeProcedura: "Nome Procedura",
 
   // Fornitori
-  tipoServizio: "Tipo Servizio", // Mantenuto qui
+  tipoServizio: "Tipo Servizio",
 
   // Personale
   nome: "Nome",
@@ -74,31 +75,61 @@ const columnHeaderMap: { [key: string]: string } = {
   dataAssunzione: "Data Assunzione",
   dataCessazione: "Data Cessazione",
 
-  // Operatori Network
-  // (già coperti da nome, cognome, telefono, email, idCliente)
-
-  // Procedure
-  // nomeProcedura: "Nome Procedura", // Rimosso duplicato
-
   // Tariffe
   clientId: "ID Cliente",
-  // tipoServizio: "Tipo Servizio", // Rimosso duplicato
   importo: "Importo",
   supplierRate: "Costo Fornitore",
   unitaMisura: "Unità di Misura",
   puntoServizioId: "ID Punto Servizio",
-  // fornitoreId: "ID Fornitore", // Rimosso duplicato
   dataInizioValidita: "Data Inizio Validità",
   dataFineValidita: "Data Fine Validita",
 };
 
+// Definizione delle intestazioni per i template di esportazione
+const templateHeaders: { [key: string]: string[] } = {
+  clienti: [
+    "Ragione Sociale", "Codice Fiscale", "Partita IVA", "Indirizzo", "Città", "CAP",
+    "Provincia", "Telefono", "Email", "PEC", "SDI", "Attivo (TRUE/FALSE)", "Note"
+  ],
+  punti_servizio: [
+    "Nome Punto Servizio", "ID Cliente (UUID)", "Indirizzo", "Città", "CAP", "Provincia",
+    "Referente", "Telefono Referente", "Telefono", "Email", "Note", "Tempo Intervento",
+    "ID Fornitore (UUID)", "Codice Cliente", "Codice SICEP", "Codice Fatturazione",
+    "Latitudine", "Longitudine", "Nome Procedura"
+  ],
+  fornitori: [
+    "Ragione Sociale", "Codice Fiscale", "Partita IVA", "Indirizzo", "Città", "CAP",
+    "Provincia", "Telefono", "Email", "PEC", "SDI", "Tipo Servizio", "Attivo (TRUE/FALSE)", "Note"
+  ],
+  personale: [
+    "Nome", "Cognome", "Ruolo", "Email", "Telefono", "Codice Fiscale", "Data Nascita (YYYY-MM-DD)",
+    "Luogo Nascita", "Indirizzo", "Città", "CAP", "Provincia", "Data Assunzione (YYYY-MM-DD)",
+    "Data Cessazione (YYYY-MM-DD)", "Note"
+  ],
+  operatori_network: [
+    "Nome", "Cognome", "Email", "Telefono", "ID Cliente (UUID)", "Note"
+  ],
+  procedure: [
+    "Nome Procedura", "Descrizione", "Versione", "Data Ultima Revisione (YYYY-MM-DD)",
+    "Responsabile", "URL Documento", "Note"
+  ],
+  tariffe: [
+    "ID Cliente (UUID)", "Tipo Servizio", "Importo", "Costo Fornitore", "Unità di Misura",
+    "ID Punto Servizio (UUID)", "ID Fornitore (UUID)", "Data Inizio Validità (YYYY-MM-DD)",
+    "Data Fine Validità (YYYY-MM-DD)", "Note"
+  ],
+};
+
+type ImportStep = 'select_file' | 'preview_data' | 'importing' | 'completed';
 
 export default function ImportExportPage() {
   const { profile: currentUserProfile, isLoading: isSessionLoading } = useSession();
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedDataRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedAnagrafica, setSelectedAnagrafica] = useState<string>(""); // To specify which anagrafica type is being imported/exported
+  const [selectedAnagrafica, setSelectedAnagrafica] = useState<string>("");
+  const [importStep, setImportStep] = useState<ImportStep>('select_file');
+  const [previewReport, setPreviewReport] = useState<any[]>([]); // Detailed report from Edge Function preview
 
   const hasAccess =
     currentUserProfile?.role === "super_admin" ||
@@ -107,7 +138,6 @@ export default function ImportExportPage() {
   useEffect(() => {
     if (!isSessionLoading && !hasAccess) {
       // Redirect or show access denied message if user doesn't have access
-      // For now, the DashboardLayout handles the access denied message.
     }
   }, [isSessionLoading, hasAccess]);
 
@@ -115,11 +145,13 @@ export default function ImportExportPage() {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
-      setParsedData([]); // Clear previous data
+      setParsedData([]);
+      setPreviewReport([]);
+      setImportStep('select_file'); // Reset step if file changes
     }
   };
 
-  const handleParseExcel = () => {
+  const handleParseAndPreview = async () => {
     if (!file) {
       toast.error("Seleziona un file Excel da importare.");
       return;
@@ -132,7 +164,7 @@ export default function ImportExportPage() {
     setLoading(true);
     const reader = new FileReader();
 
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const data = e.target?.result;
         const workbook = XLSX.read(data, { type: 'binary' });
@@ -140,9 +172,37 @@ export default function ImportExportPage() {
         const worksheet = workbook.Sheets[sheetName];
         const json = XLSX.utils.sheet_to_json(worksheet);
         setParsedData(json as ParsedDataRow[]);
-        toast.success("File Excel parsato con successo! Controlla l'anteprima.");
+
+        // --- Send to Edge Function for Preview/Validation ---
+        const response = await fetch(
+          "https://mlkahaedxpwkhheqwsjc.supabase.co/functions/v1/import-data", // Use the same Edge Function
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2FoYWVkeHB3a2hoZXF3c2pjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNzgyNTU5LCJleHAiOjIwNzY4NTQyNTl9._QR-tTUw-NPhCcv9boDDQAsewgyDzMhwiXNIlxIBCjQ",
+            },
+            body: JSON.stringify({
+              anagraficaType: selectedAnagrafica,
+              data: json,
+              mode: 'preview', // Indicate preview mode
+            }),
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || "Errore durante la fase di anteprima.");
+        }
+
+        setPreviewReport(result.report);
+        setImportStep('preview_data');
+        toast.success("Anteprima generata con successo! Controlla i dettagli prima di importare.");
+
       } catch (error: any) {
-        toast.error("Errore durante il parsing del file Excel: " + error.message);
+        toast.error("Errore durante il parsing o l'anteprima: " + error.message);
+        setImportStep('select_file'); // Go back to select file on error
       } finally {
         setLoading(false);
       }
@@ -151,14 +211,15 @@ export default function ImportExportPage() {
     reader.onerror = (error) => {
       toast.error("Errore durante la lettura del file: " + error.type);
       setLoading(false);
+      setImportStep('select_file');
     };
 
     reader.readAsBinaryString(file);
   };
 
   const handleImportData = async () => {
-    if (parsedData.length === 0) {
-      toast.error("Nessun dato parsato da importare.");
+    if (parsedData.length === 0 || previewReport.length === 0) {
+      toast.error("Nessun dato da importare o anteprima non generata.");
       return;
     }
     if (!selectedAnagrafica) {
@@ -167,18 +228,21 @@ export default function ImportExportPage() {
     }
 
     setLoading(true);
+    setImportStep('importing');
+
     try {
       const response = await fetch(
-        "https://mlkahaedxpwkhheqwsjc.supabase.co/functions/v1/import-data", // URL della tua Edge Function
+        "https://mlkahaedxpwkhheqwsjc.supabase.co/functions/v1/import-data",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2FoYWVkeHB3a2hoZXF3c2pjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNzgyNTU5LCJleHAiOjIwNzY4NTQyNTl9._QR-tTUw-NPhCcv9boDDQAsewgyDzMhwiXNIlxIBCjQ", // Aggiunto l'apikey
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2FoYWVkeHB3a2hoZXF3c2pjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNzgyNTU5LCJleHAiOjIwNzY4NTQyNTl9._QR-tTUw-NPhCcv9boDDQAsewgyDzMhwiXNIlxIBCjQ",
           },
           body: JSON.stringify({
             anagraficaType: selectedAnagrafica,
-            data: parsedData,
+            data: parsedData, // Send the original parsed data
+            mode: 'import', // Indicate import mode
           }),
         }
       );
@@ -187,7 +251,6 @@ export default function ImportExportPage() {
 
       if (!response.ok) {
         if (response.status === 207 && result.errors && Array.isArray(result.errors)) {
-          // Display detailed errors if status is 207 (Multi-Status)
           const errorSummary = `Importazione completata con ${result.successCount || 0} successi e ${result.errorCount || result.errors.length} errori.`;
           const firstFewErrors = result.errors.slice(0, 3).map((err: string) => `- ${err}`).join('\n');
           const moreErrorsMessage = result.errors.length > 3 ? `\n...e altri ${result.errors.length - 3} errori. Controlla la console per i dettagli completi.` : '';
@@ -196,19 +259,21 @@ export default function ImportExportPage() {
               <p className="font-semibold">{errorSummary}</p>
               <pre className="mt-2 whitespace-pre-wrap text-xs">{firstFewErrors}{moreErrorsMessage}</pre>
             </div>,
-            { duration: 10000 } // Keep toast visible longer for errors
+            { duration: 10000 }
           );
         } else {
           throw new Error(result.error || "Errore durante l'importazione dei dati.");
         }
       } else {
         toast.success(result.message);
-        setParsedData([]); // Clear parsed data after successful import
-        setFile(null); // Clear selected file
-        // Potresti voler ricaricare i dati della tabella specifica qui se necessario
+        setParsedData([]);
+        setFile(null);
+        setPreviewReport([]);
+        setImportStep('completed');
       }
     } catch (error: any) {
       toast.error("Errore nell'importazione: " + error.message);
+      setImportStep('preview_data'); // Go back to preview on import error
     } finally {
       setLoading(false);
     }
@@ -218,12 +283,12 @@ export default function ImportExportPage() {
     setLoading(true);
     try {
       const response = await fetch(
-        "https://mlkahaedxpwkhheqwsjc.supabase.co/functions/v1/export-data", // URL della tua Edge Function di esportazione
+        "https://mlkahaedxpwkhheqwsjc.supabase.co/functions/v1/export-data",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2FoYWVkeHB3a2hoZXF3c2pjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNzgyNTU5LCJleHAiOjIwNzY4NTQyNTl9._QR-tTUw-NPhCcv9boDDQAsewgyDzMhwiXNIlxIBCjQ", // Aggiunto l'apikey
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2FoYWVkeHB3a2hoZXF3c2pjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNzgyNTU5LCJleHAiOjIwNzY4NTQyNTl9._QR-tTUw-NPhCcv9boDDQAsewgyDzMhwiXNIlxIBCjQ",
           },
           body: JSON.stringify({ anagraficaType }),
         }
@@ -235,7 +300,6 @@ export default function ImportExportPage() {
           const errorData = await response.json();
           errorMessage = errorData.error || errorMessage;
         } catch (jsonError) {
-          // If response is not JSON, read it as text
           const textError = await response.text();
           errorMessage = `Errore durante l'esportazione di ${anagraficaType}: ${textError}`;
         }
@@ -265,6 +329,20 @@ export default function ImportExportPage() {
     }
   };
 
+  const handleExportTemplate = (anagraficaType: string) => {
+    const headers = templateHeaders[anagraficaType];
+    if (!headers) {
+      toast.error("Template non disponibile per questo tipo di anagrafica.");
+      return;
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet([headers]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+    XLSX.writeFile(wb, `${anagraficaType}_template.xlsx`);
+    toast.success(`Template ${anagraficaType} scaricato con successo!`);
+  };
+
   if (isSessionLoading) {
     return null;
   }
@@ -291,6 +369,8 @@ export default function ImportExportPage() {
     { value: "tariffe", label: "Tariffe", icon: <Euro className="h-4 w-4 mr-2" /> },
   ];
 
+  const hasErrorsInPreview = previewReport.some(row => row.status === 'ERROR' || row.status === 'INVALID_FK');
+
   return (
     <DashboardLayout>
       <div className="container mx-auto py-6">
@@ -304,57 +384,93 @@ export default function ImportExportPage() {
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <Upload className="h-5 w-5 mr-2" /> Importa Dati
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-            <div>
-              <Label htmlFor="anagrafica-type" className="mb-2 block">Tipo di Anagrafica</Label>
-              <Select value={selectedAnagrafica} onValueChange={setSelectedAnagrafica} disabled={loading}>
-                <SelectTrigger id="anagrafica-type">
-                  <SelectValue placeholder="Seleziona tipo di anagrafica" />
-                </SelectTrigger>
-                <SelectContent>
-                  {anagraficaOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      <div className="flex items-center">
-                        {option.icon} {option.label}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <p className="text-sm text-muted-foreground mb-4">
+            Utilizza il template per preparare i tuoi dati. Il sistema ti guiderà attraverso la validazione prima dell'importazione.
+          </p>
+
+          {/* Download Template Section */}
+          <div className="mb-6">
+            <h3 className="text-lg font-medium mb-2 flex items-center">
+              <FileDown className="h-4 w-4 mr-2" /> Scarica Template
+            </h3>
+            <p className="text-sm text-muted-foreground mb-3">
+              Scarica un file Excel pre-formattato con le intestazioni corrette per il tipo di anagrafica selezionato.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {anagraficaOptions.map((option) => (
+                <Button
+                  key={`template-${option.value}`}
+                  onClick={() => handleExportTemplate(option.value)}
+                  disabled={loading}
+                  variant="outline"
+                >
+                  {loading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    option.icon
+                  )}
+                  Template {option.label}
+                </Button>
+              ))}
             </div>
-            <div>
-              <Label htmlFor="excel-file" className="mb-2 block">Carica File Excel</Label>
-              <Input
-                id="excel-file"
-                type="file"
-                accept=".xlsx, .xls"
-                onChange={handleFileChange}
-                disabled={loading}
-              />
-            </div>
-          </div>
-          <div className="flex space-x-2 mt-4">
-            <Button onClick={handleParseExcel} disabled={loading || !file || !selectedAnagrafica}>
-              {loading && file && parsedData.length === 0 ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <FileText className="mr-2 h-4 w-4" />
-              )}
-              Parsa File
-            </Button>
-            <Button onClick={handleImportData} disabled={loading || parsedData.length === 0} variant="blue-accent">
-              {loading && parsedData.length > 0 ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Upload className="mr-2 h-4 w-4" />
-              )}
-              Importa nel Database
-            </Button>
           </div>
 
-          {parsedData.length > 0 && (
+          <Separator className="my-6" />
+
+          {/* Import Steps */}
+          {importStep === 'select_file' && (
+            <div>
+              <h3 className="text-lg font-medium mb-2 flex items-center">
+                <Upload className="h-4 w-4 mr-2" /> Carica e Prepara
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                <div>
+                  <Label htmlFor="anagrafica-type-import" className="mb-2 block">Tipo di Anagrafica</Label>
+                  <Select value={selectedAnagrafica} onValueChange={setSelectedAnagrafica} disabled={loading}>
+                    <SelectTrigger id="anagrafica-type-import">
+                      <SelectValue placeholder="Seleziona tipo di anagrafica" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {anagraficaOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          <div className="flex items-center">
+                            {option.icon} {option.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="excel-file-import" className="mb-2 block">Carica File Excel</Label>
+                  <Input
+                    id="excel-file-import"
+                    type="file"
+                    accept=".xlsx, .xls"
+                    onChange={handleFileChange}
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+              <div className="flex space-x-2 mt-4">
+                <Button onClick={handleParseAndPreview} disabled={loading || !file || !selectedAnagrafica}>
+                  {loading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileText className="mr-2 h-4 w-4" />
+                  )}
+                  Parsa File e Anteprima
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {importStep === 'preview_data' && (
             <div className="mt-6">
-              <h3 className="text-lg font-medium mb-2">Anteprima Dati Parsati ({selectedAnagrafica})</h3>
+              <h3 className="text-lg font-medium mb-2">Anteprima e Validazione Dati ({selectedAnagrafica})</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Rivedi i dati e le segnalazioni prima di procedere con l'importazione.
+              </p>
               <div className="rounded-md border max-h-96 overflow-auto">
                 <Table>
                   <TableHeader>
@@ -362,29 +478,86 @@ export default function ImportExportPage() {
                       {Object.keys(parsedData[0]).map((key) => (
                         <TableHead key={key}>{columnHeaderMap[key] || key}</TableHead>
                       ))}
+                      <TableHead className="font-bold text-center">Stato Importazione</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {parsedData.slice(0, 10).map((row, rowIndex) => ( // Show first 10 rows as preview
-                      <TableRow key={rowIndex}>
-                        {Object.values(row).map((value, colIndex) => (
-                          <TableCell key={colIndex}>{String(value)}</TableCell>
+                    {previewReport.slice(0, 10).map((rowReport, rowIndex) => (
+                      <TableRow key={rowIndex} className={
+                        rowReport.status === 'ERROR' || rowReport.status === 'INVALID_FK' ? 'bg-red-50' :
+                        rowReport.status === 'DUPLICATE' ? 'bg-yellow-50' :
+                        rowReport.status === 'UPDATE' ? 'bg-blue-50' : ''
+                      }>
+                        {Object.keys(parsedData[0]).map((key, colIndex) => (
+                          <TableCell key={colIndex}>{String(parsedData[rowIndex][key] || '')}</TableCell>
                         ))}
+                        <TableCell className="text-center text-xs">
+                          <span className={`px-2 py-1 rounded-full text-white ${
+                            rowReport.status === 'NEW' ? 'bg-green-500' :
+                            rowReport.status === 'UPDATE' ? 'bg-blue-500' :
+                            rowReport.status === 'DUPLICATE' ? 'bg-yellow-500' :
+                            rowReport.status === 'ERROR' || rowReport.status === 'INVALID_FK' ? 'bg-red-500' : 'bg-gray-500'
+                          }`}>
+                            {rowReport.status}
+                          </span>
+                          {rowReport.message && <p className="mt-1 text-muted-foreground">{rowReport.message}</p>}
+                          {rowReport.updatedFields && rowReport.updatedFields.length > 0 && (
+                            <p className="mt-1 text-muted-foreground text-xs">Aggiornerà: {rowReport.updatedFields.join(', ')}</p>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
-                    {parsedData.length > 10 && (
+                    {previewReport.length > 10 && (
                       <TableRow>
-                        <TableCell colSpan={Object.keys(parsedData[0]).length} className="text-center text-muted-foreground">
-                          ... e altri {parsedData.length - 10} record.
+                        <TableCell colSpan={Object.keys(parsedData[0]).length + 1} className="text-center text-muted-foreground">
+                          ... e altri {previewReport.length - 10} record.
                         </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Questa è un'anteprima dei primi 10 record del file Excel. La logica per la gestione di modifiche, duplicati e nuovi record verrà implementata in un secondo momento.
-              </p>
+              <div className="flex space-x-2 mt-4">
+                <Button onClick={handleImportData} disabled={loading || hasErrorsInPreview} variant="blue-accent">
+                  {loading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="mr-2 h-4 w-4" />
+                  )}
+                  Conferma Importazione
+                </Button>
+                <Button onClick={() => setImportStep('select_file')} variant="outline" disabled={loading}>
+                  Annulla e Ricarica File
+                </Button>
+              </div>
+              {hasErrorsInPreview && (
+                <p className="text-sm text-red-500 mt-3 flex items-center">
+                  <ShieldAlert className="h-4 w-4 mr-2" /> Ci sono errori critici. Correggi il file o annulla l'importazione.
+                </p>
+              )}
+            </div>
+          )}
+
+          {importStep === 'importing' && (
+            <div className="mt-6 flex flex-col items-center justify-center">
+              <Loader2 className="h-12 w-12 animate-spin text-blue-500 mb-4" />
+              <p className="text-lg font-medium">Importazione in corso...</p>
+              <p className="text-sm text-muted-foreground">Non chiudere questa pagina.</p>
+            </div>
+          )}
+
+          {importStep === 'completed' && (
+            <div className="mt-6 flex flex-col items-center justify-center text-center">
+              <p className="text-lg font-medium text-green-600">Importazione completata con successo!</p>
+              <Button onClick={() => {
+                setImportStep('select_file');
+                setFile(null);
+                setParsedData([]);
+                setPreviewReport([]);
+                setSelectedAnagrafica("");
+              }} className="mt-4">
+                Nuova Importazione
+              </Button>
             </div>
           )}
         </div>
@@ -392,7 +565,7 @@ export default function ImportExportPage() {
         {/* Sezione Esporta */}
         <div className="p-6 border rounded-lg shadow-sm">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
-            <Download className="h-5 w-5 mr-2" /> Esporta Dati
+            <Download className="h-5 w-5 mr-2" /> Esporta Dati Esistenti
           </h2>
           <p className="text-sm text-muted-foreground mb-4">
             Esporta i dati delle anagrafiche selezionate in formato Excel.
