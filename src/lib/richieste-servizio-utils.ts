@@ -149,11 +149,18 @@ export const richiestaServizioFormSchema = z.discriminatedUnion("tipo_servizio",
             path: [`daily_schedules`, index, `h24`],
           });
         }
-        if (!schedule.ora_inizio || !schedule.ora_fine) {
+        if (!schedule.ora_inizio) { // Solo ora_inizio è richiesto
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `Per il servizio Bonifica, il giorno ${schedule.giorno_settimana} deve avere un orario di inizio e fine.`,
+            message: `Per il servizio Bonifica, il giorno ${schedule.giorno_settimana} deve avere un orario.`,
             path: [`daily_schedules`, index, `ora_inizio`],
+          });
+        }
+        if (schedule.ora_fine !== null) { // ora_fine deve essere null
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Per il servizio Bonifica, il giorno ${schedule.giorno_settimana} deve avere solo un orario di inizio.`,
+            path: [`daily_schedules`, index, `ora_fine`],
           });
         }
       }

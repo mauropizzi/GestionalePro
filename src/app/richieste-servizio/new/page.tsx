@@ -192,7 +192,7 @@ export default function NewRichiestaServizioPage() {
       ...schedule,
       richiesta_servizio_id: newRichiesta.id,
       ora_inizio: schedule.h24 || !schedule.attivo ? null : schedule.ora_inizio,
-      ora_fine: schedule.h24 || !schedule.attivo ? null : schedule.ora_fine,
+      ora_fine: (values.tipo_servizio === "BONIFICA" || schedule.h24 || !schedule.attivo) ? null : schedule.ora_fine, // Explicitly set ora_fine to null for BONIFICA
       created_at: now,
       updated_at: now,
     }));

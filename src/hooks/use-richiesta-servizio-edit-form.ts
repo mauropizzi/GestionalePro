@@ -261,8 +261,7 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
         giorno_settimana: schedule.giorno_settimana,
         h24: schedule.h24,
         ora_inizio: schedule.h24 || !schedule.attivo ? null : schedule.ora_inizio,
-        ora_fine: schedule.h24 || !schedule.attivo ? null : schedule.ora_fine,
-        attivo: schedule.attivo,
+        ora_fine: (values.tipo_servizio === "BONIFICA" || schedule.h24 || !schedule.attivo) ? null : schedule.ora_fine, // Explicitly set ora_fine to null for BONIFICA
         updated_at: now,
       };
 
