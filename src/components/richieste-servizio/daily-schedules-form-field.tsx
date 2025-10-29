@@ -116,7 +116,7 @@ export function DailySchedulesFormField({ value, onChange, selectedServiceType }
           id="group-weekdays"
           checked={groupWeekdays}
           onCheckedChange={handleGroupWeekdaysToggle}
-          disabled={isBonifica} // Disabilita se il servizio è Bonifica
+          // Rimosso disabled={isBonifica}
         />
         <Label htmlFor="group-weekdays" className="text-sm font-medium">Raggruppa Giorni Feriali (Lunedì-Venerdì)</Label>
       </div>
