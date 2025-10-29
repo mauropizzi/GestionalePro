@@ -53,6 +53,13 @@ const columnHeaderMap: { [key: string]: string } = {
   telefonoCellulare: "Telefono Cellulare",
   emailRecapito: "Email Recapito",
 
+  // Rubrica Clienti (nuovi campi)
+  clientiTipoRecapito: "Tipo Recapito Cliente",
+  clientiNomePersona: "Nome Persona Cliente",
+  clientiTelefonoFisso: "Telefono Fisso Cliente",
+  clientiTelefonoCellulare: "Telefono Cellulare Cliente",
+  clientiEmailRecapito: "Email Recapito Cliente",
+
 
   // Fornitori
   tipoServizio: "Tipo Servizio",
@@ -109,15 +116,19 @@ const templateHeaders: { [key: string]: string[] } = {
     "ID Punto Servizio (UUID)", "ID Fornitore (UUID)", "Data Inizio Validità (YYYY-MM-DD)",
     "Data Fine Validità (YYYY-MM-DD)", "Note"
   ],
-  rubrica_punti_servizio: [ // Nuovo template per la rubrica
+  rubrica_punti_servizio: [
     "ID Punto Servizio (UUID)", "Tipo Recapito", "Nome Persona", "Telefono Fisso",
+    "Telefono Cellulare", "Email Recapito", "Note"
+  ],
+  rubrica_clienti: [ // Nuovo template per la rubrica clienti
+    "ID Cliente (UUID)", "Tipo Recapito", "Nome Persona", "Telefono Fisso",
     "Telefono Cellulare", "Email Recapito", "Note"
   ],
 };
 
 export default function ImportExportPage() {
   const { profile: currentUserProfile, isLoading: isSessionLoading } = useSession();
-  const [globalLoading, setGlobalLoading] = useState(false); // Global loading state if needed across sections
+  const [globalLoading, setGlobalLoading] = useState(false);
 
   const hasAccess =
     currentUserProfile?.role === "super_admin" ||
@@ -153,7 +164,8 @@ export default function ImportExportPage() {
     { value: "operatori_network", label: "Operatori Network", icon: <Network className="h-4 w-4 mr-2" /> },
     { value: "procedure", label: "Procedure", icon: <FileText className="h-4 w-4 mr-2" /> },
     { value: "tariffe", label: "Tariffe", icon: <Euro className="h-4 w-4 mr-2" /> },
-    { value: "rubrica_punti_servizio", label: "Rubrica Punti Servizio", icon: <Phone className="h-4 w-4 mr-2" /> }, // Aggiunto
+    { value: "rubrica_punti_servizio", label: "Rubrica Punti Servizio", icon: <Phone className="h-4 w-4 mr-2" /> },
+    { value: "rubrica_clienti", label: "Rubrica Clienti", icon: <Phone className="h-4 w-4 mr-2" /> }, // Aggiunto
   ];
 
   return (
@@ -176,7 +188,7 @@ export default function ImportExportPage() {
           <TemplateDownloadSection
             anagraficaOptions={anagraficaOptions}
             templateHeaders={templateHeaders}
-            loading={globalLoading} // Pass global loading or manage locally
+            loading={globalLoading}
           />
 
           <Separator className="my-6" />
@@ -184,15 +196,13 @@ export default function ImportExportPage() {
           <ImportSection
             anagraficaOptions={anagraficaOptions}
             columnHeaderMap={columnHeaderMap}
-            // If ImportSection needs to set global loading, pass a setter:
-            // onLoadingChange={setGlobalLoading}
           />
         </div>
 
         {/* Sezione Esporta */}
         <ExportSection
           anagraficaOptions={anagraficaOptions}
-          loading={globalLoading} // Pass global loading or manage locally
+          loading={globalLoading}
         />
       </div>
     </DashboardLayout>

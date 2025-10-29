@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useSession } from "@/components/session-context-provider";
-import { ShieldAlert, Search, Loader2, Trash, Edit, PlusCircle, CheckCircle, XCircle } from "lucide-react";
+import { ShieldAlert, Search, Loader2, Trash, Edit, PlusCircle, CheckCircle, XCircle, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -209,6 +209,17 @@ export default function ClientiPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          asChild
+                          disabled={isActionLoading}
+                          title="Visualizza rubrica"
+                        >
+                          <Link href={`/anagrafiche/clienti/${client.id}/rubrica`}>
+                            <Phone className="h-4 w-4" />
+                          </Link>
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"

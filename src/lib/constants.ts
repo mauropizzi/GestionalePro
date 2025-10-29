@@ -28,3 +28,10 @@ export const RUBRICA_RECAPITO_TYPES = [
   "Reperibile 3",
   "Responsabile",
 ];
+
+export const RUBRICA_CLIENTI_RECAPITO_TYPES = [
+  "Commerciale",
+  "Amministrazione",
+  "Operativo",
+  "Amministratore",
+];
