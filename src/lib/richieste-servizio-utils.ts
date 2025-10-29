@@ -89,8 +89,6 @@ const ispezioniBaseSchema = baseRichiestaServizioObjectSchema.extend({
   numero_agenti: z.coerce.number().min(1, "Il numero di agenti deve essere almeno 1."), // Keep numero_agenti for ISPEZIONI as well, as per current schema
   daily_schedules: z.array(dailyScheduleSchema).min(8, "Devi definire gli orari per tutti i giorni della settimana e per i festivi."),
   // Retain inspection-specific fields
-  ora_inizio_fascia: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
-  ora_fine_fascia: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)"),
   cadenza_ore: z.coerce.number().min(0.5, "La cadenza deve essere almeno 0.5 ore."),
   tipo_ispezione: z.enum(INSPECTION_TYPES.map(t => t.value) as [string, ...string[]], { required_error: "Il tipo di ispezione è richiesto." }),
 });
@@ -149,27 +147,6 @@ export const calculateTotalHours = (
   }
   // Round final result to two decimal places for display
   return parseFloat((totalHours * numAgents).toFixed(2));
-};
-
-export const calculateNumberOfInspections = (
-  oraInizioFascia: string,
-  oraFineFascia: string,
-  cadenzaOre: number
-): number => {
-  const [startH, startM] = oraInizioFascia.split(':').map(Number);
-  const [endH, endM] = oraFineFascia.split(':').map(Number);
-
-  const startTimeInMinutes = startH * 60 + startM;
-  const endTimeInMinutes = endH * 60 + endM;
-
-  const durationInMinutes = endTimeInMinutes - startTimeInMinutes;
-  if (durationInMinutes <= 0) return 0;
-
-  const cadenzaInMinutes = cadenzaOre * 60;
-
-  // Number of inspections is the floor of the total duration divided by the cadence
-  // This counts the number of full intervals that can start within the timeframe.
-  return Math.floor(durationInMinutes / cadenzaInMinutes);
 };
 
 export const defaultDailySchedules = [

@@ -31,8 +31,6 @@ export interface InspectionDetails {
   id?: string;
   richiesta_servizio_id?: string;
   data_servizio: string;
-  ora_inizio_fascia: string;
-  ora_fine_fascia: string;
   cadenza_ore: number;
   tipo_ispezione: InspectionType;
   created_at?: string;

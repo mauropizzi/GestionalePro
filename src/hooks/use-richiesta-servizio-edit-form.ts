@@ -133,8 +133,6 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
           form.reset({
             ...baseFormValues,
             tipo_servizio: "ISPEZIONI",
-            ora_inizio_fascia: inspectionDetail.ora_inizio_fascia,
-            ora_fine_fascia: inspectionDetail.ora_fine_fascia,
             cadenza_ore: inspectionDetail.cadenza_ore,
             tipo_ispezione: inspectionDetail.tipo_ispezione as InspectionType,
           } as RichiestaServizioFormSchema);
@@ -184,8 +182,6 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
     if (values.tipo_servizio === "ISPEZIONI") {
       inspectionDetailsToSave = {
         data_servizio: format(values.data_inizio_servizio, "yyyy-MM-dd"),
-        ora_inizio_fascia: values.ora_inizio_fascia,
-        ora_fine_fascia: values.ora_fine_fascia,
         cadenza_ore: values.cadenza_ore,
         tipo_ispezione: values.tipo_ispezione,
         updated_at: now,

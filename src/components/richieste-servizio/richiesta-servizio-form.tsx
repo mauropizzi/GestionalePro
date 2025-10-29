@@ -33,7 +33,6 @@ import {
   SERVICE_TYPES,
   INSPECTION_TYPES,
   calculateTotalHours,
-  calculateNumberOfInspections,
   IspezioniFormSchema,
 } from "@/lib/richieste-servizio-utils";
 import { DailySchedulesFormField } from "./daily-schedules-form-field";
@@ -65,12 +64,6 @@ export function RichiestaServizioForm({
   useEffect(() => {
     if (selectedServiceType === "ISPEZIONI") {
       // Check if values are already set or are invalid, then set defaults
-      if (!form.getValues("ora_inizio_fascia")) {
-        form.setValue("ora_inizio_fascia", "08:00", { shouldDirty: true });
-      }
-      if (!form.getValues("ora_fine_fascia")) {
-        form.setValue("ora_fine_fascia", "17:00", { shouldDirty: true });
-      }
       if (form.getValues("cadenza_ore") === undefined || form.getValues("cadenza_ore") === null || form.getValues("cadenza_ore") <= 0) {
         form.setValue("cadenza_ore", 1, { shouldDirty: true });
       }
@@ -80,7 +73,7 @@ export function RichiestaServizioForm({
     }
   }, [selectedServiceType, form]);
 
-  if (selectedServiceType === "PIANTONAMENTO_ARMATO" || selectedServiceType === "SERVIZIO_FIDUCIARIO") {
+  if (selectedServiceType === "PIANTONAMENTO_ARMATO" || selectedServiceType === "SERVIZIO_FIDUCIARIO" || selectedServiceType === "ISPEZIONI") {
     const { data_inizio_servizio, data_fine_servizio, numero_agenti, daily_schedules } = formValues;
 
     if (data_inizio_servizio && data_fine_servizio && daily_schedules && numero_agenti !== undefined) {
@@ -91,18 +84,6 @@ export function RichiestaServizioForm({
         numero_agenti
       );
       calculationLabel = "Ore totali stimate:";
-    }
-  } else if (selectedServiceType === "ISPEZIONI") {
-    const ispezioniValues = formValues as IspezioniFormSchema;
-    const { ora_inizio_fascia, ora_fine_fascia, cadenza_ore } = ispezioniValues;
-
-    if (ora_inizio_fascia && ora_fine_fascia && cadenza_ore !== undefined && cadenza_ore > 0) {
-      calculatedValue = calculateNumberOfInspections(
-        ora_inizio_fascia,
-        ora_fine_fascia,
-        cadenza_ore
-      );
-      calculationLabel = "Numero di ispezioni stimate:";
     }
   }
 
@@ -386,35 +367,9 @@ export function RichiestaServizioForm({
           />
         )}
 
-        {/* Ora Inizio Fascia, Ora Fine Fascia, Cadenza Ore (only for ISPEZIONI) */}
+        {/* Cadenza Ore (only for ISPEZIONI) */}
         {selectedServiceType === "ISPEZIONI" && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <FormField
-              control={form.control}
-              name="ora_inizio_fascia"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Ora Inizio Fascia</FormLabel>
-                  <FormControl>
-                    <Input type="time" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="ora_fine_fascia"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Ora Fine Fascia</FormLabel>
-                  <FormControl>
-                    <Input type="time" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <FormField
               control={form.control}
               name="cadenza_ore"

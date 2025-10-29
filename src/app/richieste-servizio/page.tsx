@@ -199,7 +199,6 @@ export default function RichiesteServizioPage() {
                         {richiesta.tipo_servizio === "ISPEZIONI" && richiesta.inspection_details?.[0] ? (
                           <>
                             <div>Data: {richiesta.inspection_details[0].data_servizio ? format(new Date(richiesta.inspection_details[0].data_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>
-                            <div>Fascia: {richiesta.inspection_details[0].ora_inizio_fascia} - {richiesta.inspection_details[0].ora_fine_fascia}</div>
                             <div>Cadenza: {richiesta.inspection_details[0].cadenza_ore}h, Tipo: {richiesta.inspection_details[0].tipo_ispezione}</div>
                           </>
                         ) : (

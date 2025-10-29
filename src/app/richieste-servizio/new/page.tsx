@@ -133,8 +133,6 @@ export default function NewRichiestaServizioPage() {
     if (values.tipo_servizio === "ISPEZIONI") {
       inspectionDetailsToInsert = {
         data_servizio: format(values.data_inizio_servizio, "yyyy-MM-dd"),
-        ora_inizio_fascia: values.ora_inizio_fascia,
-        ora_fine_fascia: values.ora_fine_fascia,
         cadenza_ore: values.cadenza_ore,
         tipo_ispezione: values.tipo_ispezione,
         created_at: now,
