@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useSession } from "@/components/session-context-provider";
-import { ShieldAlert, Building2, Truck, Network, UserRound, MapPin, Euro, FileText, Phone } from "lucide-react";
+import { ShieldAlert, Building2, Truck, Network, UserRound, MapPin, Euro, FileText, Phone, Wrench } from "lucide-react"; // Added Wrench icon
 import { Separator } from "@/components/ui/separator";
 
 // Import dei nuovi componenti modulari
@@ -88,6 +88,17 @@ const columnHeaderMap: { [key: string]: string } = {
   puntoServizioId: "ID Punto Servizio",
   dataInizioValidita: "Data Inizio Validità",
   dataFineValidita: "Data Fine Validita",
+
+  // Richieste Servizio (for Bonifica)
+  tipo_servizio: "Tipo Servizio",
+  data_inizio_servizio: "Data Inizio Servizio",
+  data_fine_servizio: "Data Fine Servizio",
+  numero_agenti: "Numero Agenti",
+  // Daily Schedules (for Bonifica)
+  giorno_settimana: "Giorno Settimana",
+  h24: "H24 (TRUE/FALSE)",
+  ora_inizio: "Ora Inizio (HH:mm)",
+  ora_fine: "Ora Fine (HH:mm)",
 };
 
 // Definizione delle intestazioni per i template di esportazione
@@ -131,9 +142,18 @@ const templateHeaders: { [key: string]: string[] } = {
     "ID Cliente (UUID)", "Tipo Recapito", "Nome Persona", "Telefono Fisso",
     "Telefono Cellulare", "Email Recapito", "Note"
   ],
-  rubrica_fornitori: [ // Nuovo template per la rubrica fornitori
+  rubrica_fornitori: [
     "ID Fornitore (UUID)", "Tipo Recapito", "Nome Persona", "Telefono Fisso",
     "Telefono Cellulare", "Email Recapito", "Note"
+  ],
+  richieste_servizio: [ // Template for service requests, including Bonifica
+    "ID Cliente (UUID)", "ID Punto Servizio (UUID)", "ID Fornitore (UUID)", "Tipo Servizio",
+    "Data Inizio Servizio (YYYY-MM-DD)", "Data Fine Servizio (YYYY-MM-DD)", "Numero Agenti",
+    "Note", "Status", "Total Hours Calculated", "Tipo Apertura Chiusura", "Cadenza Ore", "Tipo Ispezione"
+  ],
+  richieste_servizio_orari_giornalieri: [ // Template for daily schedules
+    "ID Richiesta Servizio (UUID)", "Giorno Settimana", "H24 (TRUE/FALSE)",
+    "Ora Inizio (HH:mm)", "Ora Fine (HH:mm)", "Attivo (TRUE/FALSE)"
   ],
 };
 
@@ -177,7 +197,9 @@ export default function ImportExportPage() {
     { value: "tariffe", label: "Tariffe", icon: <Euro className="h-4 w-4 mr-2" /> },
     { value: "rubrica_punti_servizio", label: "Rubrica Punti Servizio", icon: <Phone className="h-4 w-4 mr-2" /> },
     { value: "rubrica_clienti", label: "Rubrica Clienti", icon: <Phone className="h-4 w-4 mr-2" /> },
-    { value: "rubrica_fornitori", label: "Rubrica Fornitori", icon: <Phone className="h-4 w-4 mr-2" /> }, // Aggiunto
+    { value: "rubrica_fornitori", label: "Rubrica Fornitori", icon: <Phone className="h-4 w-4 mr-2" /> },
+    { value: "richieste_servizio", label: "Richieste Servizio", icon: <Wrench className="h-4 w-4 mr-2" /> }, // Added service requests
+    { value: "richieste_servizio_orari_giornalieri", label: "Orari Giornalieri Servizio", icon: <Wrench className="h-4 w-4 mr-2" /> }, // Added daily schedules
   ];
 
   return (

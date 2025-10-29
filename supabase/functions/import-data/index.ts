@@ -323,6 +323,136 @@ function mapRubricaFornitoriData(rowData: any) {
   };
 }
 
+// --- Mappers: richiesta-servizio-mapper.ts content ---
+import { SERVICE_TYPES as RS_SERVICE_TYPES, INSPECTION_TYPES as RS_INSPECTION_TYPES, APERTURA_CHIUSURA_TYPES as RS_APERTURA_CHIUSURA_TYPES } from '../../../src/lib/richieste-servizio-utils.ts';
+
+function mapRichiestaServizioData(rowData: any) {
+  const tipo_servizio_raw = getFieldValue(rowData, ['Tipo Servizio', 'tipo_servizio', 'tipoServizio'], toString);
+  const tipo_servizio = RS_SERVICE_TYPES.find(t => t.label.toLowerCase() === tipo_servizio_raw?.toLowerCase())?.value || tipo_servizio_raw;
+
+  if (!tipo_servizio) {
+    throw new Error('Tipo Servizio is required and must be a valid service type.');
+  }
+
+  const data_inizio_servizio = getFieldValue(rowData, ['Data Inizio Servizio', 'data_inizio_servizio', 'dataInizioServizio', 'Data Inizio Servizio (YYYY-MM-DD)'], toDateString);
+  const data_fine_servizio = getFieldValue(rowData, ['Data Fine Servizio', 'data_fine_servizio', 'dataFineServizio', 'Data Fine Servizio (YYYY-MM-DD)'], toDateString);
+  const numero_agenti = getFieldValue(rowData, ['Numero Agenti', 'numero_agenti', 'numeroAgenti'], toNumber);
+
+  if (!data_inizio_servizio || !data_fine_servizio || numero_agenti === null) {
+    throw new Error('Data Inizio Servizio, Data Fine Servizio, and Numero Agenti are required.');
+  }
+
+  let client_id = getFieldValue(rowData, ['ID Cliente', 'client_id', 'clientId', 'ID Cliente (UUID)'], toString);
+  client_id = (client_id && isValidUuid(client_id)) ? client_id : null;
+  if (!client_id) {
+    throw new Error('ID Cliente is required and must be a valid UUID.');
+  }
+
+  let punto_servizio_id = getFieldValue(rowData, ['ID Punto Servizio', 'punto_servizio_id', 'puntoServizioId', 'ID Punto Servizio (UUID)'], toString);
+  punto_servizio_id = (punto_servizio_id && isValidUuid(punto_servizio_id)) ? punto_servizio_id : null;
+
+  let fornitore_id = getFieldValue(rowData, ['ID Fornitore', 'fornitore_id', 'fornitoreId', 'ID Fornitore (UUID)'], toString);
+  fornitore_id = (fornitore_id && isValidUuid(fornitore_id)) ? fornitore_id : null;
+
+  const status = getFieldValue(rowData, ['Status', 'status'], toString) || 'pending'; // Default status
+
+  const mappedData: any = {
+    client_id: client_id,
+    punto_servizio_id: punto_servizio_id,
+    fornitore_id: fornitore_id,
+    tipo_servizio: tipo_servizio,
+    data_inizio_servizio: data_inizio_servizio,
+    data_fine_servizio: data_fine_servizio,
+    numero_agenti: numero_agenti,
+    note: getFieldValue(rowData, ['Note', 'note'], toString),
+    status: status,
+    total_hours_calculated: getFieldValue(rowData, ['Total Hours Calculated', 'total_hours_calculated', 'totalHoursCalculated'], toNumber),
+  };
+
+  if (tipo_servizio === "APERTURA_CHIUSURA") {
+    const tipo_apertura_chiusura_raw = getFieldValue(rowData, ['Tipo Apertura Chiusura', 'tipo_apertura_chiusura', 'tipoAperturaChiusura'], toString);
+    const tipo_apertura_chiusura = RS_APERTURA_CHIUSURA_TYPES.find(t => t.label.toLowerCase() === tipo_apertura_chiusura_raw?.toLowerCase())?.value || tipo_apertura_chiusura_raw;
+    if (!tipo_apertura_chiusura) {
+      throw new Error('Tipo Apertura Chiusura is required for APERTURA_CHIUSURA service type.');
+    }
+    mappedData.tipo_apertura_chiusura = tipo_apertura_chiusura;
+  }
+
+  return mappedData;
+}
+
+// --- Mappers: richieste-servizio-orari-giornalieri-mapper.ts content ---
+import { daysOfWeek as RSOG_daysOfWeek } from '../../../src/lib/richieste-servizio-utils.ts';
+
+function mapRichiesteServizioOrariGiornalieriData(rowData: any) {
+  let richiesta_servizio_id = getFieldValue(rowData, ['ID Richiesta Servizio', 'richiesta_servizio_id', 'richiestaServizioId', 'ID Richiesta Servizio (UUID)'], toString);
+  richiesta_servizio_id = (richiesta_servizio_id && isValidUuid(richiesta_servizio_id)) ? richiesta_servizio_id : null;
+  if (!richiesta_servizio_id) {
+    throw new Error('ID Richiesta Servizio is required and must be a valid UUID.');
+  }
+
+  const giorno_settimana_raw = getFieldValue(rowData, ['Giorno Settimana', 'giorno_settimana', 'giornoSettimana'], toString);
+  const giorno_settimana = RSOG_daysOfWeek.find(day => day.toLowerCase() === giorno_settimana_raw?.toLowerCase()) || giorno_settimana_raw;
+
+  if (!giorno_settimana) {
+    throw new Error('Giorno Settimana is required and must be a valid day of the week (Lunedì-Domenica, Festivo).');
+  }
+
+  const attivo = getFieldValue(rowData, ['Attivo', 'attivo', 'Attivo (TRUE/FALSE)'], toBoolean);
+  if (attivo === null) {
+    throw new Error('Attivo (TRUE/FALSE) is required.');
+  }
+
+  const h24 = getFieldValue(rowData, ['H24', 'h24', 'H24 (TRUE/FALSE)'], toBoolean);
+  const ora_inizio = getFieldValue(rowData, ['Ora Inizio', 'ora_inizio', 'oraInizio', 'Ora Inizio (HH:mm)'], toString);
+  const ora_fine = getFieldValue(rowData, ['Ora Fine', 'ora_fine', 'oraFine', 'Ora Fine (HH:mm)'], toString);
+
+  // Validation logic similar to dailyScheduleSchema in frontend
+  if (attivo) {
+    if (h24) {
+      if (ora_inizio !== null || ora_fine !== null) {
+        throw new Error('If H24 is true, Ora Inizio and Ora Fine must be empty.');
+      }
+    } else {
+      if (!ora_inizio) {
+        throw new Error('If not H24, Ora Inizio is required.');
+      }
+      // ora_fine can be null for BONIFICA, but for other types it should be present if ora_inizio is.
+      // This specific check might need to be more dynamic if we want to enforce it per service type.
+      // For now, we allow ora_fine to be null if ora_inizio is present, as per the Bonifica requirement.
+    }
+  } else {
+    if (h24 !== false || ora_inizio !== null || ora_fine !== null) {
+      throw new Error('If not active, H24 must be false, and Ora Inizio/Ora Fine must be empty.');
+    }
+  }
+
+  return {
+    richiesta_servizio_id: richiesta_servizio_id,
+    giorno_settimana: giorno_settimana,
+    h24: h24,
+    ora_inizio: ora_inizio,
+    ora_fine: ora_fine,
+    attivo: attivo,
+  };
+}
+
+
+// --- Main Edge Function Logic ---
+const dataMappers: { [key: string]: (rowData: any) => any } = {
+  clienti: mapClientData,
+  punti_servizio: mapPuntoServizioData,
+  fornitori: mapFornitoreData,
+  personale: mapPersonaleData,
+  operatori_network: mapOperatoreNetworkData,
+  procedure: mapProceduraData,
+  tariffe: mapTariffaData,
+  rubrica_punti_servizio: mapRubricaPuntiServizioData,
+  rubrica_clienti: mapRubricaClientiData,
+  rubrica_fornitori: mapRubricaFornitoriData,
+  richieste_servizio: mapRichiestaServizioData, // Added mapper for richieste_servizio
+  richieste_servizio_orari_giornalieri: mapRichiesteServizioOrariGiornalieriData, // Added mapper for daily schedules
+};
 
 // --- Utils: db-operations.ts content ---
 const UNIQUE_KEYS_CONFIG = {
@@ -361,8 +491,14 @@ const UNIQUE_KEYS_CONFIG = {
   rubrica_clienti: [
     ['client_id', 'tipo_recapito'],
   ],
-  rubrica_fornitori: [ // Nuova configurazione per rubrica_fornitori
+  rubrica_fornitori: [
     ['fornitore_id', 'tipo_recapito'],
+  ],
+  richieste_servizio: [ // Unique key for service requests
+    ['client_id', 'punto_servizio_id', 'tipo_servizio', 'data_inizio_servizio', 'data_fine_servizio'],
+  ],
+  richieste_servizio_orari_giornalieri: [ // Unique key for daily schedules
+    ['richiesta_servizio_id', 'giorno_settimana'],
   ],
 };
 
@@ -385,8 +521,16 @@ const FOREIGN_KEYS_CONFIG = {
   rubrica_clienti: [
     { field: 'client_id', refTable: 'clienti' },
   ],
-  rubrica_fornitori: [ // Nuova configurazione per rubrica_fornitori
+  rubrica_fornitori: [
     { field: 'fornitore_id', refTable: 'fornitori' },
+  ],
+  richieste_servizio: [ // Foreign keys for service requests
+    { field: 'client_id', refTable: 'clienti' },
+    { field: 'punto_servizio_id', refTable: 'punti_servizio' },
+    { field: 'fornitore_id', refTable: 'fornitori' },
+  ],
+  richieste_servizio_orari_giornalieri: [ // Foreign keys for daily schedules
+    { field: 'richiesta_servizio_id', refTable: 'richieste_servizio' },
   ],
 };
 
@@ -460,19 +604,6 @@ async function validateForeignKeys(supabaseAdmin: any, tableName: string, proces
 }
 
 // --- Main Edge Function Logic ---
-const dataMappers: { [key: string]: (rowData: any) => any } = {
-  clienti: mapClientData,
-  punti_servizio: mapPuntoServizioData,
-  fornitori: mapFornitoreData,
-  personale: mapPersonaleData,
-  operatori_network: mapOperatoreNetworkData,
-  procedure: mapProceduraData,
-  tariffe: mapTariffaData,
-  rubrica_punti_servizio: mapRubricaPuntiServizioData,
-  rubrica_clienti: mapRubricaClientiData,
-  rubrica_fornitori: mapRubricaFornitoriData, // Aggiunto il mapper per la rubrica fornitori
-};
-
 serve(async (req) => {
   console.log("import-data function invoked.");
 
