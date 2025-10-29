@@ -93,7 +93,8 @@ export function ServiceDetailsSection({
         selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
         selectedServiceType === "ISPEZIONI" ||
         selectedServiceType === "APERTURA_CHIUSURA" ||
-        selectedServiceType === "BONIFICA") && (
+        selectedServiceType === "BONIFICA" ||
+        selectedServiceType === "GESTIONE_CHIAVI") && (
         <FormField
           control={form.control}
           name="punto_servizio_id"
@@ -124,7 +125,8 @@ export function ServiceDetailsSection({
         selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
         selectedServiceType === "ISPEZIONI" ||
         selectedServiceType === "APERTURA_CHIUSURA" ||
-        selectedServiceType === "BONIFICA") && (
+        selectedServiceType === "BONIFICA" ||
+        selectedServiceType === "GESTIONE_CHIAVI") && (
         <FormField
           control={form.control}
           name="fornitore_id"
