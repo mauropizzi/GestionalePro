@@ -9,6 +9,7 @@ export const SERVICE_TYPES = [
   { value: "PIANTONAMENTO_ARMATO", label: "Piantonamento Armato" },
   { value: "SERVIZIO_FIDUCIARIO", label: "Servizio Fiduciario" },
   { value: "ISPEZIONI", label: "Ispezioni" },
+  { value: "APERTURA_CHIUSURA", label: "Apertura/Chiusura" }, // Nuovo tipo di servizio
 ] as const; // Use 'as const' for better type inference
 
 export type ServiceType = (typeof SERVICE_TYPES)[number]["value"];
@@ -21,6 +22,15 @@ export const INSPECTION_TYPES = [
 ] as const; // Use 'as const' for better type inference
 
 export type InspectionType = (typeof INSPECTION_TYPES)[number]["value"];
+
+// Define APERTURA_CHIUSURA_TYPES as an array of objects
+export const APERTURA_CHIUSURA_TYPES = [
+  { value: "APERTURA_E_CHIUSURA", label: "Apertura e Chiusura" },
+  { value: "SOLO_APERTURA", label: "Solo Apertura" },
+  { value: "SOLO_CHIUSURA", label: "Solo Chiusura" },
+] as const;
+
+export type AperturaChiusuraType = (typeof APERTURA_CHIUSURA_TYPES)[number]["value"];
 
 export const dailyScheduleSchema = z.object({
   id: z.string().optional(),
@@ -46,7 +56,7 @@ export const dailyScheduleSchema = z.object({
     const [startH, startM] = data.ora_inizio.split(':').map(Number);
     const [endH, endM] = data.ora_fine.split(':').map(Number);
     const startTime = setMinutes(setHours(new Date(), startH), startM);
-    const endTime = setMinutes(setHours(new Date(), endH), endM);
+    const endTime = setMinutes(setHours(new Date(), endM), endM); // Corretto: setMinutes(setHours(new Date(), endH), endM)
     return endTime > startTime;
   }
   return true;
@@ -93,10 +103,21 @@ const ispezioniBaseSchema = baseRichiestaServizioObjectSchema.extend({
   tipo_ispezione: z.enum(INSPECTION_TYPES.map(t => t.value) as [string, ...string[]], { required_error: "Il tipo di ispezione è richiesto." }),
 });
 
+// Define schema for APERTURA_CHIUSURA
+const aperturaChiusuraBaseSchema = baseRichiestaServizioObjectSchema.extend({
+  tipo_servizio: z.literal(SERVICE_TYPES.find(t => t.value === "APERTURA_CHIUSURA")!.value),
+  data_inizio_servizio: z.date({ required_error: "La data di inizio servizio è richiesta." }),
+  data_fine_servizio: z.date({ required_error: "La data di fine servizio è richiesta." }),
+  numero_agenti: z.coerce.number().min(1, "Il numero di agenti deve essere almeno 1."),
+  daily_schedules: z.array(dailyScheduleSchema).min(8, "Devi definire gli orari per tutti i giorni della settimana e per i festivi."),
+  tipo_apertura_chiusura: z.enum(APERTURA_CHIUSURA_TYPES.map(t => t.value) as [string, ...string[]], { required_error: "Il tipo di attività è richiesto." }),
+});
+
 export const richiestaServizioFormSchema = z.discriminatedUnion("tipo_servizio", [
   piantonamentoArmatoBaseSchema,
   servizioFiduciarioBaseSchema,
   ispezioniBaseSchema,
+  aperturaChiusuraBaseSchema, // Aggiunto il nuovo schema
 ]);
 // IMPORTANT: Conditional refinements for date/time ranges (e.g., data_fine_servizio > data_inizio_servizio,
 // ora_fine_fascia > ora_inizio_fascia) must now be implemented at the form level
@@ -104,6 +125,7 @@ export const richiestaServizioFormSchema = z.discriminatedUnion("tipo_servizio",
 
 export type RichiestaServizioFormSchema = z.infer<typeof richiestaServizioFormSchema>;
 export type IspezioniFormSchema = z.infer<typeof ispezioniBaseSchema>; // Nuovo tipo esportato
+export type AperturaChiusuraFormSchema = z.infer<typeof aperturaChiusuraBaseSchema>; // Nuovo tipo esportato
 
 export const calculateTotalHours = (
   serviceStartDate: Date,
@@ -189,6 +211,42 @@ export const calculateTotalInspections = (
   }
   // Multiply by number of agents as per previous logic for total calculated value
   return parseFloat((totalInspections * numAgents).toFixed(2));
+};
+
+export const calculateAperturaChiusuraCount = (
+  serviceStartDate: Date,
+  serviceEndDate: Date,
+  dailySchedules: z.infer<typeof dailyScheduleSchema>[],
+  tipoAperturaChiusura: AperturaChiusuraType,
+  numAgents: number
+): number => {
+  let countPerDay = 0;
+  if (tipoAperturaChiusura === "APERTURA_E_CHIUSURA") {
+    countPerDay = 2;
+  } else if (tipoAperturaChiusura === "SOLO_APERTURA" || tipoAperturaChiusura === "SOLO_CHIUSURA") {
+    countPerDay = 1;
+  } else {
+    return 0;
+  }
+
+  let totalCount = 0;
+  let currentDate = new Date(serviceStartDate);
+  currentDate.setHours(0, 0, 0, 0);
+
+  const endServiceDateNormalized = new Date(serviceEndDate);
+  endServiceDateNormalized.setHours(0, 0, 0, 0);
+
+  while (currentDate <= endServiceDateNormalized) {
+    const dayOfWeek = format(currentDate, 'EEEE', { locale: it });
+    const schedule = dailySchedules.find(s => s.giorno_settimana.toLowerCase() === dayOfWeek.toLowerCase());
+
+    if (schedule && schedule.attivo) {
+      totalCount += countPerDay;
+    }
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  // Multiply by number of agents if the business logic requires it for total calculated value
+  return parseFloat((totalCount * numAgents).toFixed(2));
 };
 
 

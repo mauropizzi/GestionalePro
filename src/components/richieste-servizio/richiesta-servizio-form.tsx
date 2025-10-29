@@ -32,9 +32,13 @@ import {
   RichiestaServizioFormSchema,
   SERVICE_TYPES,
   INSPECTION_TYPES,
+  APERTURA_CHIUSURA_TYPES, // Importa i nuovi tipi
   calculateTotalHours,
-  calculateTotalInspections, // Import the new function
+  calculateTotalInspections,
+  calculateAperturaChiusuraCount, // Importa la nuova funzione di calcolo
   IspezioniFormSchema,
+  AperturaChiusuraFormSchema, // Importa il nuovo tipo di schema
+  AperturaChiusuraType, // Importa il tipo AperturaChiusuraType
 } from "@/lib/richieste-servizio-utils";
 import { DailySchedulesFormField } from "./daily-schedules-form-field";
 
@@ -71,6 +75,10 @@ export function RichiestaServizioForm({
       if (!form.getValues("tipo_ispezione")) {
         form.setValue("tipo_ispezione", INSPECTION_TYPES[0].value, { shouldDirty: true });
       }
+    } else if (selectedServiceType === "APERTURA_CHIUSURA") {
+      if (!form.getValues("tipo_apertura_chiusura")) {
+        form.setValue("tipo_apertura_chiusura", APERTURA_CHIUSURA_TYPES[0].value, { shouldDirty: true });
+      }
     }
   }, [selectedServiceType, form]);
 
@@ -87,7 +95,6 @@ export function RichiestaServizioForm({
       calculationLabel = "Ore totali stimate:";
     }
   } else if (selectedServiceType === "ISPEZIONI") {
-    // Asserzione di tipo per informare TypeScript che formValues è di tipo IspezioniFormSchema
     const { data_inizio_servizio, data_fine_servizio, numero_agenti, daily_schedules, cadenza_ore } = formValues as IspezioniFormSchema;
 
     if (data_inizio_servizio && data_fine_servizio && daily_schedules && cadenza_ore !== undefined && numero_agenti !== undefined) {
@@ -99,6 +106,19 @@ export function RichiestaServizioForm({
         numero_agenti
       );
       calculationLabel = "Numero totale ispezioni stimate:";
+    }
+  } else if (selectedServiceType === "APERTURA_CHIUSURA") {
+    const { data_inizio_servizio, data_fine_servizio, numero_agenti, daily_schedules, tipo_apertura_chiusura } = formValues as AperturaChiusuraFormSchema;
+
+    if (data_inizio_servizio && data_fine_servizio && daily_schedules && tipo_apertura_chiusura && numero_agenti !== undefined) {
+      calculatedValue = calculateAperturaChiusuraCount(
+        data_inizio_servizio,
+        data_fine_servizio,
+        daily_schedules,
+        tipo_apertura_chiusura as AperturaChiusuraType, // Correzione qui
+        numero_agenti
+      );
+      calculationLabel = "Numero totale attività stimate:";
     }
   }
 
@@ -160,7 +180,8 @@ export function RichiestaServizioForm({
         {/* Punto Servizio ID (conditionally rendered) */}
         {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
           selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
-          selectedServiceType === "ISPEZIONI") && (
+          selectedServiceType === "ISPEZIONI" ||
+          selectedServiceType === "APERTURA_CHIUSURA") && (
           <FormField
             control={form.control}
             name="punto_servizio_id"
@@ -189,7 +210,8 @@ export function RichiestaServizioForm({
         {/* Fornitore ID (conditionally rendered) */}
         {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
           selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
-          selectedServiceType === "ISPEZIONI") && (
+          selectedServiceType === "ISPEZIONI" ||
+          selectedServiceType === "APERTURA_CHIUSURA") && (
           <FormField
             control={form.control}
             name="fornitore_id"
@@ -218,7 +240,8 @@ export function RichiestaServizioForm({
         {/* Data Inizio Servizio */}
         {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
           selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
-          selectedServiceType === "ISPEZIONI") && (
+          selectedServiceType === "ISPEZIONI" ||
+          selectedServiceType === "APERTURA_CHIUSURA") && (
           <FormField
             control={form.control}
             name="data_inizio_servizio"
@@ -263,7 +286,8 @@ export function RichiestaServizioForm({
         {/* Data Fine Servizio */}
         {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
           selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
-          selectedServiceType === "ISPEZIONI") && (
+          selectedServiceType === "ISPEZIONI" ||
+          selectedServiceType === "APERTURA_CHIUSURA") && (
           <FormField
             control={form.control}
             name="data_fine_servizio"
@@ -305,10 +329,11 @@ export function RichiestaServizioForm({
           />
         )}
 
-        {/* Numero Agenti and Cadenza Ore (conditionally rendered and grouped) */}
+        {/* Numero Agenti and Cadenza Ore / Tipo Apertura/Chiusura (conditionally rendered and grouped) */}
         {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
           selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
-          selectedServiceType === "ISPEZIONI") && (
+          selectedServiceType === "ISPEZIONI" ||
+          selectedServiceType === "APERTURA_CHIUSURA") && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
@@ -349,13 +374,41 @@ export function RichiestaServizioForm({
                 )}
               />
             )}
+
+            {selectedServiceType === "APERTURA_CHIUSURA" && (
+              <FormField
+                control={form.control}
+                name="tipo_apertura_chiusura"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo Attività</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleziona tipo attività" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {APERTURA_CHIUSURA_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
           </div>
         )}
 
         {/* Daily Schedules */}
         {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
           selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
-          selectedServiceType === "ISPEZIONI") && (
+          selectedServiceType === "ISPEZIONI" ||
+          selectedServiceType === "APERTURA_CHIUSURA") && (
           <FormField
             control={form.control}
             name="daily_schedules"

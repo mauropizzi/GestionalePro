@@ -11,11 +11,14 @@ import {
   RichiestaServizioFormSchema,
   richiestaServizioFormSchema,
   calculateTotalHours,
-  calculateTotalInspections, // Import the new function
+  calculateTotalInspections,
+  calculateAperturaChiusuraCount, // Importa la nuova funzione
   defaultDailySchedules,
   ServiceType,
   InspectionType,
   INSPECTION_TYPES, // Import INSPECTION_TYPES
+  AperturaChiusuraType, // Importa il nuovo tipo
+  APERTURA_CHIUSURA_TYPES, // Importa i nuovi tipi
 } from "@/lib/richieste-servizio-utils";
 import { Client, PuntoServizio, RichiestaServizio, DailySchedule, Fornitore } from "@/types/richieste-servizio";
 
@@ -120,8 +123,8 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
 
         const baseFormValues = {
           client_id: richiestaData.client_id || "",
-          punto_servizio_id: richiestaData.punto_servizio_id || null,
-          fornitore_id: richiestaData.fornitore_id || null,
+          punto_servizio_id: richiestaData.punto_servizio_id === "" ? null : richiestaData.punto_servizio_id,
+          fornitore_id: richiestaData.fornitore_id === "" ? null : richiestaData.fornitore_id,
           note: richiestaData.note || null,
           data_inizio_servizio: richiestaData.data_inizio_servizio ? parseISO(richiestaData.data_inizio_servizio) : new Date(),
           data_fine_servizio: richiestaData.data_fine_servizio ? parseISO(richiestaData.data_fine_servizio) : new Date(),
@@ -137,10 +140,17 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
             cadenza_ore: inspectionDetail.cadenza_ore,
             tipo_ispezione: inspectionDetail.tipo_ispezione as InspectionType,
           } as RichiestaServizioFormSchema);
-        } else {
+        } else if (richiestaData.tipo_servizio === "APERTURA_CHIUSURA") {
           form.reset({
             ...baseFormValues,
-            tipo_servizio: richiestaData.tipo_servizio as Exclude<ServiceType, "ISPEZIONI">,
+            tipo_servizio: "APERTURA_CHIUSURA",
+            tipo_apertura_chiusura: richiestaData.tipo_apertura_chiusura as AperturaChiusuraType,
+          } as RichiestaServizioFormSchema);
+        }
+        else {
+          form.reset({
+            ...baseFormValues,
+            tipo_servizio: richiestaData.tipo_servizio as Exclude<ServiceType, "ISPEZIONI" | "APERTURA_CHIUSURA">,
           } as RichiestaServizioFormSchema);
         }
       }
@@ -168,7 +178,16 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
         values.cadenza_ore,
         values.numero_agenti
       );
-    } else {
+    } else if (values.tipo_servizio === "APERTURA_CHIUSURA") {
+      totalCalculatedValue = calculateAperturaChiusuraCount(
+        dataInizioServizio,
+        dataFineServizio,
+        values.daily_schedules,
+        values.tipo_apertura_chiusura as AperturaChiusuraType, // Correzione qui
+        values.numero_agenti
+      );
+    }
+    else {
       totalCalculatedValue = calculateTotalHours(
         dataInizioServizio,
         dataFineServizio,
@@ -197,6 +216,8 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
         tipo_ispezione: values.tipo_ispezione,
         updated_at: now,
       };
+    } else if (values.tipo_servizio === "APERTURA_CHIUSURA") {
+      richiestaDataToUpdate.tipo_apertura_chiusura = values.tipo_apertura_chiusura;
     }
 
     const { error: richiestaError } = await supabase

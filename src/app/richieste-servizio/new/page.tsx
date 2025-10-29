@@ -16,8 +16,10 @@ import {
   RichiestaServizioFormSchema,
   richiestaServizioFormSchema,
   calculateTotalHours,
-  calculateTotalInspections, // Import the new function
+  calculateTotalInspections,
+  calculateAperturaChiusuraCount, // Importa la nuova funzione
   defaultDailySchedules,
+  AperturaChiusuraType, // Importa il tipo
 } from "@/lib/richieste-servizio-utils";
 import { DailySchedule } from "@/types/richieste-servizio";
 import { RichiestaServizioForm } from "@/components/richieste-servizio/richiesta-servizio-form";
@@ -117,7 +119,16 @@ export default function NewRichiestaServizioPage() {
         values.cadenza_ore,
         values.numero_agenti
       );
-    } else {
+    } else if (values.tipo_servizio === "APERTURA_CHIUSURA") {
+      totalCalculatedValue = calculateAperturaChiusuraCount(
+        dataInizioServizio,
+        dataFineServizio,
+        values.daily_schedules,
+        values.tipo_apertura_chiusura as AperturaChiusuraType, // Correzione qui
+        values.numero_agenti
+      );
+    }
+    else {
       totalCalculatedValue = calculateTotalHours(
         dataInizioServizio,
         dataFineServizio,
@@ -149,6 +160,8 @@ export default function NewRichiestaServizioPage() {
         created_at: now,
         updated_at: now,
       };
+    } else if (values.tipo_servizio === "APERTURA_CHIUSURA") {
+      richiestaData.tipo_apertura_chiusura = values.tipo_apertura_chiusura;
     }
 
     const { data: newRichiesta, error: richiestaError } = await supabase
