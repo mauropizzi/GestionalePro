@@ -178,8 +178,9 @@ export const calculateNumberOfInspections = (
 
   const cadenzaInMinutes = cadenzaOre * 60;
 
-  // Number of intervals + 1 for the start inspection
-  return Math.floor(durationInMinutes / cadenzaInMinutes) + 1;
+  // Number of inspections is the floor of the total duration divided by the cadence
+  // This counts the number of full intervals that can start within the timeframe.
+  return Math.floor(durationInMinutes / cadenzaInMinutes);
 };
 
 export const defaultDailySchedules = [

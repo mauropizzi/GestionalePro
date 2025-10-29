@@ -62,7 +62,7 @@ export function RichiestaServizioForm({
   let calculatedValue: number | null = null;
   let calculationLabel: string = "";
 
-  if (selectedServiceType === "PIANTONAMENTO_ARMATO" || selectedServiceType === "SERVIZIO_FIDUCIARIO" || selectedServiceType === "ISPEZIONI") {
+  if (selectedServiceType === "PIANTONAMENTO_ARMATO" || selectedServiceType === "SERVIZIO_FIDUCIARIO") {
     const { data_inizio_servizio, ora_inizio_servizio, data_fine_servizio, ora_fine_servizio, numero_agenti, daily_schedules } = formValues;
 
     if (data_inizio_servizio && ora_inizio_servizio && data_fine_servizio && ora_fine_servizio && daily_schedules && numero_agenti !== undefined) {
@@ -86,7 +86,7 @@ export function RichiestaServizioForm({
     const ispezioniValues = formValues as IspezioniFormSchema;
     const { ora_inizio_fascia, ora_fine_fascia, cadenza_ore } = ispezioniValues;
 
-    if (ora_inizio_fascia && ora_fine_fascia && cadenza_ore !== undefined) {
+    if (ora_inizio_fascia && ora_fine_fascia && cadenza_ore !== undefined && cadenza_ore > 0) {
       calculatedValue = calculateNumberOfInspections(
         ora_inizio_fascia,
         ora_fine_fascia,
@@ -438,7 +438,7 @@ export function RichiestaServizioForm({
                 <FormItem>
                   <FormLabel>Cadenza (ore)</FormLabel>
                   <FormControl>
-                    <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} />
+                    <Input type="number" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
