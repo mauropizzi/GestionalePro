@@ -12,13 +12,16 @@ import {
   richiestaServizioFormSchema,
   calculateTotalHours,
   calculateTotalInspections,
-  calculateAperturaChiusuraCount, // Importa la nuova funzione
+  calculateAperturaChiusuraCount,
+  calculateBonificaCount, // Importa la nuova funzione
   defaultDailySchedules,
   ServiceType,
   InspectionType,
-  INSPECTION_TYPES, // Import INSPECTION_TYPES
-  AperturaChiusuraType, // Importa il nuovo tipo
-  APERTURA_CHIUSURA_TYPES, // Importa i nuovi tipi
+  INSPECTION_TYPES,
+  AperturaChiusuraType,
+  APERTURA_CHIUSURA_TYPES,
+  BonificaType, // Importa il nuovo tipo
+  BONIFICA_TYPES, // Importa i nuovi tipi
 } from "@/lib/richieste-servizio-utils";
 import { Client, PuntoServizio, RichiestaServizio, DailySchedule, Fornitore } from "@/types/richieste-servizio";
 
@@ -146,11 +149,17 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
             tipo_servizio: "APERTURA_CHIUSURA",
             tipo_apertura_chiusura: richiestaData.tipo_apertura_chiusura as AperturaChiusuraType,
           } as RichiestaServizioFormSchema);
+        } else if (richiestaData.tipo_servizio === "BONIFICA") { // Nuova logica per BONIFICA
+          form.reset({
+            ...baseFormValues,
+            tipo_servizio: "BONIFICA",
+            tipo_bonifica: richiestaData.tipo_bonifica as BonificaType,
+          } as RichiestaServizioFormSchema);
         }
         else {
           form.reset({
             ...baseFormValues,
-            tipo_servizio: richiestaData.tipo_servizio as Exclude<ServiceType, "ISPEZIONI" | "APERTURA_CHIUSURA">,
+            tipo_servizio: richiestaData.tipo_servizio as Exclude<ServiceType, "ISPEZIONI" | "APERTURA_CHIUSURA" | "BONIFICA">,
           } as RichiestaServizioFormSchema);
         }
       }
@@ -183,7 +192,15 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
         dataInizioServizio,
         dataFineServizio,
         values.daily_schedules,
-        values.tipo_apertura_chiusura as AperturaChiusuraType, // Correzione qui
+        values.tipo_apertura_chiusura as AperturaChiusuraType,
+        values.numero_agenti
+      );
+    } else if (values.tipo_servizio === "BONIFICA") { // Nuova logica per BONIFICA
+      totalCalculatedValue = calculateBonificaCount(
+        dataInizioServizio,
+        dataFineServizio,
+        values.daily_schedules,
+        values.tipo_bonifica as BonificaType,
         values.numero_agenti
       );
     }
@@ -218,6 +235,13 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
       };
     } else if (values.tipo_servizio === "APERTURA_CHIUSURA") {
       richiestaDataToUpdate.tipo_apertura_chiusura = values.tipo_apertura_chiusura;
+      richiestaDataToUpdate.tipo_bonifica = null; // Clear bonifica type if changing to apertura/chiusura
+    } else if (values.tipo_servizio === "BONIFICA") { // Aggiungi tipo_bonifica a richiestaDataToUpdate
+      richiestaDataToUpdate.tipo_bonifica = values.tipo_bonifica;
+      richiestaDataToUpdate.tipo_apertura_chiusura = null; // Clear apertura/chiusura type if changing to bonifica
+    } else {
+      richiestaDataToUpdate.tipo_apertura_chiusura = null; // Clear if changing to other types
+      richiestaDataToUpdate.tipo_bonifica = null; // Clear if changing to other types
     }
 
     const { error: richiestaError } = await supabase

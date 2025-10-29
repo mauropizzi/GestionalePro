@@ -17,9 +17,11 @@ import {
   richiestaServizioFormSchema,
   calculateTotalHours,
   calculateTotalInspections,
-  calculateAperturaChiusuraCount, // Importa la nuova funzione
+  calculateAperturaChiusuraCount,
+  calculateBonificaCount, // Importa la nuova funzione di calcolo
   defaultDailySchedules,
-  AperturaChiusuraType, // Importa il tipo
+  AperturaChiusuraType,
+  BonificaType, // Importa il tipo BonificaType
 } from "@/lib/richieste-servizio-utils";
 import { DailySchedule } from "@/types/richieste-servizio";
 import { RichiestaServizioForm } from "@/components/richieste-servizio/richiesta-servizio-form";
@@ -124,7 +126,15 @@ export default function NewRichiestaServizioPage() {
         dataInizioServizio,
         dataFineServizio,
         values.daily_schedules,
-        values.tipo_apertura_chiusura as AperturaChiusuraType, // Correzione qui
+        values.tipo_apertura_chiusura as AperturaChiusuraType,
+        values.numero_agenti
+      );
+    } else if (values.tipo_servizio === "BONIFICA") { // Nuova logica per BONIFICA
+      totalCalculatedValue = calculateBonificaCount(
+        dataInizioServizio,
+        dataFineServizio,
+        values.daily_schedules,
+        values.tipo_bonifica as BonificaType,
         values.numero_agenti
       );
     }
@@ -152,7 +162,7 @@ export default function NewRichiestaServizioPage() {
       updated_at: now,
     };
 
-    if (values.tipo_servizio === "ISPEZIONI") {
+    if (values.tipo_servizio === "ISPEZIONI" && inspectionDetailsToInsert) {
       inspectionDetailsToInsert = {
         data_servizio: format(values.data_inizio_servizio, "yyyy-MM-dd"),
         cadenza_ore: values.cadenza_ore,
@@ -162,6 +172,8 @@ export default function NewRichiestaServizioPage() {
       };
     } else if (values.tipo_servizio === "APERTURA_CHIUSURA") {
       richiestaData.tipo_apertura_chiusura = values.tipo_apertura_chiusura;
+    } else if (values.tipo_servizio === "BONIFICA") { // Aggiungi tipo_bonifica a richiestaData
+      richiestaData.tipo_bonifica = values.tipo_bonifica;
     }
 
     const { data: newRichiesta, error: richiestaError } = await supabase

@@ -1,4 +1,4 @@
-import { ServiceType, InspectionType, AperturaChiusuraType } from "@/lib/richieste-servizio-utils";
+import { ServiceType, InspectionType, AperturaChiusuraType, BonificaType } from "@/lib/richieste-servizio-utils";
 
 export interface Client {
   id: string;
@@ -53,4 +53,5 @@ export interface RichiestaServizio {
   updated_at: string;
   inspection_details?: InspectionDetails[] | null; // Corretto a array di oggetti o null
   tipo_apertura_chiusura?: AperturaChiusuraType | null; // Nuovo campo
+  tipo_bonifica?: BonificaType | null; // Nuovo campo per Bonifica
 }

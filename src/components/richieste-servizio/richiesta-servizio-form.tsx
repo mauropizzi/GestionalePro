@@ -32,13 +32,17 @@ import {
   RichiestaServizioFormSchema,
   SERVICE_TYPES,
   INSPECTION_TYPES,
-  APERTURA_CHIUSURA_TYPES, // Importa i nuovi tipi
+  APERTURA_CHIUSURA_TYPES,
+  BONIFICA_TYPES, // Importa i nuovi tipi
   calculateTotalHours,
   calculateTotalInspections,
-  calculateAperturaChiusuraCount, // Importa la nuova funzione di calcolo
+  calculateAperturaChiusuraCount,
+  calculateBonificaCount, // Importa la nuova funzione di calcolo
   IspezioniFormSchema,
-  AperturaChiusuraFormSchema, // Importa il nuovo tipo di schema
-  AperturaChiusuraType, // Importa il tipo AperturaChiusuraType
+  AperturaChiusuraFormSchema,
+  BonificaFormSchema, // Importa il nuovo tipo di schema
+  AperturaChiusuraType,
+  BonificaType, // Importa il tipo BonificaType
 } from "@/lib/richieste-servizio-utils";
 import { DailySchedulesFormField } from "./daily-schedules-form-field";
 
@@ -65,7 +69,7 @@ export function RichiestaServizioForm({
   let calculatedValue: number | null = null;
   let calculationLabel: string = "";
 
-  // Effect to set default values for ISPEZIONI when service type changes
+  // Effect to set default values for ISPEZIONI, APERTURA_CHIUSURA, BONIFICA when service type changes
   useEffect(() => {
     if (selectedServiceType === "ISPEZIONI") {
       // Check if values are already set or are invalid, then set defaults
@@ -78,6 +82,10 @@ export function RichiestaServizioForm({
     } else if (selectedServiceType === "APERTURA_CHIUSURA") {
       if (!form.getValues("tipo_apertura_chiusura")) {
         form.setValue("tipo_apertura_chiusura", APERTURA_CHIUSURA_TYPES[0].value, { shouldDirty: true });
+      }
+    } else if (selectedServiceType === "BONIFICA") { // Nuova logica per BONIFICA
+      if (!form.getValues("tipo_bonifica")) {
+        form.setValue("tipo_bonifica", BONIFICA_TYPES[0].value, { shouldDirty: true });
       }
     }
   }, [selectedServiceType, form]);
@@ -115,10 +123,23 @@ export function RichiestaServizioForm({
         data_inizio_servizio,
         data_fine_servizio,
         daily_schedules,
-        tipo_apertura_chiusura as AperturaChiusuraType, // Correzione qui
+        tipo_apertura_chiusura as AperturaChiusuraType,
         numero_agenti
       );
       calculationLabel = "Numero totale attività stimate:";
+    }
+  } else if (selectedServiceType === "BONIFICA") { // Nuova logica per BONIFICA
+    const { data_inizio_servizio, data_fine_servizio, numero_agenti, daily_schedules, tipo_bonifica } = formValues as BonificaFormSchema;
+
+    if (data_inizio_servizio && data_fine_servizio && daily_schedules && tipo_bonifica && numero_agenti !== undefined) {
+      calculatedValue = calculateBonificaCount(
+        data_inizio_servizio,
+        data_fine_servizio,
+        daily_schedules,
+        tipo_bonifica as BonificaType,
+        numero_agenti
+      );
+      calculationLabel = "Numero totale bonifiche stimate:";
     }
   }
 
@@ -181,7 +202,8 @@ export function RichiestaServizioForm({
         {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
           selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
           selectedServiceType === "ISPEZIONI" ||
-          selectedServiceType === "APERTURA_CHIUSURA") && (
+          selectedServiceType === "APERTURA_CHIUSURA" ||
+          selectedServiceType === "BONIFICA") && ( // Aggiunto BONIFICA
           <FormField
             control={form.control}
             name="punto_servizio_id"
@@ -211,7 +233,8 @@ export function RichiestaServizioForm({
         {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
           selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
           selectedServiceType === "ISPEZIONI" ||
-          selectedServiceType === "APERTURA_CHIUSURA") && (
+          selectedServiceType === "APERTURA_CHIUSURA" ||
+          selectedServiceType === "BONIFICA") && ( // Aggiunto BONIFICA
           <FormField
             control={form.control}
             name="fornitore_id"
@@ -241,7 +264,8 @@ export function RichiestaServizioForm({
         {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
           selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
           selectedServiceType === "ISPEZIONI" ||
-          selectedServiceType === "APERTURA_CHIUSURA") && (
+          selectedServiceType === "APERTURA_CHIUSURA" ||
+          selectedServiceType === "BONIFICA") && ( // Aggiunto BONIFICA
           <FormField
             control={form.control}
             name="data_inizio_servizio"
@@ -287,7 +311,8 @@ export function RichiestaServizioForm({
         {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
           selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
           selectedServiceType === "ISPEZIONI" ||
-          selectedServiceType === "APERTURA_CHIUSURA") && (
+          selectedServiceType === "APERTURA_CHIUSURA" ||
+          selectedServiceType === "BONIFICA") && ( // Aggiunto BONIFICA
           <FormField
             control={form.control}
             name="data_fine_servizio"
@@ -329,11 +354,12 @@ export function RichiestaServizioForm({
           />
         )}
 
-        {/* Numero Agenti and Cadenza Ore / Tipo Apertura/Chiusura (conditionally rendered and grouped) */}
+        {/* Numero Agenti and Cadenza Ore / Tipo Apertura/Chiusura / Tipo Bonifica (conditionally rendered and grouped) */}
         {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
           selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
           selectedServiceType === "ISPEZIONI" ||
-          selectedServiceType === "APERTURA_CHIUSURA") && (
+          selectedServiceType === "APERTURA_CHIUSURA" ||
+          selectedServiceType === "BONIFICA") && ( // Aggiunto BONIFICA
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
@@ -401,6 +427,33 @@ export function RichiestaServizioForm({
                 )}
               />
             )}
+
+            {selectedServiceType === "BONIFICA" && ( // Nuovo campo per BONIFICA
+              <FormField
+                control={form.control}
+                name="tipo_bonifica"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo Bonifica</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleziona tipo bonifica" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {BONIFICA_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
           </div>
         )}
 
@@ -408,7 +461,8 @@ export function RichiestaServizioForm({
         {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
           selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
           selectedServiceType === "ISPEZIONI" ||
-          selectedServiceType === "APERTURA_CHIUSURA") && (
+          selectedServiceType === "APERTURA_CHIUSURA" ||
+          selectedServiceType === "BONIFICA") && ( // Aggiunto BONIFICA
           <FormField
             control={form.control}
             name="daily_schedules"

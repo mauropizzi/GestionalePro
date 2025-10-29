@@ -9,7 +9,8 @@ export const SERVICE_TYPES = [
   { value: "PIANTONAMENTO_ARMATO", label: "Piantonamento Armato" },
   { value: "SERVIZIO_FIDUCIARIO", label: "Servizio Fiduciario" },
   { value: "ISPEZIONI", label: "Ispezioni" },
-  { value: "APERTURA_CHIUSURA", label: "Apertura/Chiusura" }, // Nuovo tipo di servizio
+  { value: "APERTURA_CHIUSURA", label: "Apertura/Chiusura" },
+  { value: "BONIFICA", label: "Bonifica" }, // Nuovo tipo di servizio
 ] as const; // Use 'as const' for better type inference
 
 export type ServiceType = (typeof SERVICE_TYPES)[number]["value"];
@@ -26,11 +27,19 @@ export type InspectionType = (typeof INSPECTION_TYPES)[number]["value"];
 // Define APERTURA_CHIUSURA_TYPES as an array of objects
 export const APERTURA_CHIUSURA_TYPES = [
   { value: "APERTURA_E_CHIUSURA", label: "Apertura e Chiusura" },
-  { value: "SOLO_APERTURA", label: "Solo Apertura" },
-  { value: "SOLO_CHIUSURA", label: "Solo Chiusura" },
+  { value: "SOLO_APERTURA", "label": "Solo Apertura" },
+  { value: "SOLO_CHIUSURA", "label": "Solo Chiusura" },
 ] as const;
 
 export type AperturaChiusuraType = (typeof APERTURA_CHIUSURA_TYPES)[number]["value"];
+
+// Define BONIFICA_TYPES as an array of objects (for future expansion, currently simple)
+export const BONIFICA_TYPES = [
+  { value: "BONIFICA_STANDARD", label: "Bonifica Standard" },
+  { value: "BONIFICA_URGENTE", label: "Bonifica Urgente" },
+] as const;
+
+export type BonificaType = (typeof BONIFICA_TYPES)[number]["value"];
 
 export const dailyScheduleSchema = z.object({
   id: z.string().optional(),
@@ -56,7 +65,7 @@ export const dailyScheduleSchema = z.object({
     const [startH, startM] = data.ora_inizio.split(':').map(Number);
     const [endH, endM] = data.ora_fine.split(':').map(Number);
     const startTime = setMinutes(setHours(new Date(), startH), startM);
-    const endTime = setMinutes(setHours(new Date(), endM), endM); // Corretto: setMinutes(setHours(new Date(), endH), endM)
+    const endTime = setMinutes(setHours(new Date(), endH), endM); // Corretto: setMinutes(setHours(new Date(), endH), endM)
     return endTime > startTime;
   }
   return true;
@@ -113,19 +122,31 @@ const aperturaChiusuraBaseSchema = baseRichiestaServizioObjectSchema.extend({
   tipo_apertura_chiusura: z.enum(APERTURA_CHIUSURA_TYPES.map(t => t.value) as [string, ...string[]], { required_error: "Il tipo di attività è richiesto." }),
 });
 
+// Define schema for BONIFICA
+const bonificaBaseSchema = baseRichiestaServizioObjectSchema.extend({
+  tipo_servizio: z.literal(SERVICE_TYPES.find(t => t.value === "BONIFICA")!.value),
+  data_inizio_servizio: z.date({ required_error: "La data di inizio servizio è richiesta." }),
+  data_fine_servizio: z.date({ required_error: "La data di fine servizio è richiesta." }),
+  numero_agenti: z.coerce.number().min(1, "Il numero di agenti deve essere almeno 1."),
+  daily_schedules: z.array(dailyScheduleSchema).min(8, "Devi definire gli orari per tutti i giorni della settimana e per i festivi."),
+  tipo_bonifica: z.enum(BONIFICA_TYPES.map(t => t.value) as [string, ...string[]], { required_error: "Il tipo di bonifica è richiesto." }), // Campo specifico per Bonifica
+});
+
 export const richiestaServizioFormSchema = z.discriminatedUnion("tipo_servizio", [
   piantonamentoArmatoBaseSchema,
   servizioFiduciarioBaseSchema,
   ispezioniBaseSchema,
-  aperturaChiusuraBaseSchema, // Aggiunto il nuovo schema
+  aperturaChiusuraBaseSchema,
+  bonificaBaseSchema, // Aggiunto il nuovo schema per Bonifica
 ]);
 // IMPORTANT: Conditional refinements for date/time ranges (e.g., data_fine_servizio > data_inizio_servizio,
 // ora_fine_fascia > ora_inizio_fascia) must now be implemented at the form level
 // using `form.superRefine` or within the `onSubmit` handler.
 
 export type RichiestaServizioFormSchema = z.infer<typeof richiestaServizioFormSchema>;
-export type IspezioniFormSchema = z.infer<typeof ispezioniBaseSchema>; // Nuovo tipo esportato
-export type AperturaChiusuraFormSchema = z.infer<typeof aperturaChiusuraBaseSchema>; // Nuovo tipo esportato
+export type IspezioniFormSchema = z.infer<typeof ispezioniBaseSchema>;
+export type AperturaChiusuraFormSchema = z.infer<typeof aperturaChiusuraBaseSchema>;
+export type BonificaFormSchema = z.infer<typeof bonificaBaseSchema>; // Nuovo tipo esportato
 
 export const calculateTotalHours = (
   serviceStartDate: Date,
@@ -246,6 +267,36 @@ export const calculateAperturaChiusuraCount = (
     currentDate.setDate(currentDate.getDate() + 1);
   }
   // Multiply by number of agents if the business logic requires it for total calculated value
+  return parseFloat((totalCount * numAgents).toFixed(2));
+};
+
+export const calculateBonificaCount = (
+  serviceStartDate: Date,
+  serviceEndDate: Date,
+  dailySchedules: z.infer<typeof dailyScheduleSchema>[],
+  tipoBonifica: BonificaType,
+  numAgents: number
+): number => {
+  // Per ora, assumiamo che ogni giorno attivo con bonifica standard o urgente conti come 1 attività.
+  // Questa logica può essere raffinata in base a requisiti specifici (es. durata, complessità).
+  let countPerDay = 1; // Default 1 attività per giorno attivo
+
+  let totalCount = 0;
+  let currentDate = new Date(serviceStartDate);
+  currentDate.setHours(0, 0, 0, 0);
+
+  const endServiceDateNormalized = new Date(serviceEndDate);
+  endServiceDateNormalized.setHours(0, 0, 0, 0);
+
+  while (currentDate <= endServiceDateNormalized) {
+    const dayOfWeek = format(currentDate, 'EEEE', { locale: it });
+    const schedule = dailySchedules.find(s => s.giorno_settimana.toLowerCase() === dayOfWeek.toLowerCase());
+
+    if (schedule && schedule.attivo) {
+      totalCount += countPerDay;
+    }
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
   return parseFloat((totalCount * numAgents).toFixed(2));
 };
 

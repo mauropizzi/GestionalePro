@@ -30,7 +30,7 @@ import {
 import Link from "next/link";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
-import { ServiceType, AperturaChiusuraType } from "@/lib/richieste-servizio-utils";
+import { ServiceType, AperturaChiusuraType, BonificaType } from "@/lib/richieste-servizio-utils";
 import { DailySchedule, InspectionDetails } from "@/types/richieste-servizio"; // Import DailySchedule
 
 interface RichiestaServizio {
@@ -52,7 +52,8 @@ interface RichiestaServizio {
   fornitori?: { ragione_sociale: string } | null;
   inspection_details?: InspectionDetails[];
   daily_schedules?: DailySchedule[]; // Aggiunto daily_schedules
-  tipo_apertura_chiusura?: AperturaChiusuraType | null; // Nuovo campo
+  tipo_apertura_chiusura?: AperturaChiusuraType | null;
+  tipo_bonifica?: BonificaType | null; // Nuovo campo
 }
 
 export default function RichiesteServizioPage() {
@@ -119,7 +120,8 @@ export default function RichiesteServizioPage() {
     richiesta.fornitori?.ragione_sociale?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     richiesta.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (richiesta.tipo_servizio === "ISPEZIONI" && richiesta.inspection_details?.[0]?.tipo_ispezione?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (richiesta.tipo_servizio === "APERTURA_CHIUSURA" && richiesta.tipo_apertura_chiusura?.toLowerCase().includes(searchTerm.toLowerCase()))
+    (richiesta.tipo_servizio === "APERTURA_CHIUSURA" && richiesta.tipo_apertura_chiusura?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (richiesta.tipo_servizio === "BONIFICA" && richiesta.tipo_bonifica?.toLowerCase().includes(searchTerm.toLowerCase())) // Nuovo filtro per BONIFICA
   );
 
   if (isSessionLoading) {
@@ -222,6 +224,25 @@ export default function RichiesteServizioPage() {
                               </div>
                             )}
                             <div>Attività totali stimate: {richiesta.total_hours_calculated || 0}</div>
+                          </>
+                        ) : richiesta.tipo_servizio === "BONIFICA" ? ( // Nuova visualizzazione per BONIFICA
+                          <>
+                            <div>Tipo Bonifica: {richiesta.tipo_bonifica?.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || "N/A"}</div>
+                            <div>Inizio: {richiesta.data_inizio_servizio ? format(new Date(richiesta.data_inizio_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>
+                            <div>Fine: {richiesta.data_fine_servizio ? format(new Date(richiesta.data_fine_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</div>
+                            <div>Agenti: {richiesta.numero_agenti || "N/A"}</div>
+                            {richiesta.daily_schedules && richiesta.daily_schedules.length > 0 && (
+                              <div>
+                                Giorni attivi:{" "}
+                                <span className="font-bold">
+                                  {richiesta.daily_schedules
+                                    .filter(s => s.attivo)
+                                    .map(s => s.giorno_settimana)
+                                    .join(", ")}
+                                </span>
+                              </div>
+                            )}
+                            <div>Bonifiche totali stimate: {richiesta.total_hours_calculated || 0}</div>
                           </>
                         ) : (
                           <>
