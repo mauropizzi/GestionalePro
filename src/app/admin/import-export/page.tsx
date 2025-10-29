@@ -7,9 +7,9 @@ import { ShieldAlert, Building2, Truck, Network, UserRound, MapPin, Euro, FileTe
 import { Separator } from "@/components/ui/separator";
 
 // Import dei nuovi componenti modulari
-import { TemplateDownloadSection } from "./components/template-download-section.tsx";
-import { ImportSection } from "./components/import-section.tsx";
-import { ExportSection } from "./components/export-section.tsx";
+import { TemplateDownloadSection } from "./components/template-download-section";
+import { ImportSection } from "./components/import-section";
+import { ExportSection } from "./components/export-section";
 
 // Mappatura dei nomi delle colonne per una visualizzazione più leggibile
 const columnHeaderMap: { [key: string]: string } = {
@@ -53,6 +53,10 @@ const columnHeaderMap: { [key: string]: string } = {
   ruolo: "Ruolo",
   dataNascita: "Data Nascita",
   luogoNascita: "Luogo Nascita",
+  indirizzo: "Indirizzo",
+  citta: "Città",
+  cap: "CAP",
+  provincia: "Provincia",
   dataAssunzione: "Data Assunzione",
   dataCessazione: "Data Cessazione",
 
