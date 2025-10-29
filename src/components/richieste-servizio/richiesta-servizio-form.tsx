@@ -32,8 +32,14 @@ import {
   RichiestaServizioFormSchema,
   SERVICE_TYPES,
   INSPECTION_TYPES,
+  APERTURA_CHIUSURA_TYPES, // Importa i nuovi tipi
   calculateTotalHours,
+  calculateTotalInspections,
+  calculateAperturaChiusuraCount, // Importa la nuova funzione di calcolo
   IspezioniFormSchema,
+  AperturaChiusuraFormSchema, // Importa il nuovo tipo di schema
+  AperturaChiusuraType, // Importa il tipo AperturaChiusuraType
+  BonificaFormSchema, // Importa il nuovo tipo di schema
 } from "@/lib/richieste-servizio-utils";
 import { DailySchedulesFormField } from "./daily-schedules-form-field";
 
@@ -70,10 +76,14 @@ export function RichiestaServizioForm({
       if (!form.getValues("tipo_ispezione")) {
         form.setValue("tipo_ispezione", INSPECTION_TYPES[0].value, { shouldDirty: true });
       }
+    } else if (selectedServiceType === "APERTURA_CHIUSURA") {
+      if (!form.getValues("tipo_apertura_chiusura")) {
+        form.setValue("tipo_apertura_chiusura", APERTURA_CHIUSURA_TYPES[0].value, { shouldDirty: true });
+      }
     }
   }, [selectedServiceType, form]);
 
-  if (selectedServiceType === "PIANTONAMENTO_ARMATO" || selectedServiceType === "SERVIZIO_FIDUCIARIO" || selectedServiceType === "ISPEZIONI") {
+  if (selectedServiceType === "PIANTONAMENTO_ARMATO" || selectedServiceType === "SERVIZIO_FIDUCIARIO") {
     const { data_inizio_servizio, data_fine_servizio, numero_agenti, daily_schedules } = formValues;
 
     if (data_inizio_servizio && data_fine_servizio && daily_schedules && numero_agenti !== undefined) {
@@ -84,6 +94,45 @@ export function RichiestaServizioForm({
         numero_agenti
       );
       calculationLabel = "Ore totali stimate:";
+    }
+  } else if (selectedServiceType === "ISPEZIONI") {
+    const { data_inizio_servizio, data_fine_servizio, numero_agenti, daily_schedules, cadenza_ore } = formValues as IspezioniFormSchema;
+
+    if (data_inizio_servizio && data_fine_servizio && daily_schedules && cadenza_ore !== undefined && numero_agenti !== undefined) {
+      calculatedValue = calculateTotalInspections(
+        data_inizio_servizio,
+        data_fine_servizio,
+        daily_schedules,
+        cadenza_ore,
+        numero_agenti
+      );
+      calculationLabel = "Numero totale ispezioni stimate:";
+    }
+  } else if (selectedServiceType === "APERTURA_CHIUSURA") {
+    const { data_inizio_servizio, data_fine_servizio, numero_agenti, daily_schedules, tipo_apertura_chiusura } = formValues as AperturaChiusuraFormSchema;
+
+    if (data_inizio_servizio && data_fine_servizio && daily_schedules && tipo_apertura_chiusura && numero_agenti !== undefined) {
+      calculatedValue = calculateAperturaChiusuraCount(
+        data_inizio_servizio,
+        data_fine_servizio,
+        daily_schedules,
+        tipo_apertura_chiusura as AperturaChiusuraType,
+        numero_agenti
+      );
+      calculationLabel = "Numero totale attività stimate:";
+    }
+  } else if (selectedServiceType === "BONIFICA") {
+    const { data_inizio_servizio, data_fine_servizio, numero_agenti, daily_schedules } = formValues as BonificaFormSchema;
+
+    if (data_inizio_servizio && data_fine_servizio && daily_schedules && numero_agenti !== undefined) {
+      calculatedValue = calculateAperturaChiusuraCount(
+        data_inizio_servizio,
+        data_fine_servizio,
+        daily_schedules,
+        "APERTURA_E_CHIUSURA", // Bonifica è calcolata come Apertura e Chiusura
+        numero_agenti
+      );
+      calculationLabel = "Numero totale attività stimate:";
     }
   }
 
@@ -145,7 +194,9 @@ export function RichiestaServizioForm({
         {/* Punto Servizio ID (conditionally rendered) */}
         {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
           selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
-          selectedServiceType === "ISPEZIONI") && (
+          selectedServiceType === "ISPEZIONI" ||
+          selectedServiceType === "APERTURA_CHIUSURA" ||
+          selectedServiceType === "BONIFICA") && (
           <FormField
             control={form.control}
             name="punto_servizio_id"
@@ -174,7 +225,9 @@ export function RichiestaServizioForm({
         {/* Fornitore ID (conditionally rendered) */}
         {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
           selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
-          selectedServiceType === "ISPEZIONI") && (
+          selectedServiceType === "ISPEZIONI" ||
+          selectedServiceType === "APERTURA_CHIUSURA" ||
+          selectedServiceType === "BONIFICA") && (
           <FormField
             control={form.control}
             name="fornitore_id"
@@ -203,7 +256,9 @@ export function RichiestaServizioForm({
         {/* Data Inizio Servizio */}
         {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
           selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
-          selectedServiceType === "ISPEZIONI") && (
+          selectedServiceType === "ISPEZIONI" ||
+          selectedServiceType === "APERTURA_CHIUSURA" ||
+          selectedServiceType === "BONIFICA") && (
           <FormField
             control={form.control}
             name="data_inizio_servizio"
@@ -248,7 +303,9 @@ export function RichiestaServizioForm({
         {/* Data Fine Servizio */}
         {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
           selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
-          selectedServiceType === "ISPEZIONI") && (
+          selectedServiceType === "ISPEZIONI" ||
+          selectedServiceType === "APERTURA_CHIUSURA" ||
+          selectedServiceType === "BONIFICA") && (
           <FormField
             control={form.control}
             name="data_fine_servizio"
@@ -290,34 +347,88 @@ export function RichiestaServizioForm({
           />
         )}
 
-        {/* Numero Agenti */}
+        {/* Numero Agenti and Cadenza Ore / Tipo Apertura/Chiusura (conditionally rendered and grouped) */}
         {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
           selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
-          selectedServiceType === "ISPEZIONI") && (
-          <FormField
-            control={form.control}
-            name="numero_agenti"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Numero Agenti</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    {...field}
-                    value={field.value ?? ""}
-                    onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value))}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+          selectedServiceType === "ISPEZIONI" ||
+          selectedServiceType === "APERTURA_CHIUSURA" ||
+          selectedServiceType === "BONIFICA") && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="numero_agenti"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Numero Agenti</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      {...field}
+                      value={field.value ?? ""}
+                      onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {selectedServiceType === "ISPEZIONI" && (
+              <FormField
+                control={form.control}
+                name="cadenza_ore"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cadenza (ore)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={e => field.onChange(e.target.value === "" ? undefined : parseFloat(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             )}
-          />
+
+            {selectedServiceType === "APERTURA_CHIUSURA" && (
+              <FormField
+                control={form.control}
+                name="tipo_apertura_chiusura"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo Attività</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleziona tipo attività" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {APERTURA_CHIUSURA_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+          </div>
         )}
 
         {/* Daily Schedules */}
         {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
           selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
-          selectedServiceType === "ISPEZIONI") && (
+          selectedServiceType === "ISPEZIONI" ||
+          selectedServiceType === "APERTURA_CHIUSURA" ||
+          selectedServiceType === "BONIFICA") && (
           <FormField
             control={form.control}
             name="daily_schedules"
@@ -365,30 +476,6 @@ export function RichiestaServizioForm({
               </FormItem>
             )}
           />
-        )}
-
-        {/* Cadenza Ore (only for ISPEZIONI) */}
-        {selectedServiceType === "ISPEZIONI" && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <FormField
-              control={form.control}
-              name="cadenza_ore"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cadenza (ore)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      value={field.value ?? ""}
-                      onChange={e => field.onChange(e.target.value === "" ? undefined : parseFloat(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
         )}
 
         {/* Calculated Value Display */}
