@@ -11,3 +11,12 @@ export const REGISTRATION_STATUSES = [
   "approved",
   "rejected",
 ];
+
+export const RUBRICA_CONTACT_ROLES = [
+  "Responsabile",
+  "Tecnico",
+  "Sicurezza",
+  "Amministrazione",
+  "Referente",
+  "Altro",
+];

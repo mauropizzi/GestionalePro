@@ -15,19 +15,29 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import { RUBRICA_CONTACT_ROLES } from "@/lib/constants"; // Importa i ruoli
 
 const rubricaContactFormSchema = z.object({
   nome_contatto: z.string().min(1, "Il nome del contatto è richiesto."),
-  ruolo_contatto: z.string().nullable(),
+  ruolo_contatto: z.enum(RUBRICA_CONTACT_ROLES as [string, ...string[]], {
+    required_error: "Il ruolo del contatto è richiesto.",
+  }).nullable(), // Reso nullable per permettere 'null' se non selezionato
   telefono: z.string().nullable(),
   email: z.string().email("Inserisci un indirizzo email valido.").nullable().or(z.literal("")),
   note: z.string().nullable(),
-  numero_sul_posto: z.string().nullable(), // Nuovo campo
-  reperibile_1: z.string().nullable(),     // Nuovo campo
-  reperibile_2: z.string().nullable(),     // Nuovo campo
-  reperibile_3: z.string().nullable(),     // Nuovo campo
-  responsabile_contatto: z.string().nullable(), // Nuovo campo
+  numero_sul_posto: z.string().nullable(),
+  reperibile_1: z.string().nullable(),
+  reperibile_2: z.string().nullable(),
+  reperibile_3: z.string().nullable(),
+  responsabile_contatto: z.string().nullable(),
 });
 
 export type RubricaContactFormSchema = z.infer<typeof rubricaContactFormSchema>;
@@ -47,11 +57,11 @@ export function RubricaContactForm({ onSubmit, isLoading, defaultValues }: Rubri
       telefono: defaultValues?.telefono || null,
       email: defaultValues?.email || null,
       note: defaultValues?.note || null,
-      numero_sul_posto: defaultValues?.numero_sul_posto || null, // Default per nuovo campo
-      reperibile_1: defaultValues?.reperibile_1 || null,         // Default per nuovo campo
-      reperibile_2: defaultValues?.reperibile_2 || null,         // Default per nuovo campo
-      reperibile_3: defaultValues?.reperibile_3 || null,         // Default per nuovo campo
-      responsabile_contatto: defaultValues?.responsabile_contatto || null, // Default per nuovo campo
+      numero_sul_posto: defaultValues?.numero_sul_posto || null,
+      reperibile_1: defaultValues?.reperibile_1 || null,
+      reperibile_2: defaultValues?.reperibile_2 || null,
+      reperibile_3: defaultValues?.reperibile_3 || null,
+      responsabile_contatto: defaultValues?.responsabile_contatto || null,
     },
   });
 
@@ -77,9 +87,20 @@ export function RubricaContactForm({ onSubmit, isLoading, defaultValues }: Rubri
           render={({ field }) => (
             <FormItem>
               <FormLabel>Ruolo Contatto</FormLabel>
-              <FormControl>
-                <Input placeholder="Es. Responsabile, Tecnico" {...field} value={field.value ?? ""} />
-              </FormControl>
+              <Select onValueChange={field.onChange} value={field.value || ""}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleziona un ruolo" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {RUBRICA_CONTACT_ROLES.map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {role}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
@@ -110,7 +131,6 @@ export function RubricaContactForm({ onSubmit, isLoading, defaultValues }: Rubri
             </FormItem>
           )}
         />
-        {/* Nuovi campi per i recapiti */}
         <FormField
           control={form.control}
           name="numero_sul_posto"
