@@ -34,7 +34,7 @@ export function DailySchedulesFormField({ value, onChange, selectedServiceType, 
     (tipoAperturaChiusura === "SOLO_APERTURA" || tipoAperturaChiusura === "SOLO_CHIUSURA");
   const isGestioneChiavi = selectedServiceType === "GESTIONE_CHIAVI"; // Nuova condizione
 
-  const isSingleTimeService = isBonifica || isSoloAperturaChiusura || isGestioneChiavi; // Condizione unificata
+  const isSingleTimeService = isBonifica || isSoloAperturaChiusura || isGestioneChiavi; // Condizione unificata per logica interna (H24, Ora Fine)
 
   // Effect to initialize groupWeekdays state based on current schedules
   useEffect(() => {
@@ -130,7 +130,7 @@ export function DailySchedulesFormField({ value, onChange, selectedServiceType, 
           id="group-weekdays"
           checked={groupWeekdays}
           onCheckedChange={handleGroupWeekdaysToggle}
-          disabled={isSingleTimeService} // Disabilita se il servizio è a orario singolo
+          disabled={isSoloAperturaChiusura} // Disabilita solo per SOLO_APERTURA/SOLO_CHIUSURA
         />
         <Label htmlFor="group-weekdays" className="text-sm font-medium">Raggruppa Giorni Feriali (Lunedì-Venerdì)</Label>
       </div>
