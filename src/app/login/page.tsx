@@ -7,11 +7,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { CustomSignUpForm } from "@/components/custom-signup-form"; // Importa il nuovo componente
+import { CustomSignUpForm } from "@/components/custom-signup-form";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [showCustomSignUp, setShowCustomSignUp] = useState(false); // Stato per mostrare il modulo di registrazione personalizzato
+  const [showCustomSignUp, setShowCustomSignUp] = useState(false);
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -37,7 +37,10 @@ export default function LoginPage() {
   }, [router]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
+    <div
+      className="flex items-center justify-center min-h-screen bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: "url('/images/login-background.png')" }}
+    >
       <div className="w-full max-w-md p-6 space-y-4 bg-card rounded-lg shadow-lg">
         <h2 className="text-xl font-bold text-center text-foreground">
           {showCustomSignUp ? "Registrati" : "Accedi"}
