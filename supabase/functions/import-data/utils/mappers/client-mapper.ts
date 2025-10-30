@@ -22,6 +22,6 @@ export function mapClientData(rowData: any) {
     sdi: getFieldValue(rowData, ['SDI', 'sdi'], toString),
     attivo: getFieldValue(rowData, ['Attivo', 'attivo', 'Attivo (TRUE/FALSE)'], toBoolean),
     note: getFieldValue(rowData, ['Note', 'note'], toString),
-    codice_cliente_custom: getFieldValue(rowData, ['Codice Cliente Personalizzato', 'codice_cliente_custom', 'codiceClienteCustom'], toString),
+    codice_cliente_custom: getFieldValue(rowData, ['Codice Cliente Personalizzato', 'codice_cliente_custom', 'codiceClienteCustom'], toString), // Nuovo campo
   };
 }

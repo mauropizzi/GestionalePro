@@ -1,6 +1,5 @@
 // @ts-nocheck
 // supabase/functions/import-data/utils/db-operations.ts
-import { isValidUuid } from './data-mapping.ts'; // Importa isValidUuid
 
 /**
  * Definisce le chiavi uniche per ogni tabella per il controllo dei duplicati.
@@ -12,7 +11,7 @@ const UNIQUE_KEYS_CONFIG = {
     ['ragione_sociale'],
     ['partita_iva'],
     ['codice_fiscale'],
-    ['codice_cliente_custom'],
+    ['codice_cliente_custom'], // Aggiunto il codice cliente custom come chiave unica
   ],
   punti_servizio: [
     ['nome_punto_servizio'],
@@ -56,7 +55,7 @@ const FOREIGN_KEYS_CONFIG = {
   punti_servizio: [
     { field: 'id_cliente', refTable: 'clienti' },
     { field: 'fornitore_id', refTable: 'fornitori' },
-    { field: 'codice_cliente_associato', refTable: 'clienti', refColumn: 'codice_cliente_custom' },
+    { field: 'codice_cliente_associato', refTable: 'clienti', refColumn: 'codice_cliente_custom' }, // Nuova FK
   ],
   operatori_network: [
     { field: 'cliente_id', refTable: 'clienti' },
@@ -90,14 +89,17 @@ export async function checkExistingRecord(supabaseAdmin, tableName, processedDat
   let queryBuilder = supabaseAdmin.from(tableName).select('*');
 
   if (!uniqueKeys || uniqueKeys.length === 0) {
+    // Se non ci sono chiavi uniche definite, non possiamo controllare i duplicati in modo affidabile.
+    // Trattiamo come nuovo record per evitare errori, ma è una situazione da migliorare.
     return { status: 'NEW', message: 'Nuovo record da inserire (nessuna chiave unica definita per il controllo).', updatedFields: [], id: null };
   }
 
+  // Costruisci la clausola OR per cercare i record esistenti
   const orConditions = uniqueKeys.map(keyset => {
     const conditions = keyset.map(key => {
       const value = processedData[key];
       return value ? `${key}.eq.${value}` : null;
-    }).filter(Boolean);
+    }).filter(Boolean); // Rimuovi le condizioni nulle se il valore è null
 
     return conditions.length > 0 ? `(${conditions.join(',')})` : null;
   }).filter(Boolean);
@@ -114,6 +116,7 @@ export async function checkExistingRecord(supabaseAdmin, tableName, processedDat
     let hasChanges = false;
     const updatedFields = [];
     for (const key in processedData) {
+      // Confronta solo i campi che sono stati forniti nel processedData e che non sono campi di timestamp
       if (processedData[key] !== existingRecord[key] && key !== 'created_at' && key !== 'updated_at') {
         hasChanges = true;
         updatedFields.push(key);
@@ -145,9 +148,9 @@ export async function validateForeignKeys(supabaseAdmin, tableName, processedDat
 
   for (const fk of fkDefinitions) {
     const fkValue = processedData[fk.field];
-    if (fkValue) {
+    if (fkValue) { // Solo se il campo FK è presente
       const refTable = fk.refTable;
-      const refColumn = fk.refColumn || 'id';
+      const refColumn = fk.refColumn || 'id'; // Default to 'id' if not specified
 
       const { data, error } = await supabaseAdmin
         .from(refTable)
@@ -158,8 +161,10 @@ export async function validateForeignKeys(supabaseAdmin, tableName, processedDat
       if (error || !data) {
         return { isValid: false, message: `Errore: ID ${fk.field.replace('_id', '').replace('_', ' ').toUpperCase()} '${fkValue}' non trovato nella tabella '${refTable}' (colonna '${refColumn}').` };
       }
+      // If the FK is for 'id_cliente' and 'codice_cliente_associato' is also present,
+      // we need to ensure 'id_cliente' is populated with the actual UUID from the lookup.
       if (fk.field === 'codice_cliente_associato' && data.id) {
-        processedData.id_cliente = data.id;
+        processedData.id_cliente = data.id; // Populate the actual UUID for id_cliente
       }
     }
   }
