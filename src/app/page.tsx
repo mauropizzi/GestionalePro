@@ -38,7 +38,7 @@ export default function Home() {
               <span className="mr-3 text-blue-accent">✓</span> Preparazione offerte su misura competitive
             </li>
             <li className="flex items-center">
-              <span className="mr-3 text-blue-accent">✓</span> Progettazione avanzata per partecipazione a Gare
+              <span className="mr-3 text-blue-accent">✓</span> Progettazione avanzata per partecipazione a gare d'appalto
             </li>
           </ul>
         </div>
