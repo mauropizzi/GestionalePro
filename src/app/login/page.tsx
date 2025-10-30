@@ -7,11 +7,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { CustomSignUpForm } from "@/components/custom-signup-form";
+import { CustomSignUpForm } from "@/components/custom-signup-form"; // Importa il nuovo componente
 
 export default function LoginPage() {
   const router = useRouter();
-  const [showCustomSignUp, setShowCustomSignUp] = useState(false);
+  const [showCustomSignUp, setShowCustomSignUp] = useState(false); // Stato per mostrare il modulo di registrazione personalizzato
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -37,9 +37,7 @@ export default function LoginPage() {
   }, [router]);
 
   return (
-    <div
-      className="flex items-center justify-center min-h-screen bg-[url('/images/login-background.png')] bg-cover bg-center bg-no-repeat"
-    >
+    <div className="flex items-center justify-center min-h-screen bg-background">
       <div className="w-full max-w-md p-6 space-y-4 bg-card rounded-lg shadow-lg">
         <h2 className="text-xl font-bold text-center text-foreground">
           {showCustomSignUp ? "Registrati" : "Accedi"}
@@ -88,6 +86,12 @@ export default function LoginPage() {
                   confirmation_text: "La tua password è stata aggiornata.",
                 },
                 magic_link: {
+                  email_input_placeholder: "La tua email",
+                  button_label: "Invia Magic Link",
+                  link_text: "Invia un Magic Link",
+                  confirmation_text: "Controlla la tua email per il Magic Link.",
+                },
+                verify_otp: {
                   email_input_placeholder: "Il tuo codice OTP",
                   button_label: "Verifica OTP",
                 },
