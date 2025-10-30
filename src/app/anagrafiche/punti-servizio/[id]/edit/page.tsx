@@ -13,6 +13,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { PuntoServizioFormSchema, puntoServizioFormSchema } from "@/lib/punti-servizio-utils";
 import { PuntoServizioForm } from "@/components/punti-servizio/punto-servizio-form";
+import { Form } from "@/components/ui/form"; // Import Form
 
 interface Client {
   id: string;
@@ -232,12 +233,14 @@ export default function EditPuntoServizioPage() {
           Apporta modifiche ai dati del punto di servizio.
         </p>
 
-        <PuntoServizioForm
-          onSubmit={onSubmit}
-          isSubmitting={isSubmitting}
-          clients={clients}
-          fornitori={fornitori}
-        />
+        <Form {...form}>
+          <PuntoServizioForm
+            onSubmit={onSubmit}
+            isSubmitting={isSubmitting}
+            clients={clients}
+            fornitori={fornitori}
+          />
+        </Form>
       </div>
     </DashboardLayout>
   );
