@@ -18,7 +18,6 @@ import { Form } from "@/components/ui/form"; // Import Form
 interface Client {
   id: string;
   ragione_sociale: string;
-  codice_cliente_custom: string | null; // Include custom code
 }
 
 interface Fornitore {
@@ -30,7 +29,6 @@ interface PuntoServizio {
   id: string;
   nome_punto_servizio: string;
   id_cliente: string | null;
-  codice_cliente_associato: string | null; // Nuovo campo
   indirizzo: string | null;
   citta: string | null;
   cap: string | null;
@@ -67,7 +65,6 @@ export default function EditPuntoServizioPage() {
     defaultValues: {
       nome_punto_servizio: "",
       id_cliente: null,
-      codice_cliente_associato: null, // Default value for new field
       indirizzo: null,
       citta: null,
       cap: null,
@@ -95,7 +92,7 @@ export default function EditPuntoServizioPage() {
       // Fetch clients
       const { data: clientsData, error: clientsError } = await supabase
         .from("clienti")
-        .select("id, ragione_sociale, codice_cliente_custom") // Fetch custom code
+        .select("id, ragione_sociale")
         .order("ragione_sociale", { ascending: true });
 
       if (clientsError) {
@@ -129,12 +126,11 @@ export default function EditPuntoServizioPage() {
         console.error("Supabase fetch punto_servizio error:", puntoError); // Added for debugging
         toast.error("Errore nel recupero del punto di servizio: " + puntoError.message);
         router.push("/anagrafiche/punti-servizio");
-      } else if (puntoData) {
+      } else if (puntoData) { // Corrected: changed 'data' to 'puntoData'
         setPuntoServizio(puntoData);
         form.reset({
           nome_punto_servizio: puntoData.nome_punto_servizio || "",
           id_cliente: puntoData.id_cliente || null,
-          codice_cliente_associato: puntoData.codice_cliente_associato || null, // Populate new field
           indirizzo: puntoData.indirizzo || null,
           citta: puntoData.citta || null,
           cap: puntoData.cap || null,
@@ -163,28 +159,9 @@ export default function EditPuntoServizioPage() {
   async function onSubmit(values: PuntoServizioFormSchema) {
     setIsSubmitting(true);
     const now = new Date().toISOString();
-
-    let finalClientId = values.id_cliente;
-    // If codice_cliente_associato is provided, try to find the corresponding UUID
-    if (values.codice_cliente_associato) {
-      const { data: clientLookup, error: lookupError } = await supabase
-        .from("clienti")
-        .select("id")
-        .eq("codice_cliente_custom", values.codice_cliente_associato)
-        .single();
-
-      if (lookupError || !clientLookup) {
-        toast.error("Codice Cliente Associato non trovato o non valido.");
-        setIsSubmitting(false);
-        return;
-      }
-      finalClientId = clientLookup.id;
-    }
-
     const puntoServizioData = {
       ...values,
-      id_cliente: finalClientId === "" ? null : finalClientId, // Use the resolved client ID
-      codice_cliente_associato: values.codice_cliente_associato === "" ? null : values.codice_cliente_associato, // Save custom code
+      id_cliente: values.id_cliente === "" ? null : values.id_cliente,
       indirizzo: values.indirizzo === "" ? null : values.indirizzo,
       citta: values.citta === "" ? null : values.citta,
       cap: values.cap === "" ? null : values.cap,

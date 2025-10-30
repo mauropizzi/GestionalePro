@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// --- Start: Inlined utils/data-mapping.ts ---
+// --- Utils: data-mapping.ts content ---
 const getFieldValue = (rowData: any, keys: string[], typeConverter: (value: any) => any) => {
   for (const key of keys) {
     const value = rowData[key];
@@ -50,161 +50,8 @@ const toDateString = (value: any) => {
 };
 
 const isValidUuid = (uuid: any) => typeof uuid === 'string' && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid.trim());
-// --- End: Inlined utils/data-mapping.ts ---
 
-// --- Start: Inlined utils/db-operations.ts ---
-/**
- * Definisce le chiavi uniche per ogni tabella per il controllo dei duplicati.
- * Ogni elemento nell'array è un set di campi che, combinati, devono essere unici.
- * Se ci sono più set, significa che la tabella può essere identificata in più modi.
- */
-const UNIQUE_KEYS_CONFIG = {
-  clienti: [
-    ['ragione_sociale'],
-    ['partita_iva'],
-    ['codice_fiscale'],
-    ['codice_cliente_custom'],
-  ],
-  punti_servizio: [
-    ['nome_punto_servizio'],
-  ],
-  fornitori: [
-    ['ragione_sociale'],
-    ['partita_iva'],
-    ['codice_fiscale'],
-  ],
-  personale: [
-    ['nome', 'cognome'],
-    ['codice_fiscale'],
-    ['email'],
-  ],
-  operatori_network: [
-    ['nome', 'cognome', 'cliente_id'],
-    ['email'],
-  ],
-  procedure: [
-    ['nome_procedura'],
-  ],
-  tariffe: [
-    ['client_id', 'tipo_servizio', 'punto_servizio_id'],
-    ['client_id', 'tipo_servizio', 'fornitore_id'],
-  ],
-  rubrica_punti_servizio: [
-    ['punto_servizio_id', 'tipo_recapito'],
-  ],
-  rubrica_clienti: [
-    ['client_id', 'tipo_recapito'],
-  ],
-  rubrica_fornitori: [
-    ['fornitore_id', 'tipo_recapito'],
-  ],
-};
-
-/**
- * Definisce le chiavi esterne per ogni tabella per la validazione.
- */
-const FOREIGN_KEYS_CONFIG = {
-  punti_servizio: [
-    { field: 'id_cliente', refTable: 'clienti' },
-    { field: 'fornitore_id', refTable: 'fornitori' },
-    { field: 'codice_cliente_associato', refTable: 'clienti', refColumn: 'codice_cliente_custom' },
-  ],
-  operatori_network: [
-    { field: 'cliente_id', refTable: 'clienti' },
-  ],
-  tariffe: [
-    { field: 'client_id', refTable: 'clienti' },
-    { field: 'punto_servizio_id', refTable: 'punti_servizio' },
-    { field: 'fornitore_id', refTable: 'fornitori' },
-  ],
-  rubrica_punti_servizio: [
-    { field: 'punto_servizio_id', refTable: 'punti_servizio' },
-  ],
-  rubrica_clienti: [
-    { field: 'client_id', refTable: 'clienti' },
-  ],
-  rubrica_fornitori: [
-    { field: 'fornitore_id', refTable: 'fornitori' },
-  ],
-};
-
-async function checkExistingRecord(supabaseAdmin, tableName, processedData) {
-  const uniqueKeys = UNIQUE_KEYS_CONFIG[tableName];
-  let existingRecord = null;
-  let queryBuilder = supabaseAdmin.from(tableName).select('*');
-
-  if (!uniqueKeys || uniqueKeys.length === 0) {
-    return { status: 'NEW', message: 'Nuovo record da inserire (nessuna chiave unica definita per il controllo).', updatedFields: [], id: null };
-  }
-
-  const orConditions = uniqueKeys.map(keyset => {
-    const conditions = keyset.map(key => {
-      const value = processedData[key];
-      return value ? `${key}.eq.${value}` : null;
-    }).filter(Boolean);
-
-    return conditions.length > 0 ? `(${conditions.join(',')})` : null;
-  }).filter(Boolean);
-
-  if (orConditions.length > 0) {
-    const { data, error } = await queryBuilder.or(orConditions.join(',')).limit(1);
-    if (error) throw error;
-    if (data && data.length > 0) {
-      existingRecord = data[0];
-    }
-  }
-
-  if (existingRecord) {
-    let hasChanges = false;
-    const updatedFields = [];
-    for (const key in processedData) {
-      if (processedData[key] !== existingRecord[key] && key !== 'created_at' && key !== 'updated_at') {
-        hasChanges = true;
-        updatedFields.push(key);
-      }
-    }
-
-    if (hasChanges) {
-      return { status: 'UPDATE', message: `Aggiornerà ${updatedFields.length} campi.`, updatedFields, id: existingRecord.id };
-    } else {
-      return { status: 'DUPLICATE', message: 'Record esistente, nessun cambiamento rilevato.', updatedFields: [], id: existingRecord.id };
-    }
-  } else {
-    return { status: 'NEW', message: 'Nuovo record da inserire.', updatedFields: [], id: null };
-  }
-}
-
-async function validateForeignKeys(supabaseAdmin, tableName, processedData) {
-  const fkDefinitions = FOREIGN_KEYS_CONFIG[tableName];
-  if (!fkDefinitions || fkDefinitions.length === 0) {
-    return { isValid: true, message: null };
-  }
-
-  for (const fk of fkDefinitions) {
-    const fkValue = processedData[fk.field];
-    if (fkValue) {
-      const refTable = fk.refTable;
-      const refColumn = fk.refColumn || 'id';
-
-      const { data, error } = await supabaseAdmin
-        .from(refTable)
-        .select('id')
-        .eq(refColumn, fkValue)
-        .single();
-
-      if (error || !data) {
-        return { isValid: false, message: `Errore: ID ${fk.field.replace('_id', '').replace('_', ' ').toUpperCase()} '${fkValue}' non trovato nella tabella '${refTable}' (colonna '${refColumn}').` };
-      }
-      if (fk.field === 'codice_cliente_associato' && data.id) {
-        processedData.id_cliente = data.id;
-      }
-    }
-  }
-  return { isValid: true, message: null };
-}
-// --- End: Inlined utils/db-operations.ts ---
-
-// --- Start: Inlined utils/mappers/client-mapper.ts ---
+// --- Mappers: client-mapper.ts content ---
 function mapClientData(rowData: any) {
   const ragione_sociale = getFieldValue(rowData, ['Ragione Sociale', 'ragione_sociale', 'ragioneSociale'], toString);
   if (!ragione_sociale) {
@@ -225,12 +72,10 @@ function mapClientData(rowData: any) {
     sdi: getFieldValue(rowData, ['SDI', 'sdi'], toString),
     attivo: getFieldValue(rowData, ['Attivo', 'attivo', 'Attivo (TRUE/FALSE)'], toBoolean),
     note: getFieldValue(rowData, ['Note', 'note'], toString),
-    codice_cliente_custom: getFieldValue(rowData, ['Codice Cliente Personalizzato', 'codice_cliente_custom', 'codiceClienteCustom'], toString),
   };
 }
-// --- End: Inlined utils/mappers/client-mapper.ts ---
 
-// --- Start: Inlined utils/mappers/punto-servizio-mapper.ts ---
+// --- Mappers: punto-servizio-mapper.ts content ---
 function mapPuntoServizioData(rowData: any) {
   const nome_punto_servizio = getFieldValue(rowData, ['Nome Punto Servizio', 'nome_punto_servizio', 'nomePuntoServizio'], toString);
   if (!nome_punto_servizio) {
@@ -280,12 +125,10 @@ function mapPuntoServizioData(rowData: any) {
     latitude: latitude,
     longitude: longitude,
     nome_procedura: getFieldValue(rowData, ['Nome Procedura', 'nome_procedura', 'nomeProcedura'], toString),
-    codice_cliente_associato: getFieldValue(rowData, ['Codice Cliente Associato', 'codice_cliente_associato', 'codiceClienteAssociato'], toString),
   };
 }
-// --- End: Inlined utils/mappers/punto-servizio-mapper.ts ---
 
-// --- Start: Inlined utils/mappers/fornitore-mapper.ts ---
+// --- Mappers: fornitore-mapper.ts content ---
 function mapFornitoreData(rowData: any) {
   const ragione_sociale = getFieldValue(rowData, ['Ragione Sociale', 'ragione_sociale', 'ragioneSociale'], toString);
   if (!ragione_sociale) {
@@ -308,9 +151,8 @@ function mapFornitoreData(rowData: any) {
     note: getFieldValue(rowData, ['Note', 'note'], toString),
   };
 }
-// --- End: Inlined utils/mappers/fornitore-mapper.ts ---
 
-// --- Start: Inlined utils/mappers/personale-mapper.ts ---
+// --- Mappers: personale-mapper.ts content ---
 function mapPersonaleData(rowData: any) {
   const nome = getFieldValue(rowData, ['Nome', 'nome'], toString);
   const cognome = getFieldValue(rowData, ['Cognome', 'cognome'], toString);
@@ -337,9 +179,8 @@ function mapPersonaleData(rowData: any) {
     note: getFieldValue(rowData, ['Note', 'note'], toString),
   };
 }
-// --- End: Inlined utils/mappers/personale-mapper.ts ---
 
-// --- Start: Inlined utils/mappers/operatore-network-mapper.ts ---
+// --- Mappers: operatore-network-mapper.ts content ---
 function mapOperatoreNetworkData(rowData: any) {
   const nome = getFieldValue(rowData, ['Nome', 'nome'], toString);
   const cognome = getFieldValue(rowData, ['Cognome', 'cognome'], toString);
@@ -359,9 +200,8 @@ function mapOperatoreNetworkData(rowData: any) {
     note: getFieldValue(rowData, ['Note', 'note'], toString),
   };
 }
-// --- End: Inlined utils/mappers/operatore-network-mapper.ts ---
 
-// --- Start: Inlined utils/mappers/procedura-mapper.ts ---
+// --- Mappers: procedura-mapper.ts content ---
 function mapProceduraData(rowData: any) {
   const nome_procedura = getFieldValue(rowData, ['Nome Procedura', 'nome_procedura', 'nomeProcedura'], toString);
   if (!nome_procedura) {
@@ -379,9 +219,8 @@ function mapProceduraData(rowData: any) {
     note: getFieldValue(rowData, ['Note', 'note'], toString),
   };
 }
-// --- End: Inlined utils/mappers/procedura-mapper.ts ---
 
-// --- Start: Inlined utils/mappers/tariffa-mapper.ts ---
+// --- Mappers: tariffa-mapper.ts content ---
 function mapTariffaData(rowData: any) {
   const tipo_servizio = getFieldValue(rowData, ['Tipo Servizio', 'tipo_servizio', 'tipoServizio'], toString);
   const importo = getFieldValue(rowData, ['Importo', 'importo'], toNumber);
@@ -411,9 +250,8 @@ function mapTariffaData(rowData: any) {
     note: getFieldValue(rowData, ['Note', 'note'], toString),
   };
 }
-// --- End: Inlined utils/mappers/tariffa-mapper.ts ---
 
-// --- Start: Inlined utils/mappers/rubrica-punti-servizio-mapper.ts ---
+// --- Mappers: rubrica-punti-servizio-mapper.ts content ---
 function mapRubricaPuntiServizioData(rowData: any) {
   const tipo_recapito = getFieldValue(rowData, ['Tipo Recapito', 'tipo_recapito', 'tipoRecapito'], toString);
   if (!tipo_recapito) {
@@ -436,9 +274,8 @@ function mapRubricaPuntiServizioData(rowData: any) {
     note: getFieldValue(rowData, ['Note', 'note'], toString),
   };
 }
-// --- End: Inlined utils/mappers/rubrica-punti-servizio-mapper.ts ---
 
-// --- Start: Inlined utils/mappers/rubrica-clienti-mapper.ts ---
+// --- Mappers: rubrica-clienti-mapper.ts content ---
 function mapRubricaClientiData(rowData: any) {
   const tipo_recapito = getFieldValue(rowData, ['Tipo Recapito', 'tipo_recapito', 'tipoRecapito'], toString);
   if (!tipo_recapito) {
@@ -461,9 +298,8 @@ function mapRubricaClientiData(rowData: any) {
     note: getFieldValue(rowData, ['Note', 'note'], toString),
   };
 }
-// --- End: Inlined utils/mappers/rubrica-clienti-mapper.ts ---
 
-// --- Start: Inlined utils/mappers/rubrica-fornitori-mapper.ts ---
+// --- Mappers: rubrica-fornitori-mapper.ts content ---
 function mapRubricaFornitoriData(rowData: any) {
   const tipo_recapito = getFieldValue(rowData, ['Tipo Recapito', 'tipo_recapito', 'tipoRecapito'], toString);
   if (!tipo_recapito) {
@@ -486,9 +322,144 @@ function mapRubricaFornitoriData(rowData: any) {
     note: getFieldValue(rowData, ['Note', 'note'], toString),
   };
 }
-// --- End: Inlined utils/mappers/rubrica-fornitori-mapper.ts ---
 
 
+// --- Utils: db-operations.ts content ---
+const UNIQUE_KEYS_CONFIG = {
+  clienti: [
+    ['ragione_sociale'],
+    ['partita_iva'],
+    ['codice_fiscale'],
+  ],
+  punti_servizio: [
+    ['nome_punto_servizio'],
+  ],
+  fornitori: [
+    ['ragione_sociale'],
+    ['partita_iva'],
+    ['codice_fiscale'],
+  ],
+  personale: [
+    ['nome', 'cognome'],
+    ['codice_fiscale'],
+    ['email'],
+  ],
+  operatori_network: [
+    ['nome', 'cognome', 'cliente_id'],
+    ['email'],
+  ],
+  procedure: [
+    ['nome_procedura'],
+  ],
+  tariffe: [
+    ['client_id', 'tipo_servizio', 'punto_servizio_id'],
+    ['client_id', 'tipo_servizio', 'fornitore_id'],
+  ],
+  rubrica_punti_servizio: [
+    ['punto_servizio_id', 'tipo_recapito'],
+  ],
+  rubrica_clienti: [
+    ['client_id', 'tipo_recapito'],
+  ],
+  rubrica_fornitori: [ // Nuova configurazione per rubrica_fornitori
+    ['fornitore_id', 'tipo_recapito'],
+  ],
+};
+
+const FOREIGN_KEYS_CONFIG = {
+  punti_servizio: [
+    { field: 'id_cliente', refTable: 'clienti' },
+    { field: 'fornitore_id', refTable: 'fornitori' },
+  ],
+  operatori_network: [
+    { field: 'cliente_id', refTable: 'clienti' },
+  ],
+  tariffe: [
+    { field: 'client_id', refTable: 'clienti' },
+    { field: 'punto_servizio_id', refTable: 'punti_servizio' },
+    { field: 'fornitore_id', refTable: 'fornitori' },
+  ],
+  rubrica_punti_servizio: [
+    { field: 'punto_servizio_id', refTable: 'punti_servizio' },
+  ],
+  rubrica_clienti: [
+    { field: 'client_id', refTable: 'clienti' },
+  ],
+  rubrica_fornitori: [ // Nuova configurazione per rubrica_fornitori
+    { field: 'fornitore_id', refTable: 'fornitori' },
+  ],
+};
+
+async function checkExistingRecord(supabaseAdmin: any, tableName: string, processedData: any) {
+  const uniqueKeys = UNIQUE_KEYS_CONFIG[tableName];
+  let existingRecord = null;
+  let queryBuilder = supabaseAdmin.from(tableName).select('*');
+
+  if (!uniqueKeys || uniqueKeys.length === 0) {
+    return { status: 'NEW', message: 'Nuovo record da inserire (nessuna chiave unica definita per il controllo).', updatedFields: [], id: null };
+  }
+
+  const orConditions = uniqueKeys.map(keyset => {
+    const conditions = keyset.map(key => {
+      const value = processedData[key];
+      return value ? `${key}.eq.${value}` : null;
+    }).filter(Boolean);
+
+    return conditions.length > 0 ? `(${conditions.join(',')})` : null;
+  }).filter(Boolean);
+
+  if (orConditions.length > 0) {
+    const { data, error } = await queryBuilder.or(orConditions.join(',')).limit(1);
+    if (error) throw error;
+    if (data && data.length > 0) {
+      existingRecord = data[0];
+    }
+  }
+
+  if (existingRecord) {
+    let hasChanges = false;
+    const updatedFields = [];
+    for (const key in processedData) {
+      if (processedData[key] !== existingRecord[key] && key !== 'created_at' && key !== 'updated_at') {
+        hasChanges = true;
+        updatedFields.push(key);
+      }
+    }
+
+    if (hasChanges) {
+      return { status: 'UPDATE', message: `Aggiornerà ${updatedFields.length} campi.`, updatedFields, id: existingRecord.id };
+    } else {
+      return { status: 'DUPLICATE', message: 'Record esistente, nessun cambiamento rilevato.', updatedFields: [], id: existingRecord.id };
+    }
+  } else {
+    return { status: 'NEW', message: 'Nuovo record da inserire.', updatedFields: [], id: null };
+  }
+}
+
+async function validateForeignKeys(supabaseAdmin: any, tableName: string, processedData: any) {
+  const fkDefinitions = FOREIGN_KEYS_CONFIG[tableName];
+  if (!fkDefinitions || fkDefinitions.length === 0) {
+    return { isValid: true, message: null };
+  }
+
+  for (const fk of fkDefinitions) {
+    const fkValue = processedData[fk.field];
+    if (fkValue) {
+      const { data, error } = await supabaseAdmin
+        .from(fk.refTable)
+        .select('id')
+        .eq('id', fkValue)
+        .single();
+
+      if (error || !data) {
+        return { isValid: false, message: `Errore: ID ${fk.field.replace('_id', '').replace('_', ' ').toUpperCase()} '${fkValue}' non trovato nella tabella '${fk.refTable}'.` };
+      }
+    }
+  }
+  return { isValid: true, message: null };
+}
+
+// --- Main Edge Function Logic ---
 const dataMappers: { [key: string]: (rowData: any) => any } = {
   clienti: mapClientData,
   punti_servizio: mapPuntoServizioData,
@@ -499,7 +470,7 @@ const dataMappers: { [key: string]: (rowData: any) => any } = {
   tariffe: mapTariffaData,
   rubrica_punti_servizio: mapRubricaPuntiServizioData,
   rubrica_clienti: mapRubricaClientiData,
-  rubrica_fornitori: mapRubricaFornitoriData,
+  rubrica_fornitori: mapRubricaFornitoriData, // Aggiunto il mapper per la rubrica fornitori
 };
 
 serve(async (req) => {
@@ -550,18 +521,19 @@ serve(async (req) => {
       try {
         processedData = mapper(row);
 
-        // Validate foreign keys first, as it might populate id_cliente from codice_cliente_associato
-        const { isValid, message: fkMessage } = await validateForeignKeys(supabaseAdmin, anagraficaType, processedData);
-        if (!isValid) {
-          rowStatus = 'INVALID_FK';
-          message = fkMessage;
-          errorCount++;
-        } else {
-          const { status, message: checkMessage, updatedFields: fields, id } = await checkExistingRecord(supabaseAdmin, anagraficaType, processedData);
-          rowStatus = status;
-          message = checkMessage;
-          updatedFields = fields;
-          existingRecordId = id;
+        const { status, message: checkMessage, updatedFields: fields, id } = await checkExistingRecord(supabaseAdmin, anagraficaType, processedData);
+        rowStatus = status;
+        message = checkMessage;
+        updatedFields = fields;
+        existingRecordId = id;
+
+        if (rowStatus !== 'ERROR' && rowStatus !== 'INVALID_FK') {
+          const { isValid, message: fkMessage } = await validateForeignKeys(supabaseAdmin, anagraficaType, processedData);
+          if (!isValid) {
+            rowStatus = 'INVALID_FK';
+            message = fkMessage;
+            errorCount++;
+          }
         }
 
       } catch (rowError: any) {
@@ -608,11 +580,6 @@ serve(async (req) => {
 
       const dataToSave = { ...rowReport.processedData };
       const now = new Date().toISOString();
-
-      // Remove codice_cliente_associato before insert/update as it's only for lookup
-      if (anagraficaType === 'punti_servizio') {
-        delete dataToSave.codice_cliente_associato;
-      }
 
       try {
         if (rowReport.status === 'NEW') {

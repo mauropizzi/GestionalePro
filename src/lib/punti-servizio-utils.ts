@@ -3,7 +3,6 @@ import * as z from "zod";
 export const puntoServizioFormSchema = z.object({
   nome_punto_servizio: z.string().min(1, "Il nome del punto servizio è richiesto."),
   id_cliente: z.string().uuid("Seleziona un cliente valido.").nullable(),
-  codice_cliente_associato: z.string().nullable(), // Nuovo campo per il codice cliente personalizzato
   indirizzo: z.string().nullable(),
   citta: z.string().nullable(),
   cap: z.string().nullable(),

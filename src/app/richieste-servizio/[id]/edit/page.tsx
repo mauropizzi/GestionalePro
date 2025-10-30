@@ -65,9 +65,9 @@ export default function EditRichiestaServizioPage() {
 
         <RichiestaServizioForm
           form={form}
-          clients={[]} // Passa un array vuoto, il componente di ricerca gestisce il suo stato
+          clients={clients}
           puntiServizio={[]} // Passa un array vuoto, il componente di ricerca gestisce il suo stato
-          fornitori={[]} // Passa un array vuoto, il componente di ricerca gestisce il suo stato
+          fornitori={fornitori}
           onSubmit={onSubmit}
           isSubmitting={isSubmitting}
         />

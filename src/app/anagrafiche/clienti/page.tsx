@@ -48,7 +48,6 @@ interface Client {
   note: string | null;
   created_at: string;
   updated_at: string;
-  codice_cliente_custom: string | null; // Nuovo campo
 }
 
 export default function ClientiPage() {
@@ -121,8 +120,7 @@ export default function ClientiPage() {
     client.ragione_sociale?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.codice_fiscale?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.partita_iva?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.citta?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.codice_cliente_custom?.toLowerCase().includes(searchTerm.toLowerCase()) // Include custom code in search
+    client.citta?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (isSessionLoading) {
@@ -161,7 +159,7 @@ export default function ClientiPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Cerca clienti per ragione sociale, codice fiscale, P.IVA, città, codice personalizzato..."
+              placeholder="Cerca clienti per ragione sociale, codice fiscale, P.IVA, città..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9"
@@ -175,7 +173,6 @@ export default function ClientiPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Ragione Sociale</TableHead>
-                <TableHead>Codice Personalizzato</TableHead> {/* Nuova colonna */}
                 <TableHead>Codice Fiscale</TableHead>
                 <TableHead>Partita IVA</TableHead>
                 <TableHead>Città</TableHead>
@@ -186,7 +183,7 @@ export default function ClientiPage() {
             <TableBody>
               {filteredClients.length === 0 && !loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-20 text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="h-20 text-center text-muted-foreground">
                     Nessun cliente trovato.
                   </TableCell>
                 </TableRow>
@@ -194,7 +191,6 @@ export default function ClientiPage() {
                 filteredClients.map((client) => (
                   <TableRow key={client.id}>
                     <TableCell className="font-medium">{client.ragione_sociale}</TableCell>
-                    <TableCell>{client.codice_cliente_custom || "N/A"}</TableCell> {/* Mostra il nuovo campo */}
                     <TableCell>{client.codice_fiscale || "N/A"}</TableCell>
                     <TableCell>{client.partita_iva || "N/A"}</TableCell>
                     <TableCell>{client.citta || "N/A"}</TableCell>

@@ -31,12 +31,10 @@ const columnHeaderMap: { [key: string]: string } = {
   partitaIva: "Partita IVA",
   pec: "PEC",
   sdi: "SDI",
-  codiceClienteCustom: "Codice Cliente Personalizzato", // Nuovo campo
 
   // Punti Servizio
   nomePuntoServizio: "Nome Punto Servizio",
   idCliente: "ID Cliente",
-  codiceClienteAssociato: "Codice Cliente Associato", // Nuovo campo
   referente: "Referente",
   telefonoReferente: "Telefono Referente",
   tempoIntervento: "Tempo Intervento",
@@ -95,11 +93,11 @@ const columnHeaderMap: { [key: string]: string } = {
 // Definizione delle intestazioni per i template di esportazione
 const templateHeaders: { [key: string]: string[] } = {
   clienti: [
-    "Ragione Sociale", "Codice Cliente Personalizzato", "Codice Fiscale", "Partita IVA", "Indirizzo", "Città", "CAP",
+    "Ragione Sociale", "Codice Fiscale", "Partita IVA", "Indirizzo", "Città", "CAP",
     "Provincia", "Telefono", "Email", "PEC", "SDI", "Attivo (TRUE/FALSE)", "Note"
   ],
   punti_servizio: [
-    "Nome Punto Servizio", "ID Cliente (UUID)", "Codice Cliente Associato", "Indirizzo", "Città", "CAP", "Provincia",
+    "Nome Punto Servizio", "ID Cliente (UUID)", "Indirizzo", "Città", "CAP", "Provincia",
     "Referente", "Telefono Referente", "Telefono", "Email", "Note", "Tempo Intervento",
     "ID Fornitore (UUID)", "Codice Cliente", "Codice SICEP", "Codice Fatturazione",
     "Latitudine", "Longitudine", "Nome Procedura"

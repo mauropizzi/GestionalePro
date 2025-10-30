@@ -26,7 +26,7 @@ import { Client } from "@/types/richieste-servizio";
 import { useDebounce } from "@/hooks/use-debounce";
 
 interface SearchableClientSelectProps {
-  value: string | null | undefined; // This value is the UUID
+  value: string | null | undefined;
   onChange: (value: string | null) => void;
   disabled?: boolean;
   placeholder?: string;
@@ -42,7 +42,7 @@ export function SearchableClientSelect({
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedClientDisplayName, setSelectedClientDisplayName] = useState<string | null>(null);
+  const [selectedClientName, setSelectedClientName] = useState<string | null>(null);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -52,18 +52,18 @@ export function SearchableClientSelect({
       if (value) {
         const { data, error } = await supabase
           .from("clienti")
-          .select("ragione_sociale, codice_cliente_custom")
+          .select("ragione_sociale")
           .eq("id", value)
           .single();
 
         if (error) {
           console.error("Error fetching selected client name:", error.message);
-          setSelectedClientDisplayName(null);
+          setSelectedClientName(null);
         } else if (data) {
-          setSelectedClientDisplayName(data.ragione_sociale + (data.codice_cliente_custom ? ` (${data.codice_cliente_custom})` : ''));
+          setSelectedClientName(data.ragione_sociale);
         }
       } else {
-        setSelectedClientDisplayName(null);
+        setSelectedClientName(null);
       }
     }
     fetchSelectedClientName();
@@ -85,7 +85,6 @@ export function SearchableClientSelect({
         "indirizzo",
         "citta",
         "email",
-        "codice_cliente_custom", // Include custom code in search
       ];
 
       const orConditions = searchColumns
@@ -94,7 +93,7 @@ export function SearchableClientSelect({
 
       const { data, error } = await supabase
         .from("clienti")
-        .select("id, ragione_sociale, codice_cliente_custom, partita_iva, codice_fiscale, citta, email, indirizzo, telefono, referente, note") // Select ALL fields required by Client interface
+        .select("*")
         .or(orConditions)
         .limit(10); // Limit results for performance
 
@@ -111,8 +110,8 @@ export function SearchableClientSelect({
   }, [debouncedSearchTerm]);
 
   const handleSelectClient = (client: Client) => {
-    onChange(client.id); // Always return the UUID
-    setSelectedClientDisplayName(client.ragione_sociale + (client.codice_cliente_custom ? ` (${client.codice_cliente_custom})` : ''));
+    onChange(client.id);
+    setSelectedClientName(client.ragione_sociale);
     setIsOpen(false);
     setSearchTerm(""); // Clear search term on selection
     setSearchResults([]); // Clear search results
@@ -120,20 +119,20 @@ export function SearchableClientSelect({
 
   const handleClearSelection = () => {
     onChange(null);
-    setSelectedClientDisplayName(null);
+    setSelectedClientName(null);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <div className="flex items-center space-x-2">
         <Input
-          value={selectedClientDisplayName || ""}
+          value={selectedClientName || ""}
           readOnly
           placeholder={placeholder}
           className="flex-grow"
           disabled={disabled}
         />
-        {selectedClientDisplayName && (
+        {selectedClientName && (
           <Button
             variant="ghost"
             size="icon"
@@ -154,7 +153,7 @@ export function SearchableClientSelect({
         <DialogHeader>
           <DialogTitle>Cerca Cliente</DialogTitle>
           <DialogDescription>
-            Cerca per ragione sociale, codice fiscale, partita IVA, indirizzo, città, email o codice personalizzato.
+            Cerca per ragione sociale, codice fiscale, partita IVA, indirizzo, città o email.
           </DialogDescription>
         </DialogHeader>
         <div className="flex items-center space-x-2 mb-4">
@@ -171,7 +170,6 @@ export function SearchableClientSelect({
             <TableHeader>
               <TableRow>
                 <TableHead>Ragione Sociale</TableHead>
-                <TableHead>Codice Personalizzato</TableHead> {/* Nuova colonna */}
                 <TableHead>Partita IVA</TableHead>
                 <TableHead>Codice Fiscale</TableHead>
                 <TableHead>Città</TableHead>
@@ -181,7 +179,7 @@ export function SearchableClientSelect({
             <TableBody>
               {searchResults.length === 0 && !loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                     Nessun risultato trovato.
                   </TableCell>
                 </TableRow>
@@ -193,7 +191,6 @@ export function SearchableClientSelect({
                     className="cursor-pointer hover:bg-accent"
                   >
                     <TableCell className="font-medium">{client.ragione_sociale}</TableCell>
-                    <TableCell>{client.codice_cliente_custom || "N/A"}</TableCell> {/* Mostra il nuovo campo */}
                     <TableCell>{client.partita_iva || "N/A"}</TableCell>
                     <TableCell>{client.codice_fiscale || "N/A"}</TableCell>
                     <TableCell>{client.citta || "N/A"}</TableCell>

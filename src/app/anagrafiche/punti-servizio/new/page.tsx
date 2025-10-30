@@ -18,7 +18,6 @@ import { Form } from "@/components/ui/form"; // Import Form
 interface Client {
   id: string;
   ragione_sociale: string;
-  codice_cliente_custom: string | null; // Include custom code
 }
 
 interface Fornitore {
@@ -37,7 +36,6 @@ export default function NewPuntoServizioPage() {
     defaultValues: {
       nome_punto_servizio: "",
       id_cliente: null,
-      codice_cliente_associato: null, // Default value for new field
       indirizzo: null,
       citta: null,
       cap: null,
@@ -63,7 +61,7 @@ export default function NewPuntoServizioPage() {
       // Fetch clients
       const { data: clientsData, error: clientsError } = await supabase
         .from("clienti")
-        .select("id, ragione_sociale, codice_cliente_custom") // Fetch custom code
+        .select("id, ragione_sociale")
         .order("ragione_sociale", { ascending: true });
 
       if (clientsError) {
@@ -92,28 +90,9 @@ export default function NewPuntoServizioPage() {
   async function onSubmit(values: PuntoServizioFormSchema) {
     setIsLoading(true);
     const now = new Date().toISOString();
-
-    let finalClientId = values.id_cliente;
-    // If codice_cliente_associato is provided, try to find the corresponding UUID
-    if (values.codice_cliente_associato) {
-      const { data: clientLookup, error: lookupError } = await supabase
-        .from("clienti")
-        .select("id")
-        .eq("codice_cliente_custom", values.codice_cliente_associato)
-        .single();
-
-      if (lookupError || !clientLookup) {
-        toast.error("Codice Cliente Associato non trovato o non valido.");
-        setIsLoading(false);
-        return;
-      }
-      finalClientId = clientLookup.id;
-    }
-
     const puntoServizioData = {
       ...values,
-      id_cliente: finalClientId === "" ? null : finalClientId, // Use the resolved client ID
-      codice_cliente_associato: values.codice_cliente_associato === "" ? null : values.codice_cliente_associato, // Save custom code
+      id_cliente: values.id_cliente === "" ? null : values.id_cliente,
       indirizzo: values.indirizzo === "" ? null : values.indirizzo,
       citta: values.citta === "" ? null : values.citta,
       cap: values.cap === "" ? null : values.cap,
