@@ -13,12 +13,14 @@ export interface Client {
   note: string | null;
   created_at?: string;
   updated_at?: string;
+  codice_cliente_custom?: string | null; // Nuovo campo
 }
 
 export interface PuntoServizio {
   id: string;
   nome_punto_servizio: string;
   id_cliente: string | null;
+  codice_cliente_associato: string | null; // Nuovo campo
   indirizzo: string | null;
   citta: string | null;
   cap: string | null;

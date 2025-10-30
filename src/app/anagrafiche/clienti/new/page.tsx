@@ -39,6 +39,7 @@ const formSchema = z.object({
   sdi: z.string().nullable(),
   attivo: z.boolean(), // Changed to z.boolean()
   note: z.string().nullable(),
+  codice_cliente_custom: z.string().nullable(), // Nuovo campo
 });
 
 type ClientFormSchema = z.infer<typeof formSchema>;
@@ -63,6 +64,7 @@ export default function NewClientPage() {
       sdi: null,
       attivo: true, // Ensure this is boolean
       note: null,
+      codice_cliente_custom: null, // Default value for new field
     },
   });
 
@@ -82,6 +84,7 @@ export default function NewClientPage() {
       telefono: values.telefono === "" ? null : values.telefono,
       sdi: values.sdi === "" ? null : values.sdi,
       note: values.note === "" ? null : values.note,
+      codice_cliente_custom: values.codice_cliente_custom === "" ? null : values.codice_cliente_custom, // Save new field
     };
 
     const { error } = await supabase
@@ -124,6 +127,22 @@ export default function NewClientPage() {
                   <FormControl>
                     <Input placeholder="Ragione Sociale" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="codice_cliente_custom"
+              render={({ field }) => (
+                <FormItem className="md:col-span-2">
+                  <FormLabel>Codice Cliente Personalizzato (Opzionale)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Codice univoco per il cliente" {...field} value={field.value ?? ""} />
+                  </FormControl>
+                  <FormDescription className="text-xs">
+                    Un codice identificativo che puoi creare e modificare a piacimento. Deve essere unico.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

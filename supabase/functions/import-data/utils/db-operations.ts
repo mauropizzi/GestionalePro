@@ -11,6 +11,7 @@ const UNIQUE_KEYS_CONFIG = {
     ['ragione_sociale'],
     ['partita_iva'],
     ['codice_fiscale'],
+    ['codice_cliente_custom'], // Aggiunto il codice cliente custom come chiave unica
   ],
   punti_servizio: [
     ['nome_punto_servizio'],
@@ -39,6 +40,12 @@ const UNIQUE_KEYS_CONFIG = {
   rubrica_punti_servizio: [
     ['punto_servizio_id', 'tipo_recapito'],
   ],
+  rubrica_clienti: [
+    ['client_id', 'tipo_recapito'],
+  ],
+  rubrica_fornitori: [
+    ['fornitore_id', 'tipo_recapito'],
+  ],
 };
 
 /**
@@ -48,6 +55,7 @@ const FOREIGN_KEYS_CONFIG = {
   punti_servizio: [
     { field: 'id_cliente', refTable: 'clienti' },
     { field: 'fornitore_id', refTable: 'fornitori' },
+    { field: 'codice_cliente_associato', refTable: 'clienti', refColumn: 'codice_cliente_custom' }, // Nuova FK
   ],
   operatori_network: [
     { field: 'cliente_id', refTable: 'clienti' },
@@ -59,6 +67,12 @@ const FOREIGN_KEYS_CONFIG = {
   ],
   rubrica_punti_servizio: [
     { field: 'punto_servizio_id', refTable: 'punti_servizio' },
+  ],
+  rubrica_clienti: [
+    { field: 'client_id', refTable: 'clienti' },
+  ],
+  rubrica_fornitori: [
+    { field: 'fornitore_id', refTable: 'fornitori' },
   ],
 };
 
@@ -135,14 +149,22 @@ export async function validateForeignKeys(supabaseAdmin, tableName, processedDat
   for (const fk of fkDefinitions) {
     const fkValue = processedData[fk.field];
     if (fkValue) { // Solo se il campo FK è presente
+      const refTable = fk.refTable;
+      const refColumn = fk.refColumn || 'id'; // Default to 'id' if not specified
+
       const { data, error } = await supabaseAdmin
-        .from(fk.refTable)
+        .from(refTable)
         .select('id')
-        .eq('id', fkValue)
+        .eq(refColumn, fkValue)
         .single();
 
       if (error || !data) {
-        return { isValid: false, message: `Errore: ID ${fk.field.replace('_id', '').replace('_', ' ').toUpperCase()} '${fkValue}' non trovato nella tabella '${fk.refTable}'.` };
+        return { isValid: false, message: `Errore: ID ${fk.field.replace('_id', '').replace('_', ' ').toUpperCase()} '${fkValue}' non trovato nella tabella '${refTable}' (colonna '${refColumn}').` };
+      }
+      // If the FK is for 'id_cliente' and 'codice_cliente_associato' is also present,
+      // we need to ensure 'id_cliente' is populated with the actual UUID from the lookup.
+      if (fk.field === 'codice_cliente_associato' && data.id) {
+        processedData.id_cliente = data.id; // Populate the actual UUID for id_cliente
       }
     }
   }

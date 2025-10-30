@@ -42,7 +42,7 @@ export function SearchablePuntoServizioSelect({
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<PuntoServizio[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedPuntoServizioName, setSelectedPuntoServizioName] = useState<string | null>(null);
+  const [selectedPuntoServizioDisplayName, setSelectedPuntoServizioDisplayName] = useState<string | null>(null);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -52,18 +52,18 @@ export function SearchablePuntoServizioSelect({
       if (value) {
         const { data, error } = await supabase
           .from("punti_servizio")
-          .select("nome_punto_servizio")
+          .select("nome_punto_servizio, codice_cliente_associato") // Select custom code
           .eq("id", value)
           .single();
 
         if (error) {
           console.error("Error fetching selected punto servizio name:", error.message);
-          setSelectedPuntoServizioName(null);
+          setSelectedPuntoServizioDisplayName(null);
         } else if (data) {
-          setSelectedPuntoServizioName(data.nome_punto_servizio);
+          setSelectedPuntoServizioDisplayName(data.nome_punto_servizio + (data.codice_cliente_associato ? ` (${data.codice_cliente_associato})` : ''));
         }
       } else {
-        setSelectedPuntoServizioName(null);
+        setSelectedPuntoServizioDisplayName(null);
       }
     }
     fetchSelectedPuntoServizioName();
@@ -86,6 +86,7 @@ export function SearchablePuntoServizioSelect({
         "codice_cliente",
         "codice_sicep",
         "codice_fatturazione",
+        "codice_cliente_associato", // Include custom code in search
       ];
 
       const orConditions = searchColumns
@@ -115,7 +116,7 @@ export function SearchablePuntoServizioSelect({
 
   const handleSelectPuntoServizio = (punto: PuntoServizio) => {
     onChange(punto.id);
-    setSelectedPuntoServizioName(punto.nome_punto_servizio);
+    setSelectedPuntoServizioDisplayName(punto.nome_punto_servizio + (punto.codice_cliente_associato ? ` (${punto.codice_cliente_associato})` : ''));
     setIsOpen(false);
     setSearchTerm(""); // Clear search term on selection
     setSearchResults([]); // Clear search results
@@ -123,20 +124,20 @@ export function SearchablePuntoServizioSelect({
 
   const handleClearSelection = () => {
     onChange(null);
-    setSelectedPuntoServizioName(null);
+    setSelectedPuntoServizioDisplayName(null);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <div className="flex items-center space-x-2">
         <Input
-          value={selectedPuntoServizioName || ""}
+          value={selectedPuntoServizioDisplayName || ""}
           readOnly
           placeholder={placeholder}
           className="flex-grow"
           disabled={disabled}
         />
-        {selectedPuntoServizioName && (
+        {selectedPuntoServizioDisplayName && (
           <Button
             variant="ghost"
             size="icon"
@@ -157,7 +158,7 @@ export function SearchablePuntoServizioSelect({
         <DialogHeader>
           <DialogTitle>Cerca Punto Servizio</DialogTitle>
           <DialogDescription>
-            Cerca per nome, indirizzo, città, referente o codici.
+            Cerca per nome, indirizzo, città, referente, codici o codice cliente associato.
           </DialogDescription>
         </DialogHeader>
         <div className="flex items-center space-x-2 mb-4">
@@ -175,6 +176,7 @@ export function SearchablePuntoServizioSelect({
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Cliente</TableHead>
+                <TableHead>Codice Cliente Associato</TableHead> {/* Nuova colonna */}
                 <TableHead>Città</TableHead>
                 <TableHead>Referente</TableHead>
                 <TableHead>Codice Cliente</TableHead>
@@ -184,7 +186,7 @@ export function SearchablePuntoServizioSelect({
             <TableBody>
               {searchResults.length === 0 && !loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                     Nessun risultato trovato.
                   </TableCell>
                 </TableRow>
@@ -197,6 +199,7 @@ export function SearchablePuntoServizioSelect({
                   >
                     <TableCell className="font-medium">{punto.nome_punto_servizio}</TableCell>
                     <TableCell>{punto.clienti?.ragione_sociale || "N/A"}</TableCell>
+                    <TableCell>{punto.codice_cliente_associato || "N/A"}</TableCell> {/* Mostra il nuovo campo */}
                     <TableCell>{punto.citta || "N/A"}</TableCell>
                     <TableCell>{punto.referente || "N/A"}</TableCell>
                     <TableCell>{punto.codice_cliente || "N/A"}</TableCell>

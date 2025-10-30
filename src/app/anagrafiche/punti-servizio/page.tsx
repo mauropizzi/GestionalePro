@@ -33,6 +33,7 @@ interface PuntoServizio {
   id: string;
   nome_punto_servizio: string;
   id_cliente: string | null;
+  codice_cliente_associato: string | null; // Nuovo campo
   indirizzo: string | null;
   citta: string | null;
   cap: string | null;
@@ -52,7 +53,7 @@ interface PuntoServizio {
   nome_procedura: string | null;
   created_at: string;
   updated_at: string;
-  clienti?: { ragione_sociale: string } | null;
+  clienti?: { ragione_sociale: string, codice_cliente_custom: string | null } | null; // Aggiornato per includere custom code
   fornitori?: { ragione_sociale: string } | null;
 }
 
@@ -81,7 +82,7 @@ export default function PuntiServizioPage() {
       .from("punti_servizio")
       .select(`
         *,
-        clienti ( ragione_sociale ),
+        clienti ( ragione_sociale, codice_cliente_custom ),
         fornitori ( ragione_sociale )
       `)
       .order("nome_punto_servizio", { ascending: true });
@@ -113,6 +114,8 @@ export default function PuntiServizioPage() {
   const filteredPuntiServizio = puntiServizio.filter((punto) =>
     punto.nome_punto_servizio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     punto.clienti?.ragione_sociale?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    punto.clienti?.codice_cliente_custom?.toLowerCase().includes(searchTerm.toLowerCase()) || // Include custom code in search
+    punto.codice_cliente_associato?.toLowerCase().includes(searchTerm.toLowerCase()) || // Include custom code in search
     punto.citta?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     punto.referente?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -153,7 +156,7 @@ export default function PuntiServizioPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Cerca punti servizio per nome, cliente, città, referente..."
+              placeholder="Cerca punti servizio per nome, cliente, codice personalizzato, città, referente..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9"
@@ -168,6 +171,7 @@ export default function PuntiServizioPage() {
               <TableRow>
                 <TableHead>Nome Punto Servizio</TableHead>
                 <TableHead>Cliente</TableHead>
+                <TableHead>Codice Cliente Personalizzato</TableHead> {/* Nuova colonna */}
                 <TableHead>Città</TableHead>
                 <TableHead>Referente</TableHead>
                 <TableHead>Fornitore</TableHead>
@@ -177,7 +181,7 @@ export default function PuntiServizioPage() {
             <TableBody>
               {filteredPuntiServizio.length === 0 && !loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-20 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="h-20 text-center text-muted-foreground">
                     Nessun punto di servizio trovato.
                   </TableCell>
                 </TableRow>
@@ -186,6 +190,7 @@ export default function PuntiServizioPage() {
                   <TableRow key={punto.id}>
                     <TableCell className="font-medium">{punto.nome_punto_servizio}</TableCell>
                     <TableCell>{punto.clienti?.ragione_sociale || "N/A"}</TableCell>
+                    <TableCell>{punto.codice_cliente_associato || punto.clienti?.codice_cliente_custom || "N/A"}</TableCell> {/* Mostra il nuovo campo */}
                     <TableCell>{punto.citta || "N/A"}</TableCell>
                     <TableCell>{punto.referente || "N/A"}</TableCell>
                     <TableCell>{punto.fornitori?.ragione_sociale || "N/A"}</TableCell>

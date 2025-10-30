@@ -14,6 +14,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription, // Import FormDescription
 } from "@/components/ui/form";
 import {
   Select,
@@ -28,6 +29,7 @@ import { PuntoServizioFormSchema, puntoServizioFormSchema } from "@/lib/punti-se
 interface Client {
   id: string;
   ragione_sociale: string;
+  codice_cliente_custom: string | null; // Include custom code
 }
 
 interface Fornitore {
@@ -70,22 +72,52 @@ export function PuntoServizioForm({
           control={form.control}
           name="id_cliente"
           render={({ field }) => (
-            <FormItem className="md:col-span-2">
-              <FormLabel>Cliente Associato</FormLabel>
+            <FormItem>
+              <FormLabel>Cliente Associato (UUID)</FormLabel>
               <Select onValueChange={field.onChange} value={field.value || ""}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleziona un cliente" />
+                    <SelectValue placeholder="Seleziona un cliente per UUID" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
                   {clients.map((client) => (
                     <SelectItem key={client.id} value={client.id}>
-                      {client.ragione_sociale}
+                      {client.ragione_sociale} (ID: {client.id.substring(0, 8)}...)
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <FormDescription className="text-xs">
+                L'ID univoco generato dal sistema per il cliente.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="codice_cliente_associato"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Codice Cliente Associato (Personalizzato)</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value || ""}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleziona un cliente per codice personalizzato" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {clients.filter(c => c.codice_cliente_custom).map((client) => (
+                    <SelectItem key={client.id} value={client.codice_cliente_custom!}>
+                      {client.ragione_sociale} (Codice: {client.codice_cliente_custom})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription className="text-xs">
+                Il codice cliente personalizzato che hai definito.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
