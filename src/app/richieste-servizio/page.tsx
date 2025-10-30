@@ -30,8 +30,9 @@ import {
 import Link from "next/link";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
-import { ServiceType, AperturaChiusuraType, BonificaType } from "@/lib/richieste-servizio-utils";
-import { DailySchedule, InspectionDetails } from "@/types/richieste-servizio"; // Import DailySchedule
+import { ServiceType, AperturaChiusuraType, BonificaType, SERVICE_TYPES } from "@/lib/richieste-servizio-utils"; // Importa SERVICE_TYPES
+import { DailySchedule, InspectionDetails } from "@/types/richieste-servizio";
+import { useSearchParams } from "next/navigation"; // Importa useSearchParams
 
 interface RichiestaServizio {
   id: string;
@@ -44,16 +45,16 @@ interface RichiestaServizio {
   numero_agenti: number | null;
   note: string | null;
   status: string;
-  total_hours_calculated: number | null; // This will now hold total inspections for ISPEZIONI
+  total_hours_calculated: number | null;
   created_at: string;
   updated_at: string;
   clienti?: { ragione_sociale: string } | null;
   punti_servizio?: { nome_punto_servizio: string } | null;
   fornitori?: { ragione_sociale: string } | null;
   inspection_details?: InspectionDetails[];
-  daily_schedules?: DailySchedule[]; // Aggiunto daily_schedules
+  daily_schedules?: DailySchedule[];
   tipo_apertura_chiusura?: AperturaChiusuraType | null;
-  tipo_bonifica?: BonificaType | null; // Nuovo campo
+  tipo_bonifica?: BonificaType | null;
 }
 
 export default function RichiesteServizioPage() {
@@ -62,6 +63,8 @@ export default function RichiesteServizioPage() {
   const [loading, setLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const searchParams = useSearchParams(); // Ottieni i parametri di ricerca
+  const serviceTypeFilter = searchParams.get("type"); // Ottieni il parametro 'type'
 
   const hasAccess =
     currentUserProfile?.role === "super_admin" ||
@@ -71,13 +74,13 @@ export default function RichiesteServizioPage() {
 
   useEffect(() => {
     if (!isSessionLoading && hasAccess) {
-      fetchRichiesteServizio();
+      fetchRichiesteServizio(serviceTypeFilter);
     }
-  }, [isSessionLoading, hasAccess]);
+  }, [isSessionLoading, hasAccess, serviceTypeFilter]); // Aggiungi serviceTypeFilter alle dipendenze
 
-  const fetchRichiesteServizio = async () => {
+  const fetchRichiesteServizio = async (filterType: string | null = null) => {
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from("richieste_servizio")
       .select(`
         *,
@@ -86,8 +89,13 @@ export default function RichiesteServizioPage() {
         fornitori ( ragione_sociale ),
         inspection_details:richieste_servizio_ispezioni(*),
         daily_schedules:richieste_servizio_orari_giornalieri(*)
-      `)
-      .order("created_at", { ascending: false });
+      `);
+
+    if (filterType) {
+      query = query.eq("tipo_servizio", filterType); // Applica il filtro
+    }
+
+    const { data, error } = await query.order("created_at", { ascending: false });
 
     if (error) {
       toast.error("Errore nel recupero delle richieste di servizio: " + error.message);
@@ -108,7 +116,7 @@ export default function RichiesteServizioPage() {
       toast.error("Errore nell'eliminazione della richiesta di servizio: " + error.message);
     } else {
       toast.success("Richiesta di servizio eliminata con successo!");
-      fetchRichiesteServizio();
+      fetchRichiesteServizio(serviceTypeFilter); // Ricarica con il filtro corrente
     }
     setIsActionLoading(false);
   };
@@ -121,7 +129,7 @@ export default function RichiesteServizioPage() {
     richiesta.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (richiesta.tipo_servizio === "ISPEZIONI" && richiesta.inspection_details?.[0]?.tipo_ispezione?.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (richiesta.tipo_servizio === "APERTURA_CHIUSURA" && richiesta.tipo_apertura_chiusura?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (richiesta.tipo_servizio === "BONIFICA" && richiesta.tipo_bonifica?.toLowerCase().includes(searchTerm.toLowerCase())) // Nuovo filtro per BONIFICA
+    (richiesta.tipo_servizio === "BONIFICA" && richiesta.tipo_bonifica?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   if (isSessionLoading) {
@@ -140,11 +148,27 @@ export default function RichiesteServizioPage() {
     );
   }
 
+  const getPageTitle = () => {
+    if (serviceTypeFilter) {
+      const serviceLabel = SERVICE_TYPES.find(s => s.value === serviceTypeFilter)?.label;
+      return `Richieste di Servizio: ${serviceLabel || serviceTypeFilter.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}`;
+    }
+    return "Gestione Richieste di Servizio";
+  };
+
+  const getSearchPlaceholder = () => {
+    if (serviceTypeFilter) {
+      const serviceLabel = SERVICE_TYPES.find(s => s.value === serviceTypeFilter)?.label;
+      return `Cerca richieste ${serviceLabel ? `di tipo ${serviceLabel}` : ''} per cliente, punto servizio, fornitore, stato...`;
+    }
+    return "Cerca richieste per tipo servizio, cliente, punto servizio, fornitore, stato...";
+  };
+
   return (
     <DashboardLayout>
       <div className="container mx-auto py-6">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold">Gestione Richieste di Servizio</h1>
+          <h1 className="text-2xl font-bold">{getPageTitle()}</h1>
           <Button asChild disabled={isActionLoading}>
             <Link href="/richieste-servizio/new">
               <PlusCircle className="h-4 w-4 mr-2" /> Nuova Richiesta
@@ -160,7 +184,7 @@ export default function RichiesteServizioPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Cerca richieste per tipo servizio, cliente, punto servizio, fornitore, stato..."
+              placeholder={getSearchPlaceholder()}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9"
@@ -177,7 +201,7 @@ export default function RichiesteServizioPage() {
                 <TableHead>Cliente</TableHead>
                 <TableHead>Punto Servizio</TableHead>
                 <TableHead>Fornitore</TableHead>
-                <TableHead>Dettagli Servizio</TableHead> {/* Nuova colonna per i dettagli */}
+                <TableHead>Dettagli Servizio</TableHead>
                 <TableHead>Stato</TableHead>
                 <TableHead className="text-right">Azioni</TableHead>
               </TableRow>
@@ -199,7 +223,7 @@ export default function RichiesteServizioPage() {
                     <TableCell>{richiesta.punti_servizio?.nome_punto_servizio || "N/A"}</TableCell>
                     <TableCell>{richiesta.fornitori?.ragione_sociale || "N/A"}</TableCell>
                     <TableCell className="text-xs">
-                      <div> {/* Wrapped content in a single div */}
+                      <div>
                         {richiesta.tipo_servizio === "ISPEZIONI" && richiesta.inspection_details?.[0] ? (
                           <>
                             <div>Data: <span>{richiesta.inspection_details[0].data_servizio ? format(new Date(richiesta.inspection_details[0].data_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</span></div>
@@ -228,7 +252,7 @@ export default function RichiesteServizioPage() {
                             )}
                             <div>Attività totali stimate: <span>{richiesta.total_hours_calculated || 0}</span></div>
                           </>
-                        ) : richiesta.tipo_servizio === "BONIFICA" ? ( // Nuova visualizzazione per BONIFICA
+                        ) : richiesta.tipo_servizio === "BONIFICA" ? (
                           <>
                             <div>Tipo Bonifica: <span>{richiesta.tipo_bonifica?.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || "N/A"}</span></div>
                             <div>Inizio: <span>{richiesta.data_inizio_servizio ? format(new Date(richiesta.data_inizio_servizio), "dd/MM/yyyy", { locale: it }) : "N/A"}</span></div>

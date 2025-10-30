@@ -5,7 +5,7 @@ import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import { useSession } from "@/components/session-context-provider";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useRouter, usePathname } from "next/navigation"; // Importa usePathname
+import { useRouter, usePathname } from "next/navigation";
 import {
   Home,
   Users,
@@ -14,19 +14,20 @@ import {
   UserCog,
   Briefcase,
   ShieldCheck,
-  Building2, // Icona per Anagrafiche
-  ClipboardList, // Icona per Clienti
-  Truck, // Icona per Fornitori
-  Network, // Icona per Operatori Network
-  UserRound, // Icona per Elenco Personale
-  FileText, // Icona per Procedure
-  MapPin, // Icona per Punti Servizio
-  Euro, // Icona per Tariffe
-  FileStack, // Icona per Richieste di Servizio
-  Upload, // Icona per Import/Export
+  Building2,
+  ClipboardList,
+  Truck,
+  Network,
+  UserRound,
+  FileText,
+  MapPin,
+  Euro,
+  FileStack,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { SERVICE_TYPES } from "@/lib/richieste-servizio-utils"; // Importa SERVICE_TYPES
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -35,7 +36,7 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { profile, isLoading } = useSession();
   const router = useRouter();
-  const pathname = usePathname(); // Ottieni il percorso corrente
+  const pathname = usePathname();
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -48,10 +49,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   if (isLoading) {
-    return null; // Il SessionContextProvider gestisce già lo stato di caricamento iniziale
+    return null;
   }
 
-  // Definizione dei link della sidebar in base al ruolo
   const navLinks = [
     {
       label: "Dashboard",
@@ -60,21 +60,28 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo", "pending_approval"],
     },
     {
-      label: "Operazioni",
-      href: "/operations",
+      label: "Richieste Servizio",
+      href: "/richieste-servizio",
       icon: <Briefcase className="h-3.5 w-3.5" />,
       roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
       subLinks: [
         {
-          label: "Richieste di Servizio",
+          label: "Tutte le Richieste",
           href: "/richieste-servizio",
           icon: <FileStack className="h-3.5 w-3.5" />,
           roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
         },
+        ...SERVICE_TYPES.map(serviceType => ({
+          label: serviceType.label,
+          href: `/richieste-servizio?type=${serviceType.value}`,
+          icon: <FileStack className="h-3.5 w-3.5" />,
+          roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
+        })),
       ],
     },
     {
       label: "Anagrafiche",
+      href: "/anagrafiche/clienti", // Aggiunto href per risolvere l'errore TypeScript
       icon: <Building2 className="h-3.5 w-3.5" />,
       roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
       subLinks: [
@@ -121,7 +128,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
         },
         {
-          label: "Importa/Esporta Dati", // Spostato qui
+          label: "Importa/Esporta Dati",
           href: "/anagrafiche/import-export",
           icon: <Upload className="h-3.5 w-3.5" />,
           roles: ["super_admin", "amministrazione"],
@@ -172,7 +179,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             {filteredNavLinks.map((link, idx) => (
               link.subLinks ? (
                 <div key={idx} className="flex flex-col">
-                  <SidebarLink href="#" className="text-sidebar-foreground font-semibold text-sm">
+                  <SidebarLink href={link.href} className="text-sidebar-foreground font-semibold text-sm">
                     {link.icon} {link.label}
                   </SidebarLink>
                   <div className="ml-4 flex flex-col gap-0.5">
@@ -182,7 +189,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         href={subLink.href}
                         className={cn(
                           "text-sidebar-foreground text-xs hover:bg-blue-accent hover:text-blue-accent-foreground",
-                          pathname === subLink.href && "bg-blue-accent text-blue-accent-foreground" // Stile per link attivo
+                          pathname === subLink.href || (subLink.href !== "/" && pathname.startsWith(subLink.href)) ? "bg-blue-accent text-blue-accent-foreground" : "" // Stile per link attivo
                         )}
                       >
                         {subLink.icon} {subLink.label}
