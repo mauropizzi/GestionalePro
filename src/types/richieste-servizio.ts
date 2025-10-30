@@ -3,11 +3,21 @@ import { ServiceType, InspectionType, AperturaChiusuraType, BonificaType, Gestio
 export interface Client {
   id: string;
   ragione_sociale: string;
+  partita_iva: string | null; // Aggiunto
+  codice_fiscale: string | null; // Aggiunto
+  indirizzo: string | null; // Aggiunto per ricerca
+  citta: string | null; // Aggiunto
+  email: string | null; // Aggiunto
+  telefono: string | null;
+  referente: string | null;
+  note: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface PuntoServizio {
   id: string;
-  nome_punto_servizio: string; // Changed from 'nome' to 'nome_punto_servizio' to match DB schema
+  nome_punto_servizio: string;
   id_cliente: string | null;
   indirizzo: string | null;
   citta: string | null;
@@ -26,19 +36,30 @@ export interface PuntoServizio {
   latitude: number | null;
   longitude: number | null;
   nome_procedura: string | null;
-  created_at?: string; // Aggiunto per completezza
-  updated_at?: string; // Aggiunto per completezza
-  clienti?: { ragione_sociale: string } | null; // Per popolare il nome del cliente nella tabella di ricerca
+  created_at?: string;
+  updated_at?: string;
+  clienti?: { ragione_sociale: string } | null;
 }
 
 export interface Fornitore {
   id: string;
   ragione_sociale: string;
+  partita_iva: string | null; // Aggiunto
+  codice_fiscale: string | null; // Aggiunto per ricerca
+  indirizzo: string | null; // Aggiunto per ricerca
+  citta: string | null; // Aggiunto
+  email: string | null; // Aggiunto
+  telefono: string | null;
+  referente: string | null;
+  tipo_servizio: string | null; // Aggiunto (presumendo che sia una stringa per ora)
+  note: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface DailySchedule {
   id?: string;
-  richiesta_servizio_id?: string; // Reso opzionale
+  richiesta_servizio_id?: string;
   giorno_settimana: string;
   h24: boolean;
   ora_inizio: string | null;
@@ -64,16 +85,16 @@ export interface RichiestaServizio {
   punto_servizio_id: string | null;
   fornitore_id: string | null;
   tipo_servizio: ServiceType;
-  data_inizio_servizio?: string; // Reso opzionale per ISPEZIONI
-  data_fine_servizio?: string;   // Reso opzionale per ISPEZIONI
-  numero_agenti?: number;        // Reso opzionale per ISPEZIONI
+  data_inizio_servizio?: string;
+  data_fine_servizio?: string;
+  numero_agenti?: number;
   note: string | null;
   status: string;
-  total_hours_calculated?: number | null; // Reso opzionale per ISPEZIONI
+  total_hours_calculated?: number | null;
   created_at: string;
   updated_at: string;
-  inspection_details?: InspectionDetails[] | null; // Corretto a array di oggetti o null
-  tipo_apertura_chiusura?: AperturaChiusuraType | null; // Nuovo campo
-  tipo_bonifica?: BonificaType | null; // Nuovo campo per Bonifica
-  tipo_gestione_chiavi?: GestioneChiaviType | null; // Nuovo campo per Gestione Chiavi
+  inspection_details?: InspectionDetails[] | null;
+  tipo_apertura_chiusura?: AperturaChiusuraType | null;
+  tipo_bonifica?: BonificaType | null;
+  tipo_gestione_chiavi?: GestioneChiaviType | null;
 }
