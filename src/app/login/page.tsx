@@ -44,7 +44,7 @@ export default function LoginPage() {
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
-        backgroundColor: '#ADD8E6', // Temporary fallback/diagnostic color (light blue)
+        // Removed temporary backgroundColor
       }}
     >
       <div className="w-full max-w-md p-6 space-y-4 bg-card rounded-lg shadow-lg">
