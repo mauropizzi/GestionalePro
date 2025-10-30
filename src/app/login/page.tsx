@@ -38,8 +38,14 @@ export default function LoginPage() {
 
   return (
     <div
-      className="flex items-center justify-center min-h-screen bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: "url('/images/login-background.png')" }}
+      className="flex items-center justify-center min-h-screen"
+      style={{
+        backgroundImage: "url('/images/login-background.png')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundColor: '#ADD8E6', // Temporary fallback/diagnostic color (light blue)
+      }}
     >
       <div className="w-full max-w-md p-6 space-y-4 bg-card rounded-lg shadow-lg">
         <h2 className="text-xl font-bold text-center text-foreground">
