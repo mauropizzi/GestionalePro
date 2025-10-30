@@ -135,6 +135,7 @@ export default function EditPuntoServizioPage() {
         .order("ragione_sociale", { ascending: true });
 
       if (clientsError) {
+        console.error("Supabase fetch clients error:", clientsError); // Added for debugging
         toast.error("Errore nel recupero dei clienti: " + clientsError.message);
       } else {
         setClients(clientsData || []);
@@ -147,6 +148,7 @@ export default function EditPuntoServizioPage() {
         .order("ragione_sociale", { ascending: true });
 
       if (fornitoriError) {
+        console.error("Supabase fetch fornitori error:", fornitoriError); // Added for debugging
         toast.error("Errore nel recupero dei fornitori: " + fornitoriError.message);
       } else {
         setFornitori(fornitoriData || []);
@@ -160,6 +162,7 @@ export default function EditPuntoServizioPage() {
         .single();
 
       if (puntoError) {
+        console.error("Supabase fetch punto_servizio error:", puntoError); // Added for debugging
         toast.error("Errore nel recupero del punto di servizio: " + puntoError.message);
         router.push("/anagrafiche/punti-servizio");
       } else if (puntoData) {
@@ -221,6 +224,7 @@ export default function EditPuntoServizioPage() {
       .eq("id", puntoServizioId);
 
     if (error) {
+      console.error("Supabase update error:", error); // Added for debugging
       toast.error("Errore durante l'aggiornamento del punto di servizio: " + error.message);
     } else {
       toast.success("Punto di servizio aggiornato con successo!");

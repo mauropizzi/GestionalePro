@@ -67,6 +67,7 @@ export default function NewNetworkOperatorPage() {
         .order("ragione_sociale", { ascending: true });
 
       if (error) {
+        console.error("Supabase fetch clients error:", error); // Added for debugging
         toast.error("Errore nel recupero dei clienti: " + error.message);
       } else {
         setClients(data || []);
@@ -90,6 +91,7 @@ export default function NewNetworkOperatorPage() {
       .insert({ ...operatorData, created_at: now, updated_at: now });
 
     if (error) {
+      console.error("Supabase insert error:", error); // Added for debugging
       toast.error("Errore durante il salvataggio dell'operatore network: " + error.message);
     } else {
       toast.success("Operatore network salvato con successo!");

@@ -104,6 +104,7 @@ export default function NewPuntoServizioPage() {
         .order("ragione_sociale", { ascending: true });
 
       if (clientsError) {
+        console.error("Supabase fetch clients error:", clientsError); // Added for debugging
         toast.error("Errore nel recupero dei clienti: " + clientsError.message);
       } else {
         setClients(clientsData || []);
@@ -116,6 +117,7 @@ export default function NewPuntoServizioPage() {
         .order("ragione_sociale", { ascending: true });
 
       if (fornitoriError) {
+        console.error("Supabase fetch fornitori error:", fornitoriError); // Added for debugging
         toast.error("Errore nel recupero dei fornitori: " + fornitoriError.message);
       } else {
         setFornitori(fornitoriData || []);
@@ -152,6 +154,7 @@ export default function NewPuntoServizioPage() {
       .insert({ ...puntoServizioData, created_at: now, updated_at: now });
 
     if (error) {
+      console.error("Supabase insert error:", error); // Added for debugging
       toast.error("Errore durante il salvataggio del punto di servizio: " + error.message);
     } else {
       toast.success("Punto di servizio salvato con successo!");
