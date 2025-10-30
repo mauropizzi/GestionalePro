@@ -94,7 +94,10 @@ export function SearchablePuntoServizioSelect({
 
       const { data, error } = await supabase
         .from("punti_servizio")
-        .select("*")
+        .select(`
+          *,
+          clienti ( ragione_sociale )
+        `)
         .or(orConditions)
         .limit(10); // Limit results for performance
 
@@ -193,7 +196,7 @@ export function SearchablePuntoServizioSelect({
                     className="cursor-pointer hover:bg-accent"
                   >
                     <TableCell className="font-medium">{punto.nome_punto_servizio}</TableCell>
-                    <TableCell>{punto.id_cliente || "N/A"}</TableCell> {/* Will need to fetch client name */}
+                    <TableCell>{punto.clienti?.ragione_sociale || "N/A"}</TableCell>
                     <TableCell>{punto.citta || "N/A"}</TableCell>
                     <TableCell>{punto.referente || "N/A"}</TableCell>
                     <TableCell>{punto.codice_cliente || "N/A"}</TableCell>
