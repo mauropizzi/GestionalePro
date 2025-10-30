@@ -120,6 +120,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           icon: <Euro className="h-3.5 w-3.5" />,
           roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
         },
+        {
+          label: "Importa/Esporta Dati", // Spostato qui
+          href: "/anagrafiche/import-export",
+          icon: <Upload className="h-3.5 w-3.5" />,
+          roles: ["super_admin", "amministrazione"],
+        },
       ],
     },
     {
@@ -138,12 +144,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       label: "Approvazione Registrazioni",
       href: "/admin/registrations",
       icon: <UserCog className="h-3.5 w-3.5" />,
-      roles: ["super_admin", "amministrazione"],
-    },
-    {
-      label: "Importa/Esporta Dati", // New link
-      href: "/admin/import-export",
-      icon: <Upload className="h-3.5 w-3.5" />,
       roles: ["super_admin", "amministrazione"],
     },
   ];
