@@ -19,20 +19,22 @@ import {
 import { Client, PuntoServizio, Fornitore } from "@/types/richieste-servizio";
 import { RichiestaServizioFormSchema, SERVICE_TYPES } from "@/lib/richieste-servizio-utils";
 import { SearchablePuntoServizioSelect } from "./searchable-punto-servizio-select"; // Import the new component
+import { SearchableClientSelect } from "./searchable-client-select"; // Import new client search
+import { SearchableFornitoreSelect } from "./searchable-fornitore-select"; // Import new fornitore search
 
 interface ServiceDetailsSectionProps {
   form: UseFormReturn<RichiestaServizioFormSchema>;
-  clients: Client[];
+  clients: Client[]; // Still passed, but not directly used by the select
   puntiServizio: PuntoServizio[]; // Still passed, but not directly used by the select
-  fornitori: Fornitore[];
+  fornitori: Fornitore[]; // Still passed, but not directly used by the select
   selectedServiceType: RichiestaServizioFormSchema["tipo_servizio"];
 }
 
 export function ServiceDetailsSection({
   form,
-  clients,
+  clients, // This prop is no longer directly used by the Client select
   puntiServizio, // This prop is no longer directly used by the Punto Servizio select
-  fornitori,
+  fornitori, // This prop is no longer directly used by the Fornitore select
   selectedServiceType,
 }: ServiceDetailsSectionProps) {
   return (
@@ -44,20 +46,14 @@ export function ServiceDetailsSection({
         render={({ field }) => (
           <FormItem>
             <FormLabel>Cliente</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleziona un cliente" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.ragione_sociale}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <FormControl>
+              <SearchableClientSelect
+                value={field.value}
+                onChange={field.onChange}
+                disabled={field.disabled}
+                placeholder="Cerca e seleziona un cliente"
+              />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )}
@@ -129,20 +125,15 @@ export function ServiceDetailsSection({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Fornitore</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleziona un fornitore" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {fornitori.map((fornitore) => (
-                    <SelectItem key={fornitore.id} value={fornitore.id}>
-                      {fornitore.ragione_sociale}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormControl>
+                <SearchableFornitoreSelect
+                  value={field.value}
+                  onChange={field.onChange}
+                  disabled={field.disabled}
+                  placeholder="Cerca e seleziona un fornitore"
+                />
+              </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />

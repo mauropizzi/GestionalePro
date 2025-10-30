@@ -32,9 +32,9 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [richiesta, setRichiesta] = useState<RichiestaServizio | null>(null);
-  const [clients, setClients] = useState<Client[]>([]);
+  // Removed clients state as it's now handled by the searchable select component
   // Removed puntiServizio state as it's now handled by the searchable select component
-  const [fornitori, setFornitori] = useState<Fornitore[]>([]);
+  // Removed fornitori state as it's now handled by the searchable select component
   const router = useRouter();
 
   const form = useForm<RichiestaServizioFormSchema>({
@@ -58,17 +58,17 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
     async function fetchData() {
       if (!richiestaId) return;
 
-      // Fetch clients
-      const { data: clientsData, error: clientsError } = await supabase
-        .from("clienti")
-        .select("id, ragione_sociale")
-        .order("ragione_sociale", { ascending: true });
+      // Removed fetching clients here as it's now handled by the searchable select component
+      // const { data: clientsData, error: clientsError } = await supabase
+      //   .from("clienti")
+      //   .select("id, ragione_sociale")
+      //   .order("ragione_sociale", { ascending: true });
 
-      if (clientsError) {
-        toast.error("Errore nel recupero dei clienti: " + clientsError.message);
-      } else {
-        setClients(clientsData || []);
-      }
+      // if (clientsError) {
+      //   toast.error("Errore nel recupero dei clienti: " + clientsError.message);
+      // } else {
+      //   setClients(clientsData || []);
+      // }
 
       // Removed fetching punti_servizio here as it's now handled by the searchable select component
       // const { data: puntiServizioData, error: puntiServizioError } = await supabase
@@ -82,17 +82,17 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
       //   setPuntiServizio(puntiServizioData || []);
       // }
 
-      // Fetch fornitori
-      const { data: fornitoriData, error: fornitoriError } = await supabase
-        .from("fornitori")
-        .select("id, ragione_sociale")
-        .order("ragione_sociale", { ascending: true });
+      // Removed fetching fornitori here as it's now handled by the searchable select component
+      // const { data: fornitoriData, error: fornitoriError } = await supabase
+      //   .from("fornitori")
+      //   .select("id, ragione_sociale")
+      //   .order("ragione_sociale", { ascending: true });
 
-      if (fornitoriError) {
-        toast.error("Errore nel recupero dei fornitori: " + fornitoriError.message);
-      } else {
-        setFornitori(fornitoriData || []);
-      }
+      // if (fornitoriError) {
+      //   toast.error("Errore nel recupero dei fornitori: " + fornitoriError.message);
+      // } else {
+      //   setFornitori(fornitoriData || []);
+      // }
 
       // Fetch richiesta_servizio and daily schedules
       const { data: richiestaData, error: richiestaError } = await supabase
@@ -340,9 +340,9 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
   return {
     form,
     richiesta,
-    clients,
-    // Removed puntiServizio from here
-    fornitori,
+    clients: [], // Pass empty array
+    puntiServizio: [], // Pass empty array
+    fornitori: [], // Pass empty array
     isLoading,
     isSubmitting,
     onSubmit,

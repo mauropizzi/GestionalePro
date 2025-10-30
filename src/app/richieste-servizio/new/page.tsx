@@ -45,9 +45,9 @@ interface Fornitore {
 
 export default function NewRichiestaServizioPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [clients, setClients] = useState<Client[]>([]);
+  // Removed clients state as it's now handled by the searchable select component
   // Removed puntiServizio state as it's now handled by the searchable select component
-  const [fornitori, setFornitori] = useState<Fornitore[]>([]);
+  // Removed fornitori state as it's now handled by the searchable select component
   const router = useRouter();
 
   const form = useForm<RichiestaServizioFormSchema>({
@@ -67,44 +67,7 @@ export default function NewRichiestaServizioPage() {
     } as RichiestaServizioFormSchema, // Cast to ensure correct type for defaultValues
   });
 
-  useEffect(() => {
-    async function fetchDependencies() {
-      const { data: clientsData, error: clientsError } = await supabase
-        .from("clienti")
-        .select("id, ragione_sociale")
-        .order("ragione_sociale", { ascending: true });
-
-      if (clientsError) {
-        toast.error("Errore nel recupero dei clienti: " + clientsError.message);
-      } else {
-        setClients(clientsData || []);
-      }
-
-      // Removed fetching punti_servizio here as it's now handled by the searchable select component
-      // const { data: puntiServizioData, error: puntiServizioError } = await supabase
-      //   .from("punti_servizio")
-      //   .select("id, nome_punto_servizio")
-      //   .order("nome_punto_servizio", { ascending: true });
-
-      // if (puntiServizioError) {
-      //   toast.error("Errore nel recupero dei punti di servizio: " + puntiServizioError.message);
-      // } else {
-      //   setPuntiServizio(puntiServizioData || []);
-      // }
-
-      const { data: fornitoriData, error: fornitoriError } = await supabase
-        .from("fornitori")
-        .select("id, ragione_sociale")
-        .order("ragione_sociale", { ascending: true });
-
-      if (fornitoriError) {
-        toast.error("Errore nel recupero dei fornitori: " + fornitoriError.message);
-      } else {
-        setFornitori(fornitoriData || []);
-      }
-    }
-    fetchDependencies();
-  }, []);
+  // Removed useEffect for fetching clients, puntiServizio, and fornitori
 
   async function onSubmit(values: RichiestaServizioFormSchema) {
     setIsLoading(true);
@@ -254,9 +217,9 @@ export default function NewRichiestaServizioPage() {
 
         <RichiestaServizioForm
           form={form}
-          clients={clients}
+          clients={[]} // Pass an empty array as it's no longer used directly
           puntiServizio={[]} // Pass an empty array as it's no longer used directly
-          fornitori={fornitori}
+          fornitori={[]} // Pass an empty array as it's no longer used directly
           onSubmit={onSubmit}
           isSubmitting={isLoading}
         />
