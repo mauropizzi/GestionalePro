@@ -51,6 +51,6 @@ export function mapPuntoServizioData(rowData: any) {
     latitude: latitude,
     longitude: longitude,
     nome_procedura: getFieldValue(rowData, ['Nome Procedura', 'nome_procedura', 'nomeProcedura'], toString),
-    codice_cliente_associato: getFieldValue(rowData, ['Codice Cliente Associato', 'codice_cliente_associato', 'codiceClienteAssociato'], toString), // Nuovo campo
+    codice_cliente_associato: getFieldValue(rowData, ['Codice Cliente Associato', 'codice_cliente_associato', 'codiceClienteAssociato'], toString),
   };
 }
