@@ -125,7 +125,7 @@ export default function EditPuntoServizioPage() {
         console.error("Supabase fetch punto_servizio error:", puntoError); // Added for debugging
         toast.error("Errore nel recupero del punto di servizio: " + puntoError.message);
         router.push("/anagrafiche/punti-servizio");
-      } else if (data) {
+      } else if (puntoData) { // Corrected: changed 'data' to 'puntoData'
         setPuntoServizio(puntoData);
         form.reset({
           nome_punto_servizio: puntoData.nome_punto_servizio || "",
