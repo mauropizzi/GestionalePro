@@ -38,14 +38,7 @@ export default function LoginPage() {
 
   return (
     <div
-      className="flex items-center justify-center min-h-screen"
-      style={{
-        backgroundImage: "url('/images/login-background.png')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        // Removed temporary backgroundColor
-      }}
+      className="flex items-center justify-center min-h-screen bg-[url('/images/login-background.png')] bg-cover bg-center bg-no-repeat"
     >
       <div className="w-full max-w-md p-6 space-y-4 bg-card rounded-lg shadow-lg">
         <h2 className="text-xl font-bold text-center text-foreground">
@@ -95,12 +88,6 @@ export default function LoginPage() {
                   confirmation_text: "La tua password è stata aggiornata.",
                 },
                 magic_link: {
-                  email_input_placeholder: "La tua email",
-                  button_label: "Invia Magic Link",
-                  link_text: "Invia un Magic Link",
-                  confirmation_text: "Controlla la tua email per il Magic Link.",
-                },
-                verify_otp: {
                   email_input_placeholder: "Il tuo codice OTP",
                   button_label: "Verifica OTP",
                 },
