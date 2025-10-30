@@ -17,8 +17,8 @@ export default function EditRichiestaServizioPage() {
     form,
     richiesta,
     clients,
-    puntiServizio,
-    fornitori, // Recupera i fornitori dal hook
+    // puntiServizio rimosso, non più restituito dal hook
+    fornitori,
     isLoading,
     isSubmitting,
     onSubmit,
@@ -66,8 +66,8 @@ export default function EditRichiestaServizioPage() {
         <RichiestaServizioForm
           form={form}
           clients={clients}
-          puntiServizio={puntiServizio}
-          fornitori={fornitori} // Passa i fornitori al componente form
+          puntiServizio={[]} // Passa un array vuoto, il componente di ricerca gestisce il suo stato
+          fornitori={fornitori}
           onSubmit={onSubmit}
           isSubmitting={isSubmitting}
         />

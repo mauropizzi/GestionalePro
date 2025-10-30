@@ -18,11 +18,12 @@ import {
 } from "@/components/ui/select";
 import { Client, PuntoServizio, Fornitore } from "@/types/richieste-servizio";
 import { RichiestaServizioFormSchema, SERVICE_TYPES } from "@/lib/richieste-servizio-utils";
+import { SearchablePuntoServizioSelect } from "./searchable-punto-servizio-select"; // Import the new component
 
 interface ServiceDetailsSectionProps {
   form: UseFormReturn<RichiestaServizioFormSchema>;
   clients: Client[];
-  puntiServizio: PuntoServizio[];
+  puntiServizio: PuntoServizio[]; // Still passed, but not directly used by the select
   fornitori: Fornitore[];
   selectedServiceType: RichiestaServizioFormSchema["tipo_servizio"];
 }
@@ -30,7 +31,7 @@ interface ServiceDetailsSectionProps {
 export function ServiceDetailsSection({
   form,
   clients,
-  puntiServizio,
+  puntiServizio, // This prop is no longer directly used by the Punto Servizio select
   fornitori,
   selectedServiceType,
 }: ServiceDetailsSectionProps) {
@@ -69,7 +70,7 @@ export function ServiceDetailsSection({
         render={({ field }) => (
           <FormItem>
             <FormLabel>Tipo di Servizio</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value as string}> {/* Correzione qui */}
+            <Select onValueChange={field.onChange} defaultValue={field.value as string}>
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleziona un tipo di servizio" />
@@ -88,7 +89,7 @@ export function ServiceDetailsSection({
         )}
       />
 
-      {/* Punto Servizio ID (conditionally rendered) */}
+      {/* Punto Servizio ID (conditionally rendered with new searchable component) */}
       {(selectedServiceType === "PIANTONAMENTO_ARMATO" ||
         selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
         selectedServiceType === "ISPEZIONI" ||
@@ -101,20 +102,15 @@ export function ServiceDetailsSection({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Punto Servizio</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleziona un punto servizio" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {puntiServizio.map((punto) => (
-                    <SelectItem key={punto.id} value={punto.id}>
-                      {punto.nome_punto_servizio}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormControl>
+                <SearchablePuntoServizioSelect
+                  value={field.value}
+                  onChange={field.onChange}
+                  disabled={field.disabled}
+                  placeholder="Cerca e seleziona un punto servizio"
+                />
+              </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />

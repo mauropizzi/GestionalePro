@@ -46,7 +46,7 @@ interface Fornitore {
 export default function NewRichiestaServizioPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
-  const [puntiServizio, setPuntiServizio] = useState<PuntoServizio[]>([]);
+  // Removed puntiServizio state as it's now handled by the searchable select component
   const [fornitori, setFornitori] = useState<Fornitore[]>([]);
   const router = useRouter();
 
@@ -80,16 +80,17 @@ export default function NewRichiestaServizioPage() {
         setClients(clientsData || []);
       }
 
-      const { data: puntiServizioData, error: puntiServizioError } = await supabase
-        .from("punti_servizio")
-        .select("id, nome_punto_servizio")
-        .order("nome_punto_servizio", { ascending: true });
+      // Removed fetching punti_servizio here as it's now handled by the searchable select component
+      // const { data: puntiServizioData, error: puntiServizioError } = await supabase
+      //   .from("punti_servizio")
+      //   .select("id, nome_punto_servizio")
+      //   .order("nome_punto_servizio", { ascending: true });
 
-      if (puntiServizioError) {
-        toast.error("Errore nel recupero dei punti di servizio: " + puntiServizioError.message);
-      } else {
-        setPuntiServizio(puntiServizioData || []);
-      }
+      // if (puntiServizioError) {
+      //   toast.error("Errore nel recupero dei punti di servizio: " + puntiServizioError.message);
+      // } else {
+      //   setPuntiServizio(puntiServizioData || []);
+      // }
 
       const { data: fornitoriData, error: fornitoriError } = await supabase
         .from("fornitori")
@@ -254,7 +255,7 @@ export default function NewRichiestaServizioPage() {
         <RichiestaServizioForm
           form={form}
           clients={clients}
-          puntiServizio={puntiServizio}
+          puntiServizio={[]} // Pass an empty array as it's no longer used directly
           fornitori={fornitori}
           onSubmit={onSubmit}
           isSubmitting={isLoading}

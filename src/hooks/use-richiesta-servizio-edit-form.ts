@@ -14,7 +14,7 @@ import {
   calculateTotalInspections,
   calculateAperturaChiusuraCount,
   calculateBonificaCount,
-  calculateGestioneChiaviCount, // Importa la nuova funzione
+  calculateGestioneChiaviCount,
   defaultDailySchedules,
   ServiceType,
   InspectionType,
@@ -23,8 +23,8 @@ import {
   APERTURA_CHIUSURA_TYPES,
   BonificaType,
   BONIFICA_TYPES,
-  GestioneChiaviType, // Importa il nuovo tipo
-  GESTIONE_CHIAVI_TYPES, // Importa i nuovi tipi
+  GestioneChiaviType,
+  GESTIONE_CHIAVI_TYPES,
 } from "@/lib/richieste-servizio-utils";
 import { Client, PuntoServizio, RichiestaServizio, DailySchedule, Fornitore } from "@/types/richieste-servizio";
 
@@ -33,7 +33,7 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [richiesta, setRichiesta] = useState<RichiestaServizio | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
-  const [puntiServizio, setPuntiServizio] = useState<PuntoServizio[]>([]);
+  // Removed puntiServizio state as it's now handled by the searchable select component
   const [fornitori, setFornitori] = useState<Fornitore[]>([]);
   const router = useRouter();
 
@@ -70,17 +70,17 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
         setClients(clientsData || []);
       }
 
-      // Fetch punti_servizio
-      const { data: puntiServizioData, error: puntiServizioError } = await supabase
-        .from("punti_servizio")
-        .select("id, nome_punto_servizio")
-        .order("nome_punto_servizio", { ascending: true });
+      // Removed fetching punti_servizio here as it's now handled by the searchable select component
+      // const { data: puntiServizioData, error: puntiServizioError } = await supabase
+      //   .from("punti_servizio")
+      //   .select("id, nome_punto_servizio")
+      //   .order("nome_punto_servizio", { ascending: true });
 
-      if (puntiServizioError) {
-        toast.error("Errore nel recupero dei punti di servizio: " + puntiServizioError.message);
-      } else {
-        setPuntiServizio(puntiServizioData || []);
-      }
+      // if (puntiServizioError) {
+      //   toast.error("Errore nel recupero dei punti di servizio: " + puntiServizioError.message);
+      // } else {
+      //   setPuntiServizio(puntiServizioData || []);
+      // }
 
       // Fetch fornitori
       const { data: fornitoriData, error: fornitoriError } = await supabase
@@ -341,7 +341,7 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
     form,
     richiesta,
     clients,
-    puntiServizio,
+    // Removed puntiServizio from here
     fornitori,
     isLoading,
     isSubmitting,
