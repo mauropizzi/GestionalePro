@@ -11,7 +11,7 @@ const UNIQUE_KEYS_CONFIG = {
     ['ragione_sociale'],
     ['partita_iva'],
     ['codice_fiscale'],
-    ['codice_cliente_custom'], // Aggiunto il codice cliente custom come chiave unica
+    ['codice_cliente_custom'],
   ],
   punti_servizio: [
     ['nome_punto_servizio'],
@@ -55,7 +55,7 @@ const FOREIGN_KEYS_CONFIG = {
   punti_servizio: [
     { field: 'id_cliente', refTable: 'clienti' },
     { field: 'fornitore_id', refTable: 'fornitori' },
-    { field: 'codice_cliente_associato', refTable: 'clienti', refColumn: 'codice_cliente_custom' }, // Nuova FK
+    { field: 'codice_cliente_associato', refTable: 'clienti', refColumn: 'codice_cliente_custom' },
   ],
   operatori_network: [
     { field: 'cliente_id', refTable: 'clienti' },
