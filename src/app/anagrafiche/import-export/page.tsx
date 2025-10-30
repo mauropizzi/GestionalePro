@@ -189,33 +189,29 @@ export default function ImportExportPage() {
         </p>
 
         {/* Sezione Importa */}
-        <div className="mb-8 p-6 border rounded-lg shadow-sm">
-          <h2 className="text-xl font-semibold mb-4 flex items-center">
-            Importa Dati
-          </h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Utilizza il template per preparare i tuoi dati. Il sistema ti guiderà attraverso la validazione prima dell'importazione.
-          </p>
+        <ImportSection
+          anagraficaOptions={anagraficaOptions}
+          columnHeaderMap={columnHeaderMap}
+        />
 
-          <TemplateDownloadSection
-            anagraficaOptions={anagraficaOptions}
-            templateHeaders={templateHeaders}
-            loading={globalLoading}
-          />
-
-          <Separator className="my-6" />
-
-          <ImportSection
-            anagraficaOptions={anagraficaOptions}
-            columnHeaderMap={columnHeaderMap}
-          />
-        </div>
+        <Separator className="my-6" />
 
         {/* Sezione Esporta */}
         <ExportSection
           anagraficaOptions={anagraficaOptions}
           loading={globalLoading}
         />
+
+        <Separator className="my-6" />
+
+        {/* Sezione Scarica Template (spostata alla fine) */}
+        <div className="p-6 border rounded-lg shadow-sm">
+          <TemplateDownloadSection
+            anagraficaOptions={anagraficaOptions}
+            templateHeaders={templateHeaders}
+            loading={globalLoading}
+          />
+        </div>
       </div>
     </DashboardLayout>
   );
