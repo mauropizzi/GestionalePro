@@ -37,8 +37,9 @@ const formSchema = z.object({
   email: z.string().email("Inserisci un indirizzo email valido.").nullable().or(z.literal("")),
   pec: z.string().email("Inserisci un indirizzo PEC valido.").nullable().or(z.literal("")),
   sdi: z.string().nullable(),
-  attivo: z.boolean(), // Changed to z.boolean()
+  attivo: z.boolean(),
   note: z.string().nullable(),
+  codice_cliente_custom: z.string().nullable(), // Nuovo campo
 });
 
 type ClientFormSchema = z.infer<typeof formSchema>;
@@ -61,8 +62,9 @@ export default function NewClientPage() {
       email: null,
       pec: null,
       sdi: null,
-      attivo: true, // Ensure this is boolean
+      attivo: true,
       note: null,
+      codice_cliente_custom: null, // Default value for new field
     },
   });
 
@@ -82,6 +84,7 @@ export default function NewClientPage() {
       telefono: values.telefono === "" ? null : values.telefono,
       sdi: values.sdi === "" ? null : values.sdi,
       note: values.note === "" ? null : values.note,
+      codice_cliente_custom: values.codice_cliente_custom === "" ? null : values.codice_cliente_custom, // Handle new field
     };
 
     const { error } = await supabase
@@ -89,7 +92,7 @@ export default function NewClientPage() {
       .insert({ ...clientData, created_at: now, updated_at: now });
 
     if (error) {
-      console.error("Supabase insert error:", error); // Added for debugging
+      console.error("Supabase insert error:", error);
       toast.error("Errore durante il salvataggio del cliente: " + error.message);
     } else {
       toast.success("Cliente salvato con successo!");
@@ -123,6 +126,19 @@ export default function NewClientPage() {
                   <FormLabel>Ragione Sociale</FormLabel>
                   <FormControl>
                     <Input placeholder="Ragione Sociale" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="codice_cliente_custom" // Nuovo campo
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Codice Cliente Manuale</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Codice Cliente Personalizzato" {...field} value={field.value ?? ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -43,6 +43,7 @@ interface Client {
   note: string | null;
   created_at: string;
   updated_at: string;
+  codice_cliente_custom: string | null; // Aggiunto
 }
 
 const formSchema = z.object({
@@ -57,8 +58,9 @@ const formSchema = z.object({
   email: z.string().email("Inserisci un indirizzo email valido.").nullable().or(z.literal("")),
   pec: z.string().email("Inserisci un indirizzo PEC valido.").nullable().or(z.literal("")),
   sdi: z.string().nullable(),
-  attivo: z.boolean(), // Changed to z.boolean()
+  attivo: z.boolean(),
   note: z.string().nullable(),
+  codice_cliente_custom: z.string().nullable(), // Nuovo campo
 });
 
 type ClientFormSchema = z.infer<typeof formSchema>;
@@ -85,8 +87,9 @@ export default function EditClientPage() {
       email: null,
       pec: null,
       sdi: null,
-      attivo: true, // Ensure this is boolean
+      attivo: true,
       note: null,
+      codice_cliente_custom: null, // Default value for new field
     },
   });
 
@@ -101,7 +104,7 @@ export default function EditClientPage() {
         .single();
 
       if (error) {
-        console.error("Supabase fetch error:", error); // Added for debugging
+        console.error("Supabase fetch error:", error);
         toast.error("Errore nel recupero del cliente: " + error.message);
         router.push("/anagrafiche/clienti");
       } else if (data) {
@@ -120,6 +123,7 @@ export default function EditClientPage() {
           sdi: data.sdi || null,
           attivo: data.attivo,
           note: data.note || null,
+          codice_cliente_custom: data.codice_cliente_custom || null, // Set value for new field
         });
       }
       setIsLoading(false);
@@ -144,6 +148,7 @@ export default function EditClientPage() {
       telefono: values.telefono === "" ? null : values.telefono,
       sdi: values.sdi === "" ? null : values.sdi,
       note: values.note === "" ? null : values.note,
+      codice_cliente_custom: values.codice_cliente_custom === "" ? null : values.codice_cliente_custom, // Handle new field
     };
 
     const { error } = await supabase
@@ -152,7 +157,7 @@ export default function EditClientPage() {
       .eq("id", clientId);
 
     if (error) {
-      console.error("Supabase update error:", error); // Added for debugging
+      console.error("Supabase update error:", error);
       toast.error("Errore durante l'aggiornamento del cliente: " + error.message);
     } else {
       toast.success("Cliente aggiornato con successo!");
@@ -210,6 +215,19 @@ export default function EditClientPage() {
                   <FormLabel>Ragione Sociale</FormLabel>
                   <FormControl>
                     <Input placeholder="Ragione Sociale" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="codice_cliente_custom" // Nuovo campo
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Codice Cliente Manuale</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Codice Cliente Personalizzato" {...field} value={field.value ?? ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
