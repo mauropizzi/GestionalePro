@@ -236,9 +236,22 @@ export function PuntoServizioForm({
           name="codice_cliente"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Codice Cliente</FormLabel>
+              <FormLabel>Codice Cliente Punto Servizio</FormLabel>
               <FormControl>
                 <Input placeholder="Codice Cliente" {...field} value={field.value ?? ""} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="codice_fornitore_punto_servizio" // Nuovo campo
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Codice Fornitore Punto Servizio</FormLabel>
+              <FormControl>
+                <Input placeholder="Codice Fornitore per questo punto servizio" {...field} value={field.value ?? ""} />
               </FormControl>
               <FormMessage />
             </FormItem>
