@@ -90,7 +90,6 @@ async function mapPuntoServizioData(rowData: any, supabaseAdmin: any) {
     id_cliente = null;
   }
 
-  // Lookup client by codice_cliente_custom if id_cliente is not provided
   if (!id_cliente) {
     const codice_cliente_custom = getFieldValue(rowData, ['Codice Cliente Manuale', 'codice_cliente_custom', 'codiceClienteCustom'], toString);
     if (codice_cliente_custom) {
@@ -111,14 +110,13 @@ async function mapPuntoServizioData(rowData: any, supabaseAdmin: any) {
     fornitore_id = null;
   }
 
-  // Lookup fornitore by codice_cliente_associato (manual supplier code) if fornitore_id is not provided
   if (!fornitore_id) {
-    const codice_fornitore_manuale = getFieldValue(rowData, ['Codice Fornitore Manuale', 'codice_fornitore_manuale', 'codiceFornitoreManuale'], toString);
+    const codice_fornitore_manuale = getFieldValue(rowData, ['Codice Fornitore Manuale', 'codice_cliente_associato', 'codiceClienteAssociato'], toString);
     if (codice_fornitore_manuale) {
       const { data: fornitoreData, error: fornitoreError } = await supabaseAdmin
         .from('fornitori')
         .select('id')
-        .eq('codice_cliente_associato', codice_fornitore_manuale) // Assuming this is the manual code for suppliers
+        .eq('codice_cliente_associato', codice_fornitore_manuale)
         .single();
       if (fornitoreError || !fornitoreData) {
         throw new Error(`Fornitore con Codice Fornitore Manuale '${codice_fornitore_manuale}' non trovato.`);
@@ -163,7 +161,6 @@ async function mapPuntoServizioData(rowData: any, supabaseAdmin: any) {
     latitude: latitude,
     longitude: longitude,
     nome_procedura: getFieldValue(rowData, ['Nome Procedura', 'nome_procedura', 'nomeProcedura'], toString),
-    codice_fornitore_punto_servizio: getFieldValue(rowData, ['Codice Fornitore Punto Servizio', 'codice_fornitore_punto_servizio', 'codiceFornitorePuntoServizio'], toString), // Nuovo campo
   };
 }
 
@@ -570,7 +567,7 @@ serve(async (req: Request) => {
     for (const [rowIndex, row] of importData.entries()) {
       let processedData: any = {};
       let rowStatus = 'UNKNOWN';
-      let message: string | null = '';
+      let message: string | null = ''; // Changed to string | null
       let updatedFields: string[] = [];
       let existingRecordId: string | null = null;
 

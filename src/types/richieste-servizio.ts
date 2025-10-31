@@ -39,7 +39,6 @@ export interface PuntoServizio {
   created_at?: string;
   updated_at?: string;
   clienti?: { ragione_sociale: string } | null;
-  codice_fornitore_punto_servizio: string | null; // Nuovo nome della colonna
 }
 
 export interface Fornitore {

@@ -53,7 +53,6 @@ export default function NewPuntoServizioPage() {
       latitude: null,
       longitude: null,
       nome_procedura: null,
-      codice_fornitore_punto_servizio: null, // Default value for new field
     },
   });
 
@@ -109,7 +108,6 @@ export default function NewPuntoServizioPage() {
       codice_sicep: values.codice_sicep === "" ? null : values.codice_sicep,
       codice_fatturazione: values.codice_fatturazione === "" ? null : values.codice_fatturazione,
       nome_procedura: values.nome_procedura === "" ? null : values.nome_procedura,
-      codice_fornitore_punto_servizio: values.codice_fornitore_punto_servizio === "" ? null : values.codice_fornitore_punto_servizio, // Handle new field
     };
 
     const { error } = await supabase
