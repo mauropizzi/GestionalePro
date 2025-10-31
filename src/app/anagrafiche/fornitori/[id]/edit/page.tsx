@@ -42,6 +42,7 @@ interface Supplier {
   note: string | null;
   created_at: string;
   updated_at: string;
+  codice_cliente_associato: string | null; // Aggiunto
 }
 
 const formSchema = z.object({
@@ -58,6 +59,7 @@ const formSchema = z.object({
   tipo_servizio: z.string().nullable(),
   attivo: z.boolean(), // Changed to z.boolean()
   note: z.string().nullable(),
+  codice_cliente_associato: z.string().nullable(), // Nuovo campo
 });
 
 type SupplierFormSchema = z.infer<typeof formSchema>;
@@ -86,6 +88,7 @@ export default function EditSupplierPage() {
       tipo_servizio: null,
       attivo: true, // Ensure this is boolean
       note: null,
+      codice_cliente_associato: null, // Default value for new field
     },
   });
 
@@ -119,6 +122,7 @@ export default function EditSupplierPage() {
           tipo_servizio: data.tipo_servizio || null,
           attivo: data.attivo,
           note: data.note || null,
+          codice_cliente_associato: data.codice_cliente_associato || null, // Set value for new field
         });
       }
       setIsLoading(false);
@@ -143,6 +147,7 @@ export default function EditSupplierPage() {
       pec: values.pec === "" ? null : values.pec,
       tipo_servizio: values.tipo_servizio === "" ? null : values.tipo_servizio,
       note: values.note === "" ? null : values.note,
+      codice_cliente_associato: values.codice_cliente_associato === "" ? null : values.codice_cliente_associato, // Handle new field
     };
 
     const { error } = await supabase
@@ -209,6 +214,19 @@ export default function EditSupplierPage() {
                   <FormLabel>Ragione Sociale</FormLabel>
                   <FormControl>
                     <Input placeholder="Ragione Sociale" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="codice_cliente_associato" // Nuovo campo
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Codice Fornitore Manuale</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Codice Fornitore Personalizzato" {...field} value={field.value ?? ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
