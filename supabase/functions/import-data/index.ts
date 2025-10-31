@@ -1,13 +1,14 @@
 // @ts-nocheck
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase/supabase-js@2.45.0';
 
+// --- 1. Intestazioni CORS ---
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// --- Utils: data-mapping.ts content (consolidated) ---
+// --- 2. Utility di Mappatura Dati (Data Mapping Utilities) ---
 const getFieldValue = (rowData: any, keys: string[], typeConverter: (value: any) => any) => {
   for (const key of keys) {
     const value = rowData[key];
@@ -51,7 +52,9 @@ const toDateString = (value: any) => {
 
 const isValidUuid = (uuid: any) => typeof uuid === 'string' && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid.trim());
 
-// --- Mappers: client-mapper.ts content (consolidated) ---
+// --- 3. Mapper Specifici per Anagrafica (Entity-Specific Mappers) ---
+
+// Mapper per i dati dei Clienti
 function mapClientData(rowData: any) {
   const ragione_sociale = getFieldValue(rowData, ['Ragione Sociale', 'ragione_sociale', 'ragioneSociale'], toString);
   if (!ragione_sociale) {
@@ -76,7 +79,7 @@ function mapClientData(rowData: any) {
   };
 }
 
-// --- Mappers: punto-servizio-mapper.ts content (consolidated) ---
+// Mapper per i dati dei Punti Servizio
 async function mapPuntoServizioData(rowData: any, supabaseAdmin: any) {
   const nome_punto_servizio = getFieldValue(rowData, ['Nome Punto Servizio', 'nome_punto_servizio', 'nomePuntoServizio'], toString);
   if (!nome_punto_servizio) {
@@ -162,7 +165,7 @@ async function mapPuntoServizioData(rowData: any, supabaseAdmin: any) {
   };
 }
 
-// --- Mappers: fornitore-mapper.ts content (consolidated) ---
+// Mapper per i dati dei Fornitori
 function mapFornitoreData(rowData: any) {
   const ragione_sociale = getFieldValue(rowData, ['Ragione Sociale', 'ragione_sociale', 'ragioneSociale'], toString);
   if (!ragione_sociale) {
@@ -187,7 +190,7 @@ function mapFornitoreData(rowData: any) {
   };
 }
 
-// --- Mappers: personale-mapper.ts content (consolidated) ---
+// Mapper per i dati del Personale
 function mapPersonaleData(rowData: any) {
   const nome = getFieldValue(rowData, ['Nome', 'nome'], toString);
   const cognome = getFieldValue(rowData, ['Cognome', 'cognome'], toString);
@@ -215,7 +218,7 @@ function mapPersonaleData(rowData: any) {
   };
 }
 
-// --- Mappers: operatore-network-mapper.ts content (consolidated) ---
+// Mapper per i dati degli Operatori Network
 function mapOperatoreNetworkData(rowData: any) {
   const nome = getFieldValue(rowData, ['Nome', 'nome'], toString);
   const cognome = getFieldValue(rowData, ['Cognome', 'cognome'], toString);
@@ -236,7 +239,7 @@ function mapOperatoreNetworkData(rowData: any) {
   };
 }
 
-// --- Mappers: procedura-mapper.ts content (consolidated) ---
+// Mapper per i dati delle Procedure
 function mapProceduraData(rowData: any) {
   const nome_procedura = getFieldValue(rowData, ['Nome Procedura', 'nome_procedura', 'nomeProcedura'], toString);
   if (!nome_procedura) {
@@ -255,7 +258,7 @@ function mapProceduraData(rowData: any) {
   };
 }
 
-// --- Mappers: tariffa-mapper.ts content (consolidated) ---
+// Mapper per i dati delle Tariffe
 function mapTariffaData(rowData: any) {
   const tipo_servizio = getFieldValue(rowData, ['Tipo Servizio', 'tipo_servizio', 'tipoServizio'], toString);
   const importo = getFieldValue(rowData, ['Importo', 'importo'], toNumber);
@@ -286,7 +289,7 @@ function mapTariffaData(rowData: any) {
   };
 }
 
-// --- Mappers: rubrica-punti-servizio-mapper.ts content (consolidated) ---
+// Mapper per i dati della Rubrica Punti Servizio
 function mapRubricaPuntiServizioData(rowData: any) {
   const tipo_recapito = getFieldValue(rowData, ['Tipo Recapito', 'tipo_recapito', 'tipoRecapito'], toString);
   if (!tipo_recapito) {
@@ -310,7 +313,7 @@ function mapRubricaPuntiServizioData(rowData: any) {
   };
 }
 
-// --- Mappers: rubrica-clienti-mapper.ts content (consolidated) ---
+// Mapper per i dati della Rubrica Clienti
 function mapRubricaClientiData(rowData: any) {
   const tipo_recapito = getFieldValue(rowData, ['Tipo Recapito', 'tipo_recapito', 'tipoRecapito'], toString);
   if (!tipo_recapito) {
@@ -334,7 +337,7 @@ function mapRubricaClientiData(rowData: any) {
   };
 }
 
-// --- Mappers: rubrica-fornitori-mapper.ts content (consolidated) ---
+// Mapper per i dati della Rubrica Fornitori
 function mapRubricaFornitoriData(rowData: any) {
   const tipo_recapito = getFieldValue(rowData, ['Tipo Recapito', 'tipo_recapito', 'tipoRecapito'], toString);
   if (!tipo_recapito) {
@@ -358,7 +361,9 @@ function mapRubricaFornitoriData(rowData: any) {
   };
 }
 
-// --- Utils: db-operations.ts content (consolidated) ---
+// --- 4. Operazioni Database e Validazione (Database Operations & Validation) ---
+
+// Configurazione delle chiavi uniche per il controllo dei duplicati
 const UNIQUE_KEYS_CONFIG = {
   clienti: [
     ['ragione_sociale'],
@@ -400,6 +405,7 @@ const UNIQUE_KEYS_CONFIG = {
   ],
 };
 
+// Configurazione delle chiavi esterne per la validazione
 const FOREIGN_KEYS_CONFIG = {
   punti_servizio: [
     { field: 'id_cliente', refTable: 'clienti' },
@@ -424,6 +430,7 @@ const FOREIGN_KEYS_CONFIG = {
   ],
 };
 
+// Funzione per controllare l'esistenza di un record
 async function checkExistingRecord(supabaseAdmin: any, tableName: string, processedData: any) {
   const uniqueKeys = UNIQUE_KEYS_CONFIG[tableName];
   let existingRecord = null;
@@ -473,6 +480,7 @@ async function checkExistingRecord(supabaseAdmin: any, tableName: string, proces
   }
 }
 
+// Funzione per validare le chiavi esterne
 async function validateForeignKeys(supabaseAdmin: any, tableName: string, processedData: any) {
   const fkDefinitions = FOREIGN_KEYS_CONFIG[tableName];
   if (!fkDefinitions || fkDefinitions.length === 0) {
@@ -496,7 +504,7 @@ async function validateForeignKeys(supabaseAdmin: any, tableName: string, proces
   return { isValid: true, message: null };
 }
 
-// --- Main Edge Function Logic ---
+// --- 5. Mappatura dei Mapper (Mapper Registry) ---
 const dataMappers: { [key: string]: (rowData: any, supabaseAdmin: any) => Promise<any> | any } = {
   clienti: mapClientData,
   punti_servizio: mapPuntoServizioData,
@@ -510,6 +518,7 @@ const dataMappers: { [key: string]: (rowData: any, supabaseAdmin: any) => Promis
   rubrica_fornitori: mapRubricaFornitoriData,
 };
 
+// --- 6. Logica Principale della Funzione Edge (Main Edge Function Logic) ---
 serve(async (req) => {
   console.log("import-data function invoked.");
 
