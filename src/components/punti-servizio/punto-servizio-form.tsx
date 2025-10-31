@@ -236,7 +236,7 @@ export function PuntoServizioForm({
           name="codice_cliente"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Codice Cliente</FormLabel>
+              <FormLabel>Codice Cliente Punto Servizio</FormLabel>
               <FormControl>
                 <Input placeholder="Codice Cliente" {...field} value={field.value ?? ""} />
               </FormControl>
@@ -244,6 +244,7 @@ export function PuntoServizioForm({
             </FormItem>
           )}
         />
+        {/* Rimosso il campo codice_fornitore_punto_servizio */}
         <FormField
           control={form.control}
           name="codice_sicep"

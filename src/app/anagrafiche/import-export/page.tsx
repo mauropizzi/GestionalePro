@@ -40,15 +40,13 @@ const columnHeaderMap: { [key: string]: string } = {
   telefono_referente: "Telefono Referente",
   tempo_intervento: "Tempo Intervento",
   fornitore_id: "ID Fornitore (UUID)",
-  codice_cliente: "Codice Cliente",
+  codice_cliente: "Codice Cliente Punto Servizio", // Reso più specifico
   codice_sicep: "Codice SICEP",
   codice_fatturazione: "Codice Fatturazione",
   latitude: "Latitudine",
   longitude: "Longitudine",
   nome_procedura: "Nome Procedura",
-  // Nuovi campi per Punti Servizio
-  'Codice Cliente Manuale': "Codice Cliente Manuale", // Mappatura per il campo usato nel template
-  'Codice Fornitore Manuale': "Codice Fornitore Manuale", // Mappatura per il campo usato nel template
+  // codice_fornitore_punto_servizio: "Codice Fornitore Punto Servizio", // Rimosso
 
   // Rubrica Punti Servizio
   punto_servizio_id: "ID Punto Servizio (UUID)",
@@ -63,12 +61,12 @@ const columnHeaderMap: { [key: string]: string } = {
   // tipo_recapito, nome_persona, telefono_fisso, telefono_cellulare, email_recapito, note sono gli stessi
 
   // Rubrica Fornitori
-  fornitore_id: "ID Fornitore (UUID)",
+  // fornitore_id: "ID Fornitore (UUID)", // Rimosso duplicato
   // tipo_recapito, nome_persona, telefono_fisso, telefono_cellulare, email_recapito, note sono gli stessi
 
   // Fornitori
   tipo_servizio: "Tipo Servizio",
-  codice_cliente_associato: "Codice Fornitore Manuale",
+  codice_cliente_associato: "Codice Fornitore Manuale", // Questo è il codice manuale del fornitore stesso
 
   // Personale
   nome: "Nome",
@@ -96,8 +94,9 @@ const templateHeaders: { [key: string]: string[] } = {
   punti_servizio: [
     "Nome Punto Servizio", "ID Cliente (UUID)", "Codice Cliente Manuale", "Indirizzo", "Città", "CAP", "Provincia",
     "Referente", "Telefono Referente", "Telefono", "Email", "Note", "Tempo Intervento",
-    "ID Fornitore (UUID)", "Codice Fornitore Manuale", "Codice Cliente", "Codice SICEP", "Codice Fatturazione",
+    "ID Fornitore (UUID)", "Codice Fornitore Manuale", "Codice Cliente Punto Servizio", "Codice SICEP", "Codice Fatturazione",
     "Latitudine", "Longitudine", "Nome Procedura"
+    // "Codice Fornitore Punto Servizio" // Rimosso
   ],
   fornitori: [
     "Ragione Sociale", "Codice Fornitore Manuale", "Codice Fiscale", "Partita IVA", "Indirizzo", "Città", "CAP",

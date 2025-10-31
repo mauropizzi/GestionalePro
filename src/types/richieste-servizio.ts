@@ -39,6 +39,7 @@ export interface PuntoServizio {
   created_at?: string;
   updated_at?: string;
   clienti?: { ragione_sociale: string } | null;
+  // codice_fornitore_punto_servizio: string | null; // Rimosso
 }
 
 export interface Fornitore {

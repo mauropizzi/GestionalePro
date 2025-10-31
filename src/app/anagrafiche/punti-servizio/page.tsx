@@ -54,6 +54,7 @@ interface PuntoServizio {
   updated_at: string;
   clienti?: { ragione_sociale: string } | null;
   fornitori?: { ragione_sociale: string } | null;
+  // codice_fornitore_punto_servizio: string | null; // Rimosso
 }
 
 export default function PuntiServizioPage() {
@@ -114,7 +115,9 @@ export default function PuntiServizioPage() {
     punto.nome_punto_servizio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     punto.clienti?.ragione_sociale?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     punto.citta?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    punto.referente?.toLowerCase().includes(searchTerm.toLowerCase())
+    punto.referente?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    punto.codice_cliente?.toLowerCase().includes(searchTerm.toLowerCase())
+    // punto.codice_fornitore_punto_servizio?.toLowerCase().includes(searchTerm.toLowerCase()) // Rimosso
   );
 
   if (isSessionLoading) {
@@ -153,7 +156,7 @@ export default function PuntiServizioPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Cerca punti servizio per nome, cliente, città, referente..."
+              placeholder="Cerca punti servizio per nome, cliente, città, referente, codici..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9"
@@ -171,13 +174,15 @@ export default function PuntiServizioPage() {
                 <TableHead>Città</TableHead>
                 <TableHead>Referente</TableHead>
                 <TableHead>Fornitore</TableHead>
+                <TableHead>Codice Cliente PS</TableHead>
+                {/* <TableHead>Codice Fornitore PS</TableHead> */} {/* Rimosso */}
                 <TableHead className="text-right">Azioni</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredPuntiServizio.length === 0 && !loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-20 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="h-20 text-center text-muted-foreground">
                     Nessun punto di servizio trovato.
                   </TableCell>
                 </TableRow>
@@ -189,6 +194,8 @@ export default function PuntiServizioPage() {
                     <TableCell>{punto.citta || "N/A"}</TableCell>
                     <TableCell>{punto.referente || "N/A"}</TableCell>
                     <TableCell>{punto.fornitori?.ragione_sociale || "N/A"}</TableCell>
+                    <TableCell>{punto.codice_cliente || "N/A"}</TableCell>
+                    {/* <TableCell>{punto.codice_fornitore_punto_servizio || "N/A"}</TableCell> */} {/* Rimosso */}
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">
                         <Button
