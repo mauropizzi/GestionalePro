@@ -49,7 +49,7 @@ export function ExportSection({ anagraficaOptions, loading }: ExportSectionProps
       const blob = await response.blob();
       const contentDisposition = response.headers.get('Content-Disposition');
       const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
-      const filename = filenameMatch ? filenameMatch[1] : `${anagraficaType}_export.xlsx`;
+      const filename = filenameMatch ? filename[1] : `${anagraficaType}_export.xlsx`;
 
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
