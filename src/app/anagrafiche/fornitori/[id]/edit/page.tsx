@@ -100,7 +100,6 @@ export default function EditSupplierPage() {
         .single();
 
       if (error) {
-        console.error("Supabase fetch error:", error); // Added for debugging
         toast.error("Errore nel recupero del fornitore: " + error.message);
         router.push("/anagrafiche/fornitori");
       } else if (data) {
@@ -151,7 +150,6 @@ export default function EditSupplierPage() {
       .eq("id", supplierId);
 
     if (error) {
-      console.error("Supabase update error:", error); // Added for debugging
       toast.error("Errore durante l'aggiornamento del fornitore: " + error.message);
     } else {
       toast.success("Fornitore aggiornato con successo!");

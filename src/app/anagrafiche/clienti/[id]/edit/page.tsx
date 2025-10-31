@@ -101,7 +101,6 @@ export default function EditClientPage() {
         .single();
 
       if (error) {
-        console.error("Supabase fetch error:", error); // Added for debugging
         toast.error("Errore nel recupero del cliente: " + error.message);
         router.push("/anagrafiche/clienti");
       } else if (data) {
@@ -152,7 +151,6 @@ export default function EditClientPage() {
       .eq("id", clientId);
 
     if (error) {
-      console.error("Supabase update error:", error); // Added for debugging
       toast.error("Errore durante l'aggiornamento del cliente: " + error.message);
     } else {
       toast.success("Cliente aggiornato con successo!");

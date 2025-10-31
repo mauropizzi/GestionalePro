@@ -80,7 +80,6 @@ export default function NewProceduraPage() {
       .insert({ ...proceduraData, created_at: now, updated_at: now });
 
     if (error) {
-      console.error("Supabase insert error:", error); // Added for debugging
       toast.error("Errore durante il salvataggio della procedura: " + error.message);
     } else {
       toast.success("Procedura salvata con successo!");

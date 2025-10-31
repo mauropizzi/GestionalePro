@@ -122,14 +122,14 @@ export default function RichiesteServizioPage() {
   };
 
   const filteredRichieste = richieste.filter((richiesta) =>
-    (richiesta.tipo_servizio || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (richiesta.clienti?.ragione_sociale || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (richiesta.punti_servizio?.nome_punto_servizio || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (richiesta.fornitori?.ragione_sociale || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (richiesta.status || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (richiesta.tipo_servizio === "ISPEZIONI" && (richiesta.inspection_details?.[0]?.tipo_ispezione || '').toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (richiesta.tipo_servizio === "APERTURA_CHIUSURA" && (richiesta.tipo_apertura_chiusura || '').toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (richiesta.tipo_servizio === "BONIFICA" && (richiesta.tipo_bonifica || '').toLowerCase().includes(searchTerm.toLowerCase()))
+    richiesta.tipo_servizio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    richiesta.clienti?.ragione_sociale?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    richiesta.punti_servizio?.nome_punto_servizio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    richiesta.fornitori?.ragione_sociale?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    richiesta.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (richiesta.tipo_servizio === "ISPEZIONI" && richiesta.inspection_details?.[0]?.tipo_ispezione?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (richiesta.tipo_servizio === "APERTURA_CHIUSURA" && richiesta.tipo_apertura_chiusura?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (richiesta.tipo_servizio === "BONIFICA" && richiesta.tipo_bonifica?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   if (isSessionLoading) {

@@ -119,7 +119,6 @@ export default function EditTariffaPage() {
         .order("ragione_sociale", { ascending: true });
 
       if (clientsError) {
-        console.error("Supabase fetch clients error:", clientsError); // Added for debugging
         toast.error("Errore nel recupero dei clienti: " + clientsError.message);
       } else {
         setClients(clientsData || []);
@@ -132,7 +131,6 @@ export default function EditTariffaPage() {
         .order("nome_punto_servizio", { ascending: true });
 
       if (puntiServizioError) {
-        console.error("Supabase fetch punti_servizio error:", puntiServizioError); // Added for debugging
         toast.error("Errore nel recupero dei punti di servizio: " + puntiServizioError.message);
       } else {
         setPuntiServizio(puntiServizioData || []);
@@ -145,7 +143,6 @@ export default function EditTariffaPage() {
         .order("ragione_sociale", { ascending: true });
 
       if (fornitoriError) {
-        console.error("Supabase fetch fornitori error:", fornitoriError); // Added for debugging
         toast.error("Errore nel recupero dei fornitori: " + fornitoriError.message);
       } else {
         setFornitori(fornitoriData || []);
@@ -159,7 +156,6 @@ export default function EditTariffaPage() {
         .single();
 
       if (tariffaError) {
-        console.error("Supabase fetch tariffa error:", tariffaError); // Added for debugging
         toast.error("Errore nel recupero della tariffa: " + tariffaError.message);
         router.push("/anagrafiche/tariffe");
       } else if (tariffaData) {
@@ -204,7 +200,6 @@ export default function EditTariffaPage() {
       .eq("id", tariffaId);
 
     if (error) {
-      console.error("Supabase update error:", error); // Added for debugging
       toast.error("Errore durante l'aggiornamento della tariffa: " + error.message);
     } else {
       toast.success("Tariffa aggiornata con successo!");

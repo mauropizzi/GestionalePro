@@ -103,7 +103,6 @@ export default function NewPersonalePage() {
       .insert({ ...personaleData, created_at: now, updated_at: now });
 
     if (error) {
-      console.error("Supabase insert error:", error); // Added for debugging
       toast.error("Errore durante il salvataggio del personale: " + error.message);
     } else {
       toast.success("Personale salvato con successo!");

@@ -91,7 +91,6 @@ export default function EditProceduraPage() {
         .single();
 
       if (error) {
-        console.error("Supabase fetch error:", error); // Added for debugging
         toast.error("Errore nel recupero della procedura: " + error.message);
         router.push("/anagrafiche/procedure");
       } else if (data) {
@@ -132,7 +131,6 @@ export default function EditProceduraPage() {
       .eq("id", proceduraId);
 
     if (error) {
-      console.error("Supabase update error:", error); // Added for debugging
       toast.error("Errore durante l'aggiornamento della procedura: " + error.message);
     } else {
       toast.success("Procedura aggiornata con successo!");

@@ -89,7 +89,6 @@ export default function NewSupplierPage() {
       .insert({ ...supplierData, created_at: now, updated_at: now });
 
     if (error) {
-      console.error("Supabase insert error:", error); // Added for debugging
       toast.error("Errore durante il salvataggio del fornitore: " + error.message);
     } else {
       toast.success("Fornitore salvato con successo!");
