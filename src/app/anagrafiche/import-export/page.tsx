@@ -31,6 +31,7 @@ const columnHeaderMap: { [key: string]: string } = {
   partitaIva: "Partita IVA",
   pec: "PEC",
   sdi: "SDI",
+  codiceClienteCustom: "Codice Cliente Manuale", // Aggiunto
 
   // Punti Servizio
   nomePuntoServizio: "Nome Punto Servizio",
@@ -45,6 +46,8 @@ const columnHeaderMap: { [key: string]: string } = {
   latitude: "Latitudine",
   longitude: "Longitudine",
   nomeProcedura: "Nome Procedura",
+  codiceClienteManuale: "Codice Cliente Manuale", // Aggiunto per punti servizio
+  codiceFornitoreManuale: "Codice Fornitore Manuale", // Aggiunto per punti servizio
 
   // Rubrica Punti Servizio (nuovi campi)
   tipoRecapito: "Tipo Recapito",
@@ -70,6 +73,7 @@ const columnHeaderMap: { [key: string]: string } = {
 
   // Fornitori
   tipoServizio: "Tipo Servizio",
+  codiceClienteAssociato: "Codice Fornitore Manuale", // Aggiunto
 
   // Personale
   nome: "Nome",
@@ -93,18 +97,18 @@ const columnHeaderMap: { [key: string]: string } = {
 // Definizione delle intestazioni per i template di esportazione
 const templateHeaders: { [key: string]: string[] } = {
   clienti: [
-    "Ragione Sociale", "Codice Fiscale", "Partita IVA", "Indirizzo", "Città", "CAP",
+    "Ragione Sociale", "Codice Cliente Manuale", "Codice Fiscale", "Partita IVA", "Indirizzo", "Città", "CAP",
     "Provincia", "Telefono", "Email", "PEC", "SDI", "Attivo (TRUE/FALSE)", "Note"
   ],
   punti_servizio: [
-    "Nome Punto Servizio", "ID Cliente (UUID)", "Indirizzo", "Città", "CAP", "Provincia",
+    "Nome Punto Servizio", "ID Cliente (UUID)", "Codice Cliente Manuale", "Indirizzo", "Città", "CAP", "Provincia",
     "Referente", "Telefono Referente", "Telefono", "Email", "Note", "Tempo Intervento",
-    "ID Fornitore (UUID)", "Codice Cliente", "Codice SICEP", "Codice Fatturazione",
+    "ID Fornitore (UUID)", "Codice Fornitore Manuale", "Codice Cliente", "Codice SICEP", "Codice Fatturazione",
     "Latitudine", "Longitudine", "Nome Procedura"
   ],
   fornitori: [
-    "Ragione Sociale", "Codice Fiscale", "Partita IVA", "Indirizzo", "Città", "CAP",
-    "Provincia", "Telefono", "Email", "PEC", "SDI", "Tipo Servizio", "Attivo (TRUE/FALSE)", "Note"
+    "Ragione Sociale", "Codice Fornitore Manuale", "Codice Fiscale", "Partita IVA", "Indirizzo", "Città", "CAP",
+    "Provincia", "Telefono", "Email", "PEC", "Tipo Servizio", "Attivo (TRUE/FALSE)", "Note"
   ],
   personale: [
     "Nome", "Cognome", "Ruolo", "Email", "Telefono", "Codice Fiscale", "Data Nascita (YYYY-MM-DD)",

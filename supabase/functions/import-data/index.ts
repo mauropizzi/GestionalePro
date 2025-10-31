@@ -76,17 +76,54 @@ function mapClientData(rowData: any) {
 }
 
 // --- Mappers: punto-servizio-mapper.ts content ---
-function mapPuntoServizioData(rowData: any) {
+// Updated to accept supabaseAdmin for lookups
+async function mapPuntoServizioData(rowData: any, supabaseAdmin: any) {
   const nome_punto_servizio = getFieldValue(rowData, ['Nome Punto Servizio', 'nome_punto_servizio', 'nomePuntoServizio'], toString);
   if (!nome_punto_servizio) {
     throw new Error('Nome Punto Servizio is required and cannot be empty.');
   }
 
   let id_cliente = getFieldValue(rowData, ['ID Cliente', 'id_cliente', 'idCliente', 'ID Cliente (UUID)'], toString);
-  id_cliente = (id_cliente && isValidUuid(id_cliente)) ? id_cliente : null;
+  if (id_cliente && !isValidUuid(id_cliente)) {
+    id_cliente = null; // Invalida l'UUID se non è corretto
+  }
+
+  // Se l'ID cliente non è un UUID valido, prova a cercarlo tramite codice manuale
+  if (!id_cliente) {
+    const codice_cliente_custom = getFieldValue(rowData, ['Codice Cliente Manuale', 'codice_cliente_custom', 'codiceClienteCustom'], toString);
+    if (codice_cliente_custom) {
+      const { data: clientData, error: clientError } = await supabaseAdmin
+        .from('clienti')
+        .select('id')
+        .eq('codice_cliente_custom', codice_cliente_custom)
+        .single();
+      if (clientError || !clientData) {
+        throw new Error(`Cliente con Codice Cliente Manuale '${codice_cliente_custom}' non trovato.`);
+      }
+      id_cliente = clientData.id;
+    }
+  }
 
   let fornitore_id = getFieldValue(rowData, ['ID Fornitore', 'fornitore_id', 'fornitoreId', 'ID Fornitore (UUID)'], toString);
-  fornitore_id = (fornitore_id && isValidUuid(fornitore_id)) ? fornitore_id : null;
+  if (fornitore_id && !isValidUuid(fornitore_id)) {
+    fornitore_id = null; // Invalida l'UUID se non è corretto
+  }
+
+  // Se l'ID fornitore non è un UUID valido, prova a cercarlo tramite codice manuale
+  if (!fornitore_id) {
+    const codice_fornitore_manuale = getFieldValue(rowData, ['Codice Fornitore Manuale', 'codice_cliente_associato', 'codiceClienteAssociato'], toString);
+    if (codice_fornitore_manuale) {
+      const { data: fornitoreData, error: fornitoreError } = await supabaseAdmin
+        .from('fornitori')
+        .select('id')
+        .eq('codice_cliente_associato', codice_fornitore_manuale)
+        .single();
+      if (fornitoreError || !fornitoreData) {
+        throw new Error(`Fornitore con Codice Fornitore Manuale '${codice_fornitore_manuale}' non trovato.`);
+      }
+      fornitore_id = fornitoreData.id;
+    }
+  }
 
   let latitude = getFieldValue(rowData, ['Latitudine', 'latitude'], toNumber);
   let longitude = getFieldValue(rowData, ['Longitudine', 'longitude'], toNumber);
@@ -101,7 +138,7 @@ function mapPuntoServizioData(rowData: any) {
       latitude = potentialShiftedLat;
       longitude = potentialShiftedLon;
       note = null;
-      fornitore_id = null;
+      // fornitore_id = null; // This line might need review if fornitore_id was already resolved
     }
   }
 
@@ -460,9 +497,10 @@ async function validateForeignKeys(supabaseAdmin: any, tableName: string, proces
 }
 
 // --- Main Edge Function Logic ---
-const dataMappers: { [key: string]: (rowData: any) => any } = {
+// Modified dataMappers to be an object of functions that accept supabaseAdmin
+const dataMappers: { [key: string]: (rowData: any, supabaseAdmin: any) => Promise<any> | any } = {
   clienti: mapClientData,
-  punti_servizio: mapPuntoServizioData,
+  punti_servizio: mapPuntoServizioData, // Now an async function
   fornitori: mapFornitoreData,
   personale: mapPersonaleData,
   operatori_network: mapOperatoreNetworkData,
@@ -470,7 +508,7 @@ const dataMappers: { [key: string]: (rowData: any) => any } = {
   tariffe: mapTariffaData,
   rubrica_punti_servizio: mapRubricaPuntiServizioData,
   rubrica_clienti: mapRubricaClientiData,
-  rubrica_fornitori: mapRubricaFornitoriData, // Aggiunto il mapper per la rubrica fornitori
+  rubrica_fornitori: mapRubricaFornitoriData,
 };
 
 serve(async (req) => {
@@ -519,7 +557,8 @@ serve(async (req) => {
       let existingRecordId: string | null = null;
 
       try {
-        processedData = mapper(row);
+        // Pass supabaseAdmin to the mapper if it's mapPuntoServizioData
+        processedData = anagraficaType === 'punti_servizio' ? await mapper(row, supabaseAdmin) : mapper(row);
 
         const { status, message: checkMessage, updatedFields: fields, id } = await checkExistingRecord(supabaseAdmin, anagraficaType, processedData);
         rowStatus = status;
