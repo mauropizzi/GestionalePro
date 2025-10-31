@@ -30,7 +30,8 @@ export function DateRangeSection({ form, selectedServiceType }: DateRangeSection
     selectedServiceType === "SERVIZIO_FIDUCIARIO" ||
     selectedServiceType === "ISPEZIONI" ||
     selectedServiceType === "APERTURA_CHIUSURA" ||
-    selectedServiceType === "BONIFICA";
+    selectedServiceType === "BONIFICA" ||
+    selectedServiceType === "GESTIONE_CHIAVI"; // Added GESTIONE_CHIAVI
 
   if (!shouldRender) {
     return null;

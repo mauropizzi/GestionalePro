@@ -21,77 +21,67 @@ const columnHeaderMap: { [key: string]: string } = {
   telefono: "Telefono",
   email: "Email",
   note: "Note",
-  createdAt: "Data Creazione",
-  updatedAt: "Data Aggiornamento",
+  created_at: "Data Creazione",
+  updated_at: "Data Aggiornamento",
   attivo: "Attivo", // Comune a Clienti e Fornitori
 
   // Clienti
-  ragioneSociale: "Ragione Sociale",
-  codiceFiscale: "Codice Fiscale",
-  partitaIva: "Partita IVA",
+  ragione_sociale: "Ragione Sociale",
+  codice_fiscale: "Codice Fiscale",
+  partita_iva: "Partita IVA",
   pec: "PEC",
   sdi: "SDI",
-  codiceClienteCustom: "Codice Cliente Manuale", // Aggiunto
+  codice_cliente_custom: "Codice Cliente Manuale",
 
   // Punti Servizio
-  nomePuntoServizio: "Nome Punto Servizio",
-  idCliente: "ID Cliente",
+  nome_punto_servizio: "Nome Punto Servizio",
+  id_cliente: "ID Cliente (UUID)",
   referente: "Referente",
-  telefonoReferente: "Telefono Referente",
-  tempoIntervento: "Tempo Intervento",
-  fornitoreId: "ID Fornitore",
-  codiceCliente: "Codice Cliente",
-  codiceSicep: "Codice SICEP",
-  codiceFatturazione: "Codice Fatturazione",
+  telefono_referente: "Telefono Referente",
+  tempo_intervento: "Tempo Intervento",
+  fornitore_id: "ID Fornitore (UUID)",
+  codice_cliente: "Codice Cliente",
+  codice_sicep: "Codice SICEP",
+  codice_fatturazione: "Codice Fatturazione",
   latitude: "Latitudine",
   longitude: "Longitudine",
-  nomeProcedura: "Nome Procedura",
-  codiceClienteManuale: "Codice Cliente Manuale", // Aggiunto per punti servizio
-  codiceFornitoreManuale: "Codice Fornitore Manuale", // Aggiunto per punti servizio
+  nome_procedura: "Nome Procedura",
 
-  // Rubrica Punti Servizio (nuovi campi)
-  tipoRecapito: "Tipo Recapito",
-  nomePersona: "Nome Persona",
-  telefonoFisso: "Telefono Fisso",
-  telefonoCellulare: "Telefono Cellulare",
-  emailRecapito: "Email Recapito",
+  // Rubrica Punti Servizio
+  punto_servizio_id: "ID Punto Servizio (UUID)",
+  tipo_recapito: "Tipo Recapito",
+  nome_persona: "Nome Persona",
+  telefono_fisso: "Telefono Fisso",
+  telefono_cellulare: "Telefono Cellulare",
+  email_recapito: "Email Recapito",
 
-  // Rubrica Clienti (nuovi campi)
-  clientiTipoRecapito: "Tipo Recapito Cliente",
-  clientiNomePersona: "Nome Persona Cliente",
-  clientiTelefonoFisso: "Telefono Fisso Cliente",
-  clientiTelefonoCellulare: "Telefono Cellulare Cliente",
-  clientiEmailRecapito: "Email Recapito Cliente",
+  // Rubrica Clienti
+  client_id: "ID Cliente (UUID)",
+  // tipo_recapito, nome_persona, telefono_fisso, telefono_cellulare, email_recapito, note sono gli stessi
 
-  // Rubrica Fornitori (nuovi campi)
-  fornitoriTipoRecapito: "Tipo Recapito Fornitore",
-  fornitoriNomePersona: "Nome Persona Fornitore",
-  fornitoriTelefonoFisso: "Telefono Fisso Fornitore",
-  fornitoriTelefonoCellulare: "Telefono Cellulare Fornitore",
-  fornitoriEmailRecapito: "Email Recapito Fornitore",
-
+  // Rubrica Fornitori
+  // fornitore_id: "ID Fornitore (UUID)", // Rimosso duplicato
+  // tipo_recapito, nome_persona, telefono_fisso, telefono_cellulare, email_recapito, note sono gli stessi
 
   // Fornitori
-  tipoServizio: "Tipo Servizio",
-  codiceClienteAssociato: "Codice Fornitore Manuale", // Aggiunto
+  tipo_servizio: "Tipo Servizio",
+  codice_cliente_associato: "Codice Fornitore Manuale",
 
   // Personale
   nome: "Nome",
   cognome: "Cognome",
   ruolo: "Ruolo",
-  dataNascita: "Data Nascita",
-  luogoNascita: "Luogo Nascita",
-  dataAssunzione: "Data Assunzione",
-  dataCessazione: "Data Cessazione",
+  data_nascita: "Data Nascita (YYYY-MM-DD)",
+  luogo_nascita: "Luogo Nascita",
+  data_assunzione: "Data Assunzione (YYYY-MM-DD)",
+  data_cessazione: "Data Cessazione (YYYY-MM-DD)",
 
   // Tariffe
-  clientId: "ID Cliente",
   importo: "Importo",
-  supplierRate: "Costo Fornitore",
-  unitaMisura: "Unità di Misura",
-  puntoServizioId: "ID Punto Servizio",
-  dataInizioValidita: "Data Inizio Validità",
-  dataFineValidita: "Data Fine Validita",
+  supplier_rate: "Costo Fornitore",
+  unita_misura: "Unità di Misura",
+  data_inizio_validita: "Data Inizio Validità (YYYY-MM-DD)",
+  data_fine_validita: "Data Fine Validità (YYYY-MM-DD)",
 };
 
 // Definizione delle intestazioni per i template di esportazione
@@ -135,7 +125,7 @@ const templateHeaders: { [key: string]: string[] } = {
     "ID Cliente (UUID)", "Tipo Recapito", "Nome Persona", "Telefono Fisso",
     "Telefono Cellulare", "Email Recapito", "Note"
   ],
-  rubrica_fornitori: [ // Nuovo template per la rubrica fornitori
+  rubrica_fornitori: [
     "ID Fornitore (UUID)", "Tipo Recapito", "Nome Persona", "Telefono Fisso",
     "Telefono Cellulare", "Email Recapito", "Note"
   ],
@@ -143,7 +133,7 @@ const templateHeaders: { [key: string]: string[] } = {
 
 export default function ImportExportPage() {
   const { profile: currentUserProfile, isLoading: isSessionLoading } = useSession();
-  const [globalLoading, setGlobalLoading] = useState(false);
+  const [globalLoading, setGlobalLoading] = useState(false); // This state is not directly used by children, but can be for overall page loading
 
   const hasAccess =
     currentUserProfile?.role === "super_admin" ||
@@ -181,7 +171,7 @@ export default function ImportExportPage() {
     { value: "tariffe", label: "Tariffe", icon: <Euro className="h-4 w-4 mr-2" /> },
     { value: "rubrica_punti_servizio", label: "Rubrica Punti Servizio", icon: <Phone className="h-4 w-4 mr-2" /> },
     { value: "rubrica_clienti", label: "Rubrica Clienti", icon: <Phone className="h-4 w-4 mr-2" /> },
-    { value: "rubrica_fornitori", label: "Rubrica Fornitori", icon: <Phone className="h-4 w-4 mr-2" /> }, // Aggiunto
+    { value: "rubrica_fornitori", label: "Rubrica Fornitori", icon: <Phone className="h-4 w-4 mr-2" /> },
   ];
 
   return (

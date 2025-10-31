@@ -17,9 +17,6 @@ interface ExportSectionProps {
 export function ExportSection({ anagraficaOptions, loading }: ExportSectionProps) {
 
   const handleExportData = async (anagraficaType: string) => {
-    // This loading state should ideally be managed by the parent or a global context
-    // For now, we'll use a local loading state if needed, or rely on the parent's.
-    // For simplicity, we'll assume the parent's `loading` prop is sufficient for disabling buttons.
     toast.info(`Esportazione di ${anagraficaType} in corso...`);
     try {
       const response = await fetch(

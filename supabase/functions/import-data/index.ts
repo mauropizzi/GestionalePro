@@ -368,14 +368,18 @@ const UNIQUE_KEYS_CONFIG = {
     ['ragione_sociale'],
     ['partita_iva'],
     ['codice_fiscale'],
+    ['codice_cliente_custom'],
   ],
   punti_servizio: [
-    ['nome_punto_servizio'],
+    ['nome_punto_servizio', 'id_cliente'], // Unique per nome e cliente
+    ['codice_sicep'],
+    ['codice_fatturazione'],
   ],
   fornitori: [
     ['ragione_sociale'],
     ['partita_iva'],
     ['codice_fiscale'],
+    ['codice_cliente_associato'],
   ],
   personale: [
     ['nome', 'cognome'],
@@ -431,32 +435,34 @@ const FOREIGN_KEYS_CONFIG = {
 
 // Funzione per controllare l'esistenza di un record
 async function checkExistingRecord(supabaseAdmin: any, tableName: string, processedData: any) {
-  const uniqueKeys = UNIQUE_KEYS_CONFIG[tableName];
+  const uniqueKeys = UNIQUE_KEYS_CONFIG[tableName as keyof typeof UNIQUE_KEYS_CONFIG];
   let existingRecord = null;
-  let queryBuilder = supabaseAdmin.from(tableName).select('*');
 
   if (!uniqueKeys || uniqueKeys.length === 0) {
     return { status: 'NEW', message: 'Nuovo record da inserire (nessuna chiave unica definita per il controllo).', updatedFields: [], id: null };
   }
 
-  const orConditions = uniqueKeys.map(keyset => {
-    const conditions = keyset.map(key => {
+  // Try each unique key combination
+  for (const keyset of uniqueKeys) {
+    let query = supabaseAdmin.from(tableName).select('*');
+    let allKeysPresent = true;
+
+    for (const key of keyset) {
       const value = processedData[key];
-      if (value === null || value === undefined) return null;
+      if (value === null || value === undefined || String(value).trim() === '') {
+        allKeysPresent = false;
+        break;
+      }
+      query = query.eq(key, value); // Chain .eq() for AND logic
+    }
 
-      // Applica encodeURIComponent per gestire correttamente i caratteri speciali nelle stringhe
-      const formattedValue = typeof value === 'string' ? encodeURIComponent(value) : value;
-      return `${key}.eq.${formattedValue}`;
-    }).filter(Boolean);
-
-    return conditions.length > 0 ? `(${conditions.join(',')})` : null;
-  }).filter(Boolean);
-
-  if (orConditions.length > 0) {
-    const { data, error } = await queryBuilder.or(orConditions.join(',')).limit(1);
-    if (error) throw error;
-    if (data && data.length > 0) {
-      existingRecord = data[0];
+    if (allKeysPresent) {
+      const { data, error } = await query.limit(1);
+      if (error) throw error;
+      if (data && data.length > 0) {
+        existingRecord = data[0];
+        break; // Found an existing record, no need to check other unique key sets
+      }
     }
   }
 
@@ -464,7 +470,8 @@ async function checkExistingRecord(supabaseAdmin: any, tableName: string, proces
     let hasChanges = false;
     const updatedFields = [];
     for (const key in processedData) {
-      if (processedData[key] !== existingRecord[key] && key !== 'created_at' && key !== 'updated_at') {
+      // Exclude 'created_at' and 'updated_at' from comparison
+      if (key !== 'created_at' && key !== 'updated_at' && processedData[key] !== existingRecord[key]) {
         hasChanges = true;
         updatedFields.push(key);
       }
@@ -482,7 +489,7 @@ async function checkExistingRecord(supabaseAdmin: any, tableName: string, proces
 
 // Funzione per validare le chiavi esterne
 async function validateForeignKeys(supabaseAdmin: any, tableName: string, processedData: any) {
-  const fkDefinitions = FOREIGN_KEYS_CONFIG[tableName];
+  const fkDefinitions = FOREIGN_KEYS_CONFIG[tableName as keyof typeof FOREIGN_KEYS_CONFIG];
   if (!fkDefinitions || fkDefinitions.length === 0) {
     return { isValid: true, message: null };
   }
@@ -519,7 +526,7 @@ const dataMappers: { [key: string]: (rowData: any, supabaseAdmin: any) => Promis
 };
 
 // --- 6. Logica Principale della Funzione Edge (Main Edge Function Logic) ---
-serve(async (req) => {
+serve(async (req: Request) => {
   console.log("import-data function invoked.");
 
   if (req.method === 'OPTIONS') {
@@ -560,7 +567,7 @@ serve(async (req) => {
     for (const [rowIndex, row] of importData.entries()) {
       let processedData: any = {};
       let rowStatus = 'UNKNOWN';
-      let message = '';
+      let message: string | null = ''; // Changed to string | null
       let updatedFields: string[] = [];
       let existingRecordId: string | null = null;
 

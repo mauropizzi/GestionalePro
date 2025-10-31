@@ -262,7 +262,7 @@ export function ImportSection({ anagraficaOptions, columnHeaderMap }: ImportSect
             <Table>
               <TableHeader>
                 <TableRow>
-                  {Object.keys(parsedData[0]).map((key) => (
+                  {Object.keys(parsedData[0] || {}).map((key) => ( // Aggiunto controllo per parsedData[0]
                     <TableHead key={key}>{columnHeaderMap[key] || key}</TableHead>
                   ))}
                   <TableHead className="font-bold text-center">Stato Importazione</TableHead>
@@ -275,7 +275,7 @@ export function ImportSection({ anagraficaOptions, columnHeaderMap }: ImportSect
                     rowReport.status === 'DUPLICATE' ? 'bg-yellow-50' :
                     rowReport.status === 'UPDATE' ? 'bg-blue-50' : ''
                   }>
-                    {Object.keys(parsedData[0]).map((key, colIndex) => (
+                    {Object.keys(parsedData[0] || {}).map((key, colIndex) => ( // Aggiunto controllo per parsedData[0]
                       <TableCell key={colIndex}>{String(parsedData[rowIndex][key] || '')}</TableCell>
                     ))}
                     <TableCell className="text-center text-xs">
@@ -296,7 +296,7 @@ export function ImportSection({ anagraficaOptions, columnHeaderMap }: ImportSect
                 ))}
                 {previewReport.length > 10 && (
                   <TableRow>
-                    <TableCell colSpan={Object.keys(parsedData[0]).length + 1} className="text-center text-muted-foreground">
+                    <TableCell colSpan={Object.keys(parsedData[0] || {}).length + 1} className="text-center text-muted-foreground">
                       ... e altri {previewReport.length - 10} record.
                     </TableCell>
                   </TableRow>
