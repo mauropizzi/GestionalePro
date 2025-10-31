@@ -46,6 +46,9 @@ const columnHeaderMap: { [key: string]: string } = {
   latitude: "Latitudine",
   longitude: "Longitudine",
   nome_procedura: "Nome Procedura",
+  // Nuovi campi per Punti Servizio
+  'Codice Cliente Manuale': "Codice Cliente Manuale", // Mappatura per il campo usato nel template
+  'Codice Fornitore Manuale': "Codice Fornitore Manuale", // Mappatura per il campo usato nel template
 
   // Rubrica Punti Servizio
   punto_servizio_id: "ID Punto Servizio (UUID)",
@@ -60,7 +63,7 @@ const columnHeaderMap: { [key: string]: string } = {
   // tipo_recapito, nome_persona, telefono_fisso, telefono_cellulare, email_recapito, note sono gli stessi
 
   // Rubrica Fornitori
-  // fornitore_id: "ID Fornitore (UUID)", // Rimosso duplicato
+  fornitore_id: "ID Fornitore (UUID)",
   // tipo_recapito, nome_persona, telefono_fisso, telefono_cellulare, email_recapito, note sono gli stessi
 
   // Fornitori
