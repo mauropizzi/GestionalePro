@@ -444,10 +444,8 @@ async function checkExistingRecord(supabaseAdmin: any, tableName: string, proces
       const value = processedData[key];
       if (value === null || value === undefined) return null;
 
-      // MODIFIED: Do not add outer quotes here. Only escape internal quotes if necessary.
-      // PostgREST filter string for 'eq' usually expects the raw string value,
-      // and it handles the SQL quoting internally.
-      const formattedValue = typeof value === 'string' ? value.replace(/'/g, "''") : value;
+      // Applica encodeURIComponent per gestire correttamente i caratteri speciali nelle stringhe
+      const formattedValue = typeof value === 'string' ? encodeURIComponent(value) : value;
       return `${key}.eq.${formattedValue}`;
     }).filter(Boolean);
 
