@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useSession } from "@/components/session-context-provider";
-import { ShieldAlert, Search, Loader2, Trash, Edit, PlusCircle, Phone } from "lucide-react"; // Aggiunto Phone
+import { ShieldAlert, Search, Loader2, Trash, Edit, PlusCircle, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -54,7 +54,6 @@ interface PuntoServizio {
   updated_at: string;
   clienti?: { ragione_sociale: string } | null;
   fornitori?: { ragione_sociale: string } | null;
-  // codice_fornitore_punto_servizio: string | null; // Rimosso
 }
 
 export default function PuntiServizioPage() {
@@ -117,7 +116,6 @@ export default function PuntiServizioPage() {
     punto.citta?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     punto.referente?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     punto.codice_cliente?.toLowerCase().includes(searchTerm.toLowerCase())
-    // punto.codice_fornitore_punto_servizio?.toLowerCase().includes(searchTerm.toLowerCase()) // Rimosso
   );
 
   if (isSessionLoading) {
@@ -175,17 +173,14 @@ export default function PuntiServizioPage() {
                 <TableHead>Referente</TableHead>
                 <TableHead>Fornitore</TableHead>
                 <TableHead>Codice Cliente PS</TableHead>
-                {/* <TableHead>Codice Fornitore PS</TableHead> */} {/* Rimosso */}
-                <TableHead className="text-right">Azioni</TableHead>
-              </TableRow>
+                <TableHead className="text-right">Azioni</TableHead></TableRow>
             </TableHeader>
             <TableBody>
               {filteredPuntiServizio.length === 0 && !loading ? (
                 <TableRow>
                   <TableCell colSpan={7} className="h-20 text-center text-muted-foreground">
                     Nessun punto di servizio trovato.
-                  </TableCell>
-                </TableRow>
+                  </TableCell></TableRow>
               ) : (
                 filteredPuntiServizio.map((punto) => (
                   <TableRow key={punto.id}>
@@ -195,7 +190,6 @@ export default function PuntiServizioPage() {
                     <TableCell>{punto.referente || "N/A"}</TableCell>
                     <TableCell>{punto.fornitori?.ragione_sociale || "N/A"}</TableCell>
                     <TableCell>{punto.codice_cliente || "N/A"}</TableCell>
-                    {/* <TableCell>{punto.codice_fornitore_punto_servizio || "N/A"}</TableCell> */} {/* Rimosso */}
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">
                         <Button
@@ -247,8 +241,7 @@ export default function PuntiServizioPage() {
                           </AlertDialogContent>
                         </AlertDialog>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </TableCell></TableRow>
                 ))
               )}
             </TableBody>
