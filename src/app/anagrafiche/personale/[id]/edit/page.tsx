@@ -115,6 +115,7 @@ export default function EditPersonalePage() {
         .single();
 
       if (error) {
+        console.error("Supabase fetch error:", error); // Added for debugging
         toast.error("Errore nel recupero del personale: " + error.message);
         router.push("/anagrafiche/personale");
       } else if (data) {
@@ -170,6 +171,7 @@ export default function EditPersonalePage() {
       .eq("id", personaleId);
 
     if (error) {
+      console.error("Supabase update error:", error); // Added for debugging
       toast.error("Errore durante l'aggiornamento del personale: " + error.message);
     } else {
       toast.success("Personale aggiornato con successo!");

@@ -89,6 +89,7 @@ export default function NewClientPage() {
       .insert({ ...clientData, created_at: now, updated_at: now });
 
     if (error) {
+      console.error("Supabase insert error:", error); // Added for debugging
       toast.error("Errore durante il salvataggio del cliente: " + error.message);
     } else {
       toast.success("Cliente salvato con successo!");
