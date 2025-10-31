@@ -39,6 +39,12 @@ const UNIQUE_KEYS_CONFIG = {
   rubrica_punti_servizio: [
     ['punto_servizio_id', 'tipo_recapito'],
   ],
+  rubrica_clienti: [
+    ['client_id', 'tipo_recapito'],
+  ],
+  rubrica_fornitori: [ // Nuova configurazione per rubrica_fornitori
+    ['fornitore_id', 'tipo_recapito'],
+  ],
 };
 
 /**
@@ -59,6 +65,12 @@ const FOREIGN_KEYS_CONFIG = {
   ],
   rubrica_punti_servizio: [
     { field: 'punto_servizio_id', refTable: 'punti_servizio' },
+  ],
+  rubrica_clienti: [
+    { field: 'client_id', refTable: 'clienti' },
+  ],
+  rubrica_fornitori: [ // Nuova configurazione per rubrica_fornitori
+    { field: 'fornitore_id', refTable: 'fornitori' },
   ],
 };
 
