@@ -39,7 +39,7 @@ export default function LoginPage() {
   return (
     <div
       className="flex items-center justify-center min-h-screen bg-cover bg-center"
-      style={{ backgroundImage: "url('/login-background-tech.jpg')" }}
+      style={{ backgroundImage: "url('/login-background.jpg')" }}
     >
       <div className="w-full max-w-md p-6 space-y-4 bg-card/90 backdrop-blur-sm rounded-lg shadow-lg font-sans"> {/* Aggiunto font-sans qui */}
         <h2 className="text-xl font-bold text-center text-foreground">
