@@ -72,6 +72,7 @@ function mapClientData(rowData: any) {
     sdi: getFieldValue(rowData, ['SDI', 'sdi'], toString),
     attivo: getFieldValue(rowData, ['Attivo', 'attivo', 'Attivo (TRUE/FALSE)'], toBoolean),
     note: getFieldValue(rowData, ['Note', 'note'], toString),
+    codice_cliente_custom: getFieldValue(rowData, ['Codice Cliente Manuale', 'codice_cliente_custom', 'codiceClienteCustom'], toString),
   };
 }
 
@@ -186,6 +187,7 @@ function mapFornitoreData(rowData: any) {
     tipo_servizio: getFieldValue(rowData, ['Tipo Servizio', 'tipo_servizio', 'tipoServizio'], toString),
     attivo: getFieldValue(rowData, ['Attivo', 'attivo', 'Attivo (TRUE/FALSE)'], toBoolean),
     note: getFieldValue(rowData, ['Note', 'note'], toString),
+    codice_cliente_associato: getFieldValue(rowData, ['Codice Fornitore Manuale', 'codice_cliente_associato', 'codiceClienteAssociato'], toString),
   };
 }
 
@@ -439,7 +441,11 @@ async function checkExistingRecord(supabaseAdmin: any, tableName: string, proces
   const orConditions = uniqueKeys.map(keyset => {
     const conditions = keyset.map(key => {
       const value = processedData[key];
-      return value ? `${key}.eq.${value}` : null;
+      if (value === null || value === undefined) return null;
+
+      // Explicitly quote string values for the filter string
+      const formattedValue = typeof value === 'string' ? `'${value.replace(/'/g, "''")}'` : value;
+      return `${key}.eq.${formattedValue}`;
     }).filter(Boolean);
 
     return conditions.length > 0 ? `(${conditions.join(',')})` : null;

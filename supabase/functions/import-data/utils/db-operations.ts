@@ -84,7 +84,11 @@ export async function checkExistingRecord(supabaseAdmin, tableName, processedDat
   const orConditions = uniqueKeys.map(keyset => {
     const conditions = keyset.map(key => {
       const value = processedData[key];
-      return value ? `${key}.eq.${value}` : null;
+      if (value === null || value === undefined) return null;
+
+      // Explicitly quote string values for the filter string
+      const formattedValue = typeof value === 'string' ? `'${value.replace(/'/g, "''")}'` : value;
+      return `${key}.eq.${formattedValue}`;
     }).filter(Boolean); // Rimuovi le condizioni nulle se il valore è null
 
     return conditions.length > 0 ? `(${conditions.join(',')})` : null;
