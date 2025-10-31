@@ -84,9 +84,9 @@ export default function RichiesteServizioPage() {
       .from("richieste_servizio")
       .select(`
         *,
-        clienti ( ragione_sociale ),
-        punti_servizio ( nome_punto_servizio ),
-        fornitori ( ragione_sociale ),
+        clienti!client_id( ragione_sociale ),
+        punti_servizio!punto_servizio_id( nome_punto_servizio ),
+        fornitori!fornitore_id( ragione_sociale ),
         inspection_details:richieste_servizio_ispezioni(*),
         daily_schedules:richieste_servizio_orari_giornalieri(*)
       `);

@@ -75,8 +75,8 @@ export default function TariffePage() {
       .from("tariffe")
       .select(`
         *,
-        clienti ( ragione_sociale ),
-        punti_servizio ( nome_punto_servizio ),
+        clienti!client_id( ragione_sociale ),
+        punti_servizio!punto_servizio_id( nome_punto_servizio ),
         fornitori ( ragione_sociale )
       `)
       .order("tipo_servizio", { ascending: true });

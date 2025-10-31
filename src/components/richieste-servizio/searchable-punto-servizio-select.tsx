@@ -96,7 +96,7 @@ export function SearchablePuntoServizioSelect({
         .from("punti_servizio")
         .select(`
           *,
-          clienti ( ragione_sociale )
+          clienti!id_cliente( ragione_sociale )
         `)
         .or(orConditions)
         .limit(10); // Limit results for performance

@@ -81,7 +81,7 @@ export default function PuntiServizioPage() {
       .from("punti_servizio")
       .select(`
         *,
-        clienti ( ragione_sociale ),
+        clienti!id_cliente( ragione_sociale ),
         fornitori ( ragione_sociale )
       `)
       .order("nome_punto_servizio", { ascending: true });
