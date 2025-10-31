@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'; // Corretto l'URL di importazione
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -444,7 +444,10 @@ async function checkExistingRecord(supabaseAdmin: any, tableName: string, proces
       const value = processedData[key];
       if (value === null || value === undefined) return null;
 
-      const formattedValue = typeof value === 'string' ? `'${value.replace(/'/g, "''")}'` : value;
+      // MODIFIED: Do not add outer quotes here. Only escape internal quotes if necessary.
+      // PostgREST filter string for 'eq' usually expects the raw string value,
+      // and it handles the SQL quoting internally.
+      const formattedValue = typeof value === 'string' ? value.replace(/'/g, "''") : value;
       return `${key}.eq.${formattedValue}`;
     }).filter(Boolean);
 
