@@ -1,6 +1,6 @@
 // @ts-nocheck
 // supabase/functions/import-data/utils/mappers/tariffa-mapper.ts
-import { getFieldValue, toString, toNumber, isValidUuid } from '../data-mapping.ts';
+import { getFieldValue, toString, toNumber, toBoolean, toDateString, isValidUuid } from '../data-mapping.ts';
 
 export function mapTariffaData(rowData: any) {
   const tipo_servizio = getFieldValue(rowData, ['Tipo Servizio', 'tipo_servizio', 'tipoServizio'], toString);
