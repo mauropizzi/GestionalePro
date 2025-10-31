@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useSession } from "@/components/session-context-provider";
-import { ShieldAlert, Search, Loader2, Trash, Edit, PlusCircle, Phone } from "lucide-react";
+import { ShieldAlert, Search, Loader2, Trash, Edit, PlusCircle, Phone } from "lucide-react"; // Aggiunto Phone
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -169,7 +169,14 @@ export default function PuntiServizioPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome Punto Servizio</TableHead><TableHead>Cliente</TableHead><TableHead>Città</TableHead><TableHead>Referente</TableHead><TableHead>Fornitore</TableHead><TableHead>Codice Cliente PS</TableHead><TableHead className="text-right">Azioni</TableHead>
+                <TableHead>Nome Punto Servizio</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Città</TableHead>
+                <TableHead>Referente</TableHead>
+                <TableHead>Fornitore</TableHead>
+                <TableHead>Codice Cliente PS</TableHead>
+                {/* <TableHead>Codice Fornitore PS</TableHead> */} {/* Rimosso */}
+                <TableHead className="text-right">Azioni</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -182,7 +189,14 @@ export default function PuntiServizioPage() {
               ) : (
                 filteredPuntiServizio.map((punto) => (
                   <TableRow key={punto.id}>
-                    <TableCell className="font-medium">{punto.nome_punto_servizio}</TableCell><TableCell>{punto.clienti?.ragione_sociale || "N/A"}</TableCell><TableCell>{punto.citta || "N/A"}</TableCell><TableCell>{punto.referente || "N/A"}</TableCell><TableCell>{punto.fornitori?.ragione_sociale || "N/A"}</TableCell><TableCell>{punto.codice_cliente || "N/A"}</TableCell><TableCell className="text-right">
+                    <TableCell className="font-medium">{punto.nome_punto_servizio}</TableCell>
+                    <TableCell>{punto.clienti?.ragione_sociale || "N/A"}</TableCell>
+                    <TableCell>{punto.citta || "N/A"}</TableCell>
+                    <TableCell>{punto.referente || "N/A"}</TableCell>
+                    <TableCell>{punto.fornitori?.ragione_sociale || "N/A"}</TableCell>
+                    <TableCell>{punto.codice_cliente || "N/A"}</TableCell>
+                    {/* <TableCell>{punto.codice_fornitore_punto_servizio || "N/A"}</TableCell> */} {/* Rimosso */}
+                    <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">
                         <Button
                           variant="outline"
