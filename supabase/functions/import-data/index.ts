@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts"; // Updated Deno std version
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.0'; // Updated Supabase JS client version
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+// Removed: import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.0'; // Not needed for minimal test
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
