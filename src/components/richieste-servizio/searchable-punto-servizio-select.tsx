@@ -86,7 +86,6 @@ export function SearchablePuntoServizioSelect({
         "codice_cliente",
         "codice_sicep",
         "codice_fatturazione",
-        // "codice_fornitore_punto_servizio", // Rimosso
       ];
 
       const orConditions = searchColumns
@@ -179,7 +178,6 @@ export function SearchablePuntoServizioSelect({
                 <TableHead>Città</TableHead>
                 <TableHead>Referente</TableHead>
                 <TableHead>Codice Cliente PS</TableHead>
-                {/* <TableHead>Codice Fornitore PS</TableHead> */} {/* Rimosso */}
                 <TableHead>Codice SICEP</TableHead>
               </TableRow>
             </TableHeader>
@@ -202,7 +200,6 @@ export function SearchablePuntoServizioSelect({
                     <TableCell>{punto.citta || "N/A"}</TableCell>
                     <TableCell>{punto.referente || "N/A"}</TableCell>
                     <TableCell>{punto.codice_cliente || "N/A"}</TableCell>
-                    {/* <TableCell>{punto.codice_fornitore_punto_servizio || "N/A"}</TableCell> */} {/* Rimosso */}
                     <TableCell>{punto.codice_sicep || "N/A"}</TableCell>
                   </TableRow>
                 ))

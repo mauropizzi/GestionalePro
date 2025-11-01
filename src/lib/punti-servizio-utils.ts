@@ -20,7 +20,6 @@ export const puntoServizioFormSchema = z.object({
   latitude: z.coerce.number().nullable(),
   longitude: z.coerce.number().nullable(),
   nome_procedura: z.string().nullable(),
-  // codice_fornitore_punto_servizio: z.string().nullable(), // Rimosso
 });
 
 export type PuntoServizioFormSchema = z.infer<typeof puntoServizioFormSchema>;

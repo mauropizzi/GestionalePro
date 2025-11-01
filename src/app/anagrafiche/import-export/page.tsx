@@ -46,7 +46,6 @@ const columnHeaderMap: { [key: string]: string } = {
   latitude: "Latitudine",
   longitude: "Longitudine",
   nome_procedura: "Nome Procedura",
-  // codice_fornitore_punto_servizio: "Codice Fornitore Punto Servizio", // Rimosso
 
   // Rubrica Punti Servizio
   punto_servizio_id: "ID Punto Servizio (UUID)",
@@ -96,7 +95,6 @@ const templateHeaders: { [key: string]: string[] } = {
     "Referente", "Telefono Referente", "Telefono", "Email", "Note", "Tempo Intervento",
     "ID Fornitore (UUID)", "Codice Fornitore Manuale", "Codice Cliente Punto Servizio", "Codice SICEP", "Codice Fatturazione",
     "Latitudine", "Longitudine", "Nome Procedura"
-    // "Codice Fornitore Punto Servizio" // Rimosso
   ],
   fornitori: [
     "Ragione Sociale", "Codice Fornitore Manuale", "Codice Fiscale", "Partita IVA", "Indirizzo", "Città", "CAP",

@@ -173,14 +173,16 @@ export default function PuntiServizioPage() {
                 <TableHead>Referente</TableHead>
                 <TableHead>Fornitore</TableHead>
                 <TableHead>Codice Cliente PS</TableHead>
-                <TableHead className="text-right">Azioni</TableHead></TableRow>
+                <TableHead className="text-right">Azioni</TableHead>
+              </TableRow>
             </TableHeader>
             <TableBody>
               {filteredPuntiServizio.length === 0 && !loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-20 text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="h-20 text-center text-muted-foreground">
                     Nessun punto di servizio trovato.
-                  </TableCell></TableRow>
+                  </TableCell>
+                </TableRow>
               ) : (
                 filteredPuntiServizio.map((punto) => (
                   <TableRow key={punto.id}>
@@ -241,7 +243,8 @@ export default function PuntiServizioPage() {
                           </AlertDialogContent>
                         </AlertDialog>
                       </div>
-                    </TableCell></TableRow>
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
             </TableBody>

@@ -244,7 +244,6 @@ export function PuntoServizioForm({
             </FormItem>
           )}
         />
-        {/* Rimosso il campo codice_fornitore_punto_servizio */}
         <FormField
           control={form.control}
           name="codice_sicep"

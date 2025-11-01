@@ -48,7 +48,6 @@ interface PuntoServizio {
   nome_procedura: string | null;
   created_at: string;
   updated_at: string;
-  // codice_fornitore_punto_servizio: string | null; // Rimosso
 }
 
 export default function EditPuntoServizioPage() {
@@ -83,7 +82,6 @@ export default function EditPuntoServizioPage() {
       latitude: null,
       longitude: null,
       nome_procedura: null,
-      // codice_fornitore_punto_servizio: null, // Rimosso
     },
   });
 
@@ -150,7 +148,6 @@ export default function EditPuntoServizioPage() {
           latitude: puntoData.latitude || null,
           longitude: puntoData.longitude || null,
           nome_procedura: puntoData.nome_procedura || null,
-          // codice_fornitore_punto_servizio: puntoData.codice_fornitore_punto_servizio || null, // Rimosso
         });
       }
       setIsLoading(false);
@@ -180,7 +177,6 @@ export default function EditPuntoServizioPage() {
       codice_sicep: values.codice_sicep === "" ? null : values.codice_sicep,
       codice_fatturazione: values.codice_fatturazione === "" ? null : values.codice_fatturazione,
       nome_procedura: values.nome_procedura === "" ? null : values.nome_procedura,
-      // codice_fornitore_punto_servizio: values.codice_fornitore_punto_servizio === "" ? null : values.codice_fornitore_punto_servizio, // Rimosso
     };
 
     const { error } = await supabase
