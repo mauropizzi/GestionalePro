@@ -16,12 +16,12 @@ export async function mapPuntoServizioData(rowData: any, supabaseAdmin: any) {
   }
 
   let id_cliente = getFieldValue(rowData, ['ID Cliente', 'id_cliente', 'idCliente', 'ID Cliente (UUID)'], toString);
-  if (id_cliente && !isValidUuid(id_cliente)) {
-    id_cliente = null;
-  }
-
-  // Lookup client by codice_cliente_custom if id_cliente is not provided
-  if (!id_cliente) {
+  if (id_cliente) { // Valida solo se un valore è presente
+    if (!isValidUuid(id_cliente)) {
+      throw new Error(`ID Cliente '${id_cliente}' non è un UUID valido.`);
+    }
+  } else {
+    // Cerca il cliente tramite codice_cliente_custom se id_cliente non è fornito
     const codice_cliente_custom = getFieldValue(rowData, ['Codice Cliente Manuale', 'codice_cliente_custom', 'codiceClienteCustom'], toString);
     if (codice_cliente_custom) {
       const { data: clientData, error: clientError } = await supabaseAdmin
@@ -37,18 +37,18 @@ export async function mapPuntoServizioData(rowData: any, supabaseAdmin: any) {
   }
 
   let fornitore_id = getFieldValue(rowData, ['ID Fornitore', 'fornitore_id', 'fornitoreId', 'ID Fornitore (UUID)'], toString);
-  if (fornitore_id && !isValidUuid(fornitore_id)) {
-    fornitore_id = null;
-  }
-
-  // Lookup fornitore by codice_cliente_associato (manual supplier code) if fornitore_id is not provided
-  if (!fornitore_id) {
+  if (fornitore_id) { // Valida solo se un valore è presente
+    if (!isValidUuid(fornitore_id)) {
+      throw new Error(`ID Fornitore '${fornitore_id}' non è un UUID valido.`);
+    }
+  } else {
+    // Cerca il fornitore tramite codice_cliente_associato (codice fornitore manuale) se fornitore_id non è fornito
     const codice_fornitore_manuale = getFieldValue(rowData, ['Codice Fornitore Manuale', 'codice_fornitore_manuale', 'codiceFornitoreManuale'], toString);
     if (codice_fornitore_manuale) {
       const { data: fornitoreData, error: fornitoreError } = await supabaseAdmin
         .from('fornitori')
         .select('id')
-        .eq('codice_cliente_associato', codice_fornitore_manuale) // Assuming this is the manual code for suppliers
+        .eq('codice_cliente_associato', codice_fornitore_manuale) // Assumendo che questo sia il codice manuale per i fornitori
         .single();
       if (fornitoreError || !fornitoreData) {
         throw new Error(`Fornitore con Codice Fornitore Manuale '${codice_fornitore_manuale}' non trovato.`);
@@ -57,22 +57,12 @@ export async function mapPuntoServizioData(rowData: any, supabaseAdmin: any) {
     }
   }
 
-  let latitude = getFieldValue(rowData, ['Latitudine', 'latitude'], toNumber);
-  let longitude = getFieldValue(rowData, ['Longitudine', 'longitude'], toNumber);
+  const latitude = getFieldValue(rowData, ['Latitudine', 'latitude'], toNumber);
+  const longitude = getFieldValue(rowData, ['Longitudine', 'longitude'], toNumber);
+  const note = getFieldValue(rowData, ['Note', 'note'], toString);
 
-  let note = getFieldValue(rowData, ['Note', 'note'], toString);
-
-  // Handle potential shifted lat/lon if 'Note' or 'fornitore_id' columns were used for them
-  if (latitude === null && longitude === null) {
-    const potentialShiftedLat = toNumber(rowData['Note'] || rowData['note']);
-    const potentialShiftedLon = toNumber(rowData['fornitore_id'] || rowData['fornitoreId']);
-
-    if (potentialShiftedLat !== null && potentialShiftedLon !== null && Math.abs(potentialShiftedLat) <= 90 && Math.abs(potentialShiftedLon) <= 180) {
-      latitude = potentialShiftedLat;
-      longitude = potentialShiftedLon;
-      note = null; // Clear note if it was actually latitude
-    }
-  }
+  // La logica per gestire lat/lon "spostati" è stata rimossa per maggiore chiarezza e affidabilità.
+  // Si prega di utilizzare le colonne esplicite 'Latitudine' e 'Longitudine' nel template.
 
   return {
     nome_punto_servizio: nome_punto_servizio,
