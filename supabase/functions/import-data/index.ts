@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// --- utils.ts content ---
+// --- Utility Functions (from utils.ts) ---
 export const getFieldValue = (rowData: any, keys: string[], typeConverter: (value: any) => any) => {
   for (const key of keys) {
     const value = rowData[key];
@@ -51,7 +51,7 @@ export const toDateString = (value: any) => {
 
 export const isValidUuid = (uuid: any) => typeof uuid === 'string' && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid.trim());
 
-// --- mappers.ts content ---
+// --- Data Mappers (from mappers.ts) ---
 // Mapper per i dati dei Clienti
 function mapClientData(rowData: any) {
   const ragione_sociale = getFieldValue(rowData, ['Ragione Sociale', 'ragione_sociale', 'ragioneSociale'], toString);
@@ -374,7 +374,7 @@ export const dataMappers: { [key: string]: (rowData: any, supabaseAdmin: any) =>
   rubrica_fornitori: mapRubricaFornitoriData,
 };
 
-// --- db_operations.ts content ---
+// --- Database Operations (from db_operations.ts) ---
 // Configurazione delle chiavi uniche per il controllo dei duplicati
 export const UNIQUE_KEYS_CONFIG = {
   clienti: [

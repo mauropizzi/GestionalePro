@@ -17,9 +17,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, FileText, Upload, ShieldAlert } from "lucide-react";
+import { Loader2, FileText, Upload, ShieldAlert, CheckCircle2, AlertTriangle, XCircle } from "lucide-react"; // Added new icons
 import { toast } from "sonner";
 import * as XLSX from 'xlsx';
+import { cn } from "@/lib/utils"; // Import cn for conditional classNames
 
 interface ParsedDataRow {
   [key: string]: any;
@@ -45,6 +46,13 @@ export function ImportSection({ anagraficaOptions, columnHeaderMap }: ImportSect
   const [selectedAnagrafica, setSelectedAnagrafica] = useState<string>("");
   const [importStep, setImportStep] = useState<ImportStep>('select_file');
   const [previewReport, setPreviewReport] = useState<any[]>([]);
+  const [importSummary, setImportSummary] = useState({
+    new: 0,
+    update: 0,
+    duplicate: 0,
+    error: 0,
+    invalid_fk: 0,
+  });
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -52,6 +60,7 @@ export function ImportSection({ anagraficaOptions, columnHeaderMap }: ImportSect
       setFile(selectedFile);
       setParsedData([]);
       setPreviewReport([]);
+      setImportSummary({ new: 0, update: 0, duplicate: 0, error: 0, invalid_fk: 0 });
       setImportStep('select_file'); // Reset step if file changes
     }
   };
@@ -102,6 +111,18 @@ export function ImportSection({ anagraficaOptions, columnHeaderMap }: ImportSect
         }
 
         setPreviewReport(result.report);
+
+        // Calculate summary
+        const summary = { new: 0, update: 0, duplicate: 0, error: 0, invalid_fk: 0 };
+        result.report.forEach((row: any) => {
+          if (row.status === 'NEW') summary.new++;
+          else if (row.status === 'UPDATE') summary.update++;
+          else if (row.status === 'DUPLICATE') summary.duplicate++;
+          else if (row.status === 'ERROR') summary.error++;
+          else if (row.status === 'INVALID_FK') summary.invalid_fk++;
+        });
+        setImportSummary(summary);
+
         setImportStep('preview_data');
         toast.success("Anteprima generata con successo! Controlla i dettagli prima di importare.");
 
@@ -174,6 +195,7 @@ export function ImportSection({ anagraficaOptions, columnHeaderMap }: ImportSect
         setParsedData([]);
         setFile(null);
         setPreviewReport([]);
+        setImportSummary({ new: 0, update: 0, duplicate: 0, error: 0, invalid_fk: 0 });
         setImportStep('completed');
       }
     } catch (error: any) {
@@ -190,10 +212,47 @@ export function ImportSection({ anagraficaOptions, columnHeaderMap }: ImportSect
     setParsedData([]);
     setPreviewReport([]);
     setSelectedAnagrafica("");
+    setImportSummary({ new: 0, update: 0, duplicate: 0, error: 0, invalid_fk: 0 });
     setLoading(false);
   };
 
   const hasErrorsInPreview = previewReport.some(row => row.status === 'ERROR' || row.status === 'INVALID_FK');
+  const hasWarningsInPreview = previewReport.some(row => row.status === 'DUPLICATE' || row.status === 'UPDATE');
+
+  const getStatusClasses = (status: string) => {
+    switch (status) {
+      case 'NEW': return 'bg-green-100 text-green-800';
+      case 'UPDATE': return 'bg-blue-100 text-blue-800';
+      case 'DUPLICATE': return 'bg-yellow-100 text-yellow-800';
+      case 'ERROR':
+      case 'INVALID_FK': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'NEW': return <CheckCircle2 className="h-3 w-3 text-green-600 mr-1" />;
+      case 'UPDATE': return <AlertTriangle className="h-3 w-3 text-blue-600 mr-1" />;
+      case 'DUPLICATE': return <AlertTriangle className="h-3 w-3 text-yellow-600 mr-1" />;
+      case 'ERROR':
+      case 'INVALID_FK': return <XCircle className="h-3 w-3 text-red-600 mr-1" />;
+      default: return null;
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'NEW': return 'Nuovo';
+      case 'UPDATE': return 'Aggiornamento';
+      case 'DUPLICATE': return 'Duplicato';
+      case 'ERROR': return 'Errore';
+      case 'INVALID_FK': return 'FK non valida';
+      default: return 'Sconosciuto';
+    }
+  };
+
+  const allHeaders = parsedData.length > 0 ? Object.keys(parsedData[0]) : [];
 
   return (
     <div className="mb-8 p-6 border rounded-lg shadow-sm">
@@ -258,11 +317,28 @@ export function ImportSection({ anagraficaOptions, columnHeaderMap }: ImportSect
           <p className="text-sm text-muted-foreground mb-4">
             Rivedi i dati e le segnalazioni prima di procedere con l'importazione.
           </p>
+
+          {/* Import Summary */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm">
+            <div className="flex items-center p-2 border rounded-md bg-green-50 text-green-800">
+              <CheckCircle2 className="h-4 w-4 mr-2" /> Nuovi: <span className="font-semibold ml-1">{importSummary.new}</span>
+            </div>
+            <div className="flex items-center p-2 border rounded-md bg-blue-50 text-blue-800">
+              <AlertTriangle className="h-4 w-4 mr-2" /> Aggiornamenti: <span className="font-semibold ml-1">{importSummary.update}</span>
+            </div>
+            <div className="flex items-center p-2 border rounded-md bg-yellow-50 text-yellow-800">
+              <AlertTriangle className="h-4 w-4 mr-2" /> Duplicati: <span className="font-semibold ml-1">{importSummary.duplicate}</span>
+            </div>
+            <div className="flex items-center p-2 border rounded-md bg-red-50 text-red-800">
+              <XCircle className="h-4 w-4 mr-2" /> Errori: <span className="font-semibold ml-1">{importSummary.error + importSummary.invalid_fk}</span>
+            </div>
+          </div>
+
           <div className="rounded-md border max-h-96 overflow-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  {Object.keys(parsedData[0] || {}).map((key) => ( // Aggiunto controllo per parsedData[0]
+                  {allHeaders.map((key) => (
                     <TableHead key={key}>{columnHeaderMap[key] || key}</TableHead>
                   ))}
                   <TableHead className="font-bold text-center">Stato Importazione</TableHead>
@@ -270,33 +346,27 @@ export function ImportSection({ anagraficaOptions, columnHeaderMap }: ImportSect
               </TableHeader>
               <TableBody>
                 {previewReport.slice(0, 10).map((rowReport, rowIndex) => (
-                  <TableRow key={rowIndex} className={
-                    rowReport.status === 'ERROR' || rowReport.status === 'INVALID_FK' ? 'bg-red-50' :
-                    rowReport.status === 'DUPLICATE' ? 'bg-yellow-50' :
-                    rowReport.status === 'UPDATE' ? 'bg-blue-50' : ''
-                  }>
-                    {Object.keys(parsedData[0] || {}).map((key, colIndex) => ( // Aggiunto controllo per parsedData[0]
+                  <TableRow key={rowIndex} className={cn(
+                    getStatusClasses(rowReport.status),
+                    "text-xs"
+                  )}>
+                    {allHeaders.map((key, colIndex) => (
                       <TableCell key={colIndex}>{String(parsedData[rowIndex][key] || '')}</TableCell>
                     ))}
                     <TableCell className="text-center text-xs">
-                      <span className={`px-2 py-1 rounded-full text-white ${
-                        rowReport.status === 'NEW' ? 'bg-green-500' :
-                        rowReport.status === 'UPDATE' ? 'bg-blue-500' :
-                        rowReport.status === 'DUPLICATE' ? 'bg-yellow-500' :
-                        rowReport.status === 'ERROR' || rowReport.status === 'INVALID_FK' ? 'bg-red-500' : 'bg-gray-500'
-                      }`}>
-                        {rowReport.status}
+                      <span className="flex items-center justify-center font-semibold">
+                        {getStatusIcon(rowReport.status)} {getStatusLabel(rowReport.status)}
                       </span>
                       {rowReport.message && <p className="mt-1 text-muted-foreground">{rowReport.message}</p>}
                       {rowReport.updatedFields && rowReport.updatedFields.length > 0 && (
-                        <p className="mt-1 text-muted-foreground text-xs">Aggiornerà: {rowReport.updatedFields.join(', ')}</p>
+                        <p className="mt-1 text-muted-foreground text-2xs">Aggiornerà: {rowReport.updatedFields.join(', ')}</p>
                       )}
                     </TableCell>
                   </TableRow>
                 ))}
                 {previewReport.length > 10 && (
                   <TableRow>
-                    <TableCell colSpan={Object.keys(parsedData[0] || {}).length + 1} className="text-center text-muted-foreground">
+                    <TableCell colSpan={allHeaders.length + 1} className="text-center text-muted-foreground">
                       ... e altri {previewReport.length - 10} record.
                     </TableCell>
                   </TableRow>
@@ -320,6 +390,11 @@ export function ImportSection({ anagraficaOptions, columnHeaderMap }: ImportSect
           {hasErrorsInPreview && (
             <p className="text-sm text-red-500 mt-3 flex items-center">
               <ShieldAlert className="h-4 w-4 mr-2" /> Ci sono errori critici. Correggi il file o annulla l'importazione.
+            </p>
+          )}
+          {hasWarningsInPreview && !hasErrorsInPreview && (
+            <p className="text-sm text-yellow-600 mt-3 flex items-center">
+              <AlertTriangle className="h-4 w-4 mr-2" /> Alcuni record sono duplicati o verranno aggiornati. Rivedi attentamente.
             </p>
           )}
         </div>
