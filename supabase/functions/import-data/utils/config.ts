@@ -12,6 +12,8 @@ export const UNIQUE_KEYS_CONFIG = {
   ],
   punti_servizio: [
     ['nome_punto_servizio', 'id_cliente'], // Unique per nome e cliente
+    ['nome_punto_servizio'], // Aggiunto: nome_punto_servizio da solo
+    ['codice_cliente'], // Aggiunto: codice_cliente del punto servizio
     ['codice_sicep'],
     ['codice_fatturazione'],
   ],
