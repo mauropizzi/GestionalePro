@@ -59,6 +59,7 @@ interface PuntoServizio {
 export default function PuntiServizioPage() {
   const { profile: currentUserProfile, isLoading: isSessionLoading } = useSession();
   const [puntiServizio, setPuntiServizio] = useState<PuntoServizio[]>([]);
+  const [totalPuntiServizio, setTotalPuntiServizio] = useState<number>(0); // Nuovo stato per il conteggio totale
   const [loading, setLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -77,19 +78,20 @@ export default function PuntiServizioPage() {
 
   const fetchPuntiServizio = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error, count } = await supabase
       .from("punti_servizio")
       .select(`
         *,
         clienti!id_cliente( ragione_sociale ),
         fornitori ( ragione_sociale )
-      `)
+      `, { count: 'exact' }) // Richiedi il conteggio esatto
       .order("nome_punto_servizio", { ascending: true });
 
     if (error) {
       toast.error("Errore nel recupero dei punti di servizio: " + error.message);
     } else {
       setPuntiServizio(data || []);
+      setTotalPuntiServizio(count || 0); // Aggiorna il conteggio totale
     }
     setLoading(false);
   };
@@ -145,8 +147,11 @@ export default function PuntiServizioPage() {
             </Link>
           </Button>
         </div>
-        <p className="text-sm text-muted-foreground mb-6">
+        <p className="text-sm text-muted-foreground mb-2">
           Gestisci i punti di servizio associati ai clienti.
+        </p>
+        <p className="text-sm text-muted-foreground mb-6">
+          Totale Punti Servizio: <span className="font-semibold">{totalPuntiServizio}</span>
         </p>
 
         <div className="mb-4 flex justify-between items-center">
