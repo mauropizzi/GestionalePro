@@ -3,20 +3,19 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.0';
 
 // Import utility functions
-import { isValidUuid } from './utils/data-mapping.ts';
-import { checkExistingRecord, validateForeignKeys } from './utils/db-operations.ts';
+import { checkExistingRecord, validateForeignKeys } from './utils/db-operations';
 
 // Import mappers
-import { mapClientData } from './mappers/client-mapper.ts';
-import { mapFornitoreData } from './mappers/fornitore-mapper.ts';
-import { mapOperatoreNetworkData } from './mappers/operatore-network-mapper.ts';
-import { mapPersonaleData } from './mappers/personale-mapper.ts';
-import { mapProceduraData } from './mappers/procedura-mapper.ts';
-import { mapPuntoServizioData } from './mappers/punto-servizio-mapper.ts';
-import { mapRubricaClientiData } from './mappers/rubrica-clienti-mapper.ts';
-import { mapRubricaFornitoriData } from './mappers/rubrica-fornitori-mapper.ts';
-import { mapRubricaPuntiServizioData } from './mappers/rubrica-punti-servizio-mapper.ts';
-import { mapTariffaData } from './mappers/tariffa-mapper.ts';
+import { mapClientData } from './mappers/client-mapper';
+import { mapFornitoreData } from './mappers/fornitore-mapper';
+import { mapOperatoreNetworkData } from './mappers/operatore-network-mapper';
+import { mapPersonaleData } from './mappers/personale-mapper';
+import { mapProceduraData } from './mappers/procedura-mapper';
+import { mapPuntoServizioData } from './mappers/punto-servizio-mapper';
+import { mapRubricaClientiData } from './mappers/rubrica-clienti-mapper';
+import { mapRubricaFornitoriData } from './mappers/rubrica-fornitori-mapper';
+import { mapRubricaPuntiServizioData } from './mappers/rubrica-punti-servizio-mapper';
+import { mapTariffaData } from './mappers/tariffa-mapper';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,8 +35,12 @@ export const dataMappers: { [key: string]: (rowData: any, supabaseAdmin: any) =>
   rubrica_fornitori: mapRubricaFornitoriData,
 };
 
+// Define a batch size for concurrent operations
+const BATCH_SIZE = 50; // You can adjust this value based on your needs and Supabase limits
+
 serve(async (req: Request) => {
   console.log("import-data function invoked.");
+  console.time("import-data-total");
 
   if (req.method === 'OPTIONS') {
     console.log("Handling OPTIONS request for import-data.");
@@ -45,22 +48,17 @@ serve(async (req: Request) => {
   }
 
   try {
+    console.time("parse-request-body");
     const { anagraficaType, data: importData, mode } = await req.json();
-
-    if (!anagraficaType || !importData || !Array.isArray(importData) || !mode) {
-      console.error('Invalid request: anagraficaType, data array, and mode are required.');
-      return new Response(JSON.stringify({ error: 'Invalid request: anagraficaType, data array, and mode are required.' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      });
-    }
-
+    console.timeEnd("parse-request-body");
     console.log(`Starting ${mode} for anagraficaType: ${anagraficaType} with ${importData.length} rows.`);
 
+    console.time("create-supabase-client");
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+    console.timeEnd("create-supabase-client");
 
     let successCount = 0;
     let updateCount = 0;
@@ -75,7 +73,8 @@ serve(async (req: Request) => {
     }
 
     // Fase di anteprima/validazione
-    for (const [rowIndex, row] of importData.entries()) {
+    console.time("preview-validation-loop");
+    const previewTasks = importData.map(async (row: any, rowIndex: number) => {
       let processedData: any = {};
       let rowStatus = 'UNKNOWN';
       let message: string | null = '';
@@ -96,28 +95,55 @@ serve(async (req: Request) => {
           if (!isValid) {
             rowStatus = 'INVALID_FK';
             message = fkMessage;
-            errorCount++;
           }
         }
 
       } catch (rowError: any) {
         rowStatus = 'ERROR';
         message = `Errore di validazione: ${rowError.message}`;
-        errorCount++;
         console.error(`Detailed error for row ${rowIndex}:`, rowError);
       }
 
-      report.push({
+      return {
         originalRow: row,
         processedData: processedData,
         status: rowStatus,
         message: message,
         updatedFields: updatedFields,
         id: existingRecordId,
+      };
+    });
+
+    // Execute preview tasks in batches
+    for (let i = 0; i < previewTasks.length; i += BATCH_SIZE) {
+      const batch = previewTasks.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.allSettled(batch);
+      batchResults.forEach(result => {
+        if (result.status === 'fulfilled') {
+          report.push(result.value);
+          if (result.value.status === 'ERROR' || result.value.status === 'INVALID_FK') {
+            errorCount++;
+          }
+        } else {
+          // Handle rejected promises (should ideally not happen if try/catch is robust inside map)
+          report.push({
+            originalRow: {}, // Placeholder
+            processedData: {}, // Placeholder
+            status: 'ERROR',
+            message: `Unhandled error during preview: ${result.reason?.message || 'Unknown error'}`,
+            updatedFields: [],
+            id: null,
+          });
+          errorCount++;
+          console.error("Unhandled promise rejection in preview batch:", result.reason);
+        }
       });
     }
+    console.timeEnd("preview-validation-loop");
 
     if (mode === 'preview') {
+      console.log("Returning preview response.");
+      console.timeEnd("import-data-total");
       return new Response(JSON.stringify({ report }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -126,21 +152,20 @@ serve(async (req: Request) => {
 
     // Fase di importazione effettiva (se mode è 'import')
     console.log("Starting actual import process...");
+    console.time("actual-import-loop");
     successCount = 0;
     updateCount = 0;
     errorCount = 0;
     duplicateCount = 0; // Reset counts for actual import
 
-    for (const rowReport of report) {
+    const importTasks = report.map(async (rowReport) => {
       if (rowReport.status === 'ERROR' || rowReport.status === 'INVALID_FK') {
-        errorCount++;
         errors.push(`Riga con errore non importata: ${rowReport.message}`);
-        continue;
+        return { status: 'error' };
       }
       if (rowReport.status === 'DUPLICATE' && rowReport.updatedFields.length === 0) {
-        duplicateCount++;
         errors.push(`Riga duplicata e senza modifiche, saltata: ${rowReport.message}`);
-        continue;
+        return { status: 'duplicate' };
       }
 
       const dataToSave = { ...rowReport.processedData };
@@ -152,24 +177,45 @@ serve(async (req: Request) => {
             .from(anagraficaType)
             .insert({ ...dataToSave, created_at: now, updated_at: now });
           if (insertError) throw insertError;
-          successCount++;
+          return { status: 'new' };
         } else if (rowReport.status === 'UPDATE' || (rowReport.status === 'DUPLICATE' && rowReport.updatedFields.length > 0)) {
-          // Se è un aggiornamento o un duplicato con modifiche, aggiorna il record esistente
           const { error: updateError } = await supabaseAdmin
             .from(anagraficaType)
             .update({ ...dataToSave, updated_at: now })
             .eq('id', rowReport.id);
           if (updateError) throw updateError;
-          updateCount++;
+          return { status: 'update' };
         }
       } catch (dbError: any) {
-        errorCount++;
         errors.push(`Errore DB per riga ${JSON.stringify(rowReport.originalRow)}: ${dbError.message}`);
         console.error(`DB error during import for row:`, dbError);
+        return { status: 'error' };
       }
+      return { status: 'unknown' }; // Should not be reached
+    });
+
+    // Execute import tasks in batches
+    for (let i = 0; i < importTasks.length; i += BATCH_SIZE) {
+      const batch = importTasks.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.allSettled(batch);
+      batchResults.forEach(result => {
+        if (result.status === 'fulfilled') {
+          if (result.value.status === 'new') successCount++;
+          else if (result.value.status === 'update') updateCount++;
+          else if (result.value.status === 'duplicate') duplicateCount++;
+          else if (result.value.status === 'error') errorCount++;
+        } else {
+          errorCount++;
+          errors.push(`Unhandled promise rejection during import: ${result.reason?.message || 'Unknown error'}`);
+          console.error("Unhandled promise rejection in import batch:", result.reason);
+        }
+      });
     }
+    console.timeEnd("actual-import-loop");
 
     if (errorCount > 0 || duplicateCount > 0) {
+      console.log("Returning partial content response.");
+      console.timeEnd("import-data-total");
       return new Response(JSON.stringify({
         message: `Importazione completata con ${successCount} nuovi record, ${updateCount} aggiornamenti, ${duplicateCount} duplicati saltati e ${errorCount} errori.`,
         successCount,
@@ -183,6 +229,8 @@ serve(async (req: Request) => {
       });
     }
 
+    console.log("Returning full success response.");
+    console.timeEnd("import-data-total");
     return new Response(JSON.stringify({
       message: `Importazione completata con successo. ${successCount} nuovi record e ${updateCount} aggiornamenti.`,
       successCount,
@@ -194,6 +242,7 @@ serve(async (req: Request) => {
 
   } catch (error) {
     console.error('Unhandled error in import-data function:', error);
+    console.timeEnd("import-data-total");
     return new Response(JSON.stringify({ error: (error as Error).message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
