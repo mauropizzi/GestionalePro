@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { getFieldValue, toString, toNumber, isValidUuid } from '../utils/data-mapping.ts';
+import { getFieldValue, toString, toNumber, isValidUuid } from '../data-mapping.ts';
 
 /**
  * Mappa i dati di una riga Excel a un formato Punto Servizio.
@@ -46,7 +46,7 @@ export async function mapPuntoServizioData(rowData: any, supabaseAdmin: any) {
     const { data: fornitoreData, error: fornitoreError } = await supabaseAdmin
       .from('fornitori')
       .select('id')
-      .eq('codice_cliente_associato', codice_fornitore_manuale_from_excel)
+      .eq('codice_cliente_associato', codice_fornitore_manuale_from_fornitore_id_from_excel)
       .single();
     if (fornitoreError || !fornitoreData) {
       throw new Error(`Fornitore con Codice Fornitore Manuale '${codice_fornitore_manuale_from_excel}' non trovato.`);

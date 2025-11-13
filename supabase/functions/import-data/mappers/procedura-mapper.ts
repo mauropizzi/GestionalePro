@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { getFieldValue, toString, toBoolean, toDateString } from '../utils/data-mapping.ts';
+import { getFieldValue, toString, toBoolean, toDateString } from '../data-mapping.ts';
 
 /**
  * Mappa i dati di una riga Excel a un formato Procedura.

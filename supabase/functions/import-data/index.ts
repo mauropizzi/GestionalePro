@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.0';
 
 // Import utility functions
-import { isValidUuid } from './utils/data-mapping.ts';
+import { isValidUuid } from './data-mapping.ts';
 import { checkExistingRecord, validateForeignKeys } from './utils/db-operations.ts';
 
 // Import mappers
