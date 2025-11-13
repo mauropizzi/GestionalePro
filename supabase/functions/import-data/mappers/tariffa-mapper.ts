@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { getFieldValue, toString, toNumber, toDateString, isValidUuid } from '@/utils/data-mapping.ts';
+import { getFieldValue, toString, toNumber, toDateString, isValidUuid } from '../utils/data-mapping.ts';
 
 /**
  * Mappa i dati di una riga Excel a un formato Tariffa.

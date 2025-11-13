@@ -3,20 +3,20 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.0';
 
 // Import utility functions
-import { isValidUuid } from '@/utils/data-mapping.ts';
-import { checkExistingRecord, validateForeignKeys } from '@/utils/db-operations.ts';
+import { isValidUuid } from './utils/data-mapping.ts';
+import { checkExistingRecord, validateForeignKeys } from './utils/db-operations.ts';
 
 // Import mappers
-import { mapClientData } from '@/mappers/client-mapper.ts';
-import { mapFornitoreData } from '@/mappers/fornitore-mapper.ts';
-import { mapOperatoreNetworkData } from '@/mappers/operatore-network-mapper.ts';
-import { mapPersonaleData } from '@/mappers/personale-mapper.ts';
-import { mapProceduraData } from '@/mappers/procedura-mapper.ts';
-import { mapPuntoServizioData } from '@/mappers/punto-servizio-mapper.ts';
-import { mapRubricaClientiData } from '@/mappers/rubrica-clienti-mapper.ts';
-import { mapRubricaFornitoriData } from '@/mappers/rubrica-fornitori-mapper.ts';
-import { mapRubricaPuntiServizioData } from '@/mappers/rubrica-punti-servizio-mapper.ts';
-import { mapTariffaData } from '@/mappers/tariffa-mapper.ts';
+import { mapClientData } from './mappers/client-mapper.ts';
+import { mapFornitoreData } from './mappers/fornitore-mapper.ts';
+import { mapOperatoreNetworkData } from './mappers/operatore-network-mapper.ts';
+import { mapPersonaleData } from './mappers/personale-mapper.ts';
+import { mapProceduraData } from './mappers/procedura-mapper.ts';
+import { mapPuntoServizioData } from './mappers/punto-servizio-mapper.ts';
+import { mapRubricaClientiData } from './mappers/rubrica-clienti-mapper.ts';
+import { mapRubricaFornitoriData } from './mappers/rubrica-fornitori-mapper.ts';
+import { mapRubricaPuntiServizioData } from './mappers/rubrica-punti-servizio-mapper.ts';
+import { mapTariffaData } from './mappers/tariffa-mapper.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
