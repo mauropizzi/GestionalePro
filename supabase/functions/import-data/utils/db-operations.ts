@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { UNIQUE_KEYS_CONFIG, FOREIGN_KEYS_CONFIG } from './config.ts';
+import { UNIQUE_KEYS_CONFIG, FOREIGN_KEYS_CONFIG } from '../config.ts';
 
 /**
  * Controlla se un record esiste già nel database e determina se è nuovo, un aggiornamento o un duplicato.
