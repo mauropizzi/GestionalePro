@@ -66,31 +66,23 @@ serve(async (req) => {
       });
     }
 
-    try {
-      console.log("Creating Excel workbook...");
-      const ws = XLSX.utils.json_to_sheet(data);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, anagraficaType);
+    console.log("Creating Excel workbook...");
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, anagraficaType);
 
-      console.log("Writing workbook to buffer...");
-      const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-      console.log("Workbook written to buffer.");
+    console.log("Writing workbook to buffer...");
+    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    console.log("Workbook written to buffer.");
 
-      return new Response(excelBuffer, {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          'Content-Disposition': `attachment; filename="${anagraficaType}_export_${new Date().toISOString().split('T')[0]}.xlsx"`,
-        },
-        status: 200,
-      });
-    } catch (xlsxError) {
-      console.error("Error during Excel file generation:", xlsxError);
-      return new Response(JSON.stringify({ error: `Error generating Excel file: ${(xlsxError as Error).message}` }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      });
-    }
+    return new Response(excelBuffer, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition': `attachment; filename="${anagraficaType}_export_${new Date().toISOString().split('T')[0]}.xlsx"`,
+      },
+      status: 200,
+    });
 
   } catch (error) {
     console.error("Unhandled error in export-data function:", error);
