@@ -5,17 +5,17 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.0';
 // Import utility functions from the consolidated file
 import { isValidUuid, checkExistingRecord, validateForeignKeys } from './utils.ts';
 
-// Import mappers
-import { mapClientData } from './mappers/client-mapper.ts';
-import { mapFornitoreData } from './mappers/fornitore-mapper.ts';
-import { mapOperatoreNetworkData } from './mappers/operatore-network-mapper.ts';
-import { mapPersonaleData } from './mappers/personale-mapper.ts';
-import { mapProceduraData } from './mappers/procedura-mapper.ts';
-import { mapPuntoServizioData } from './mappers/punto-servizio-mapper.ts';
-import { mapRubricaClientiData } from './mappers/rubrica-clienti-mapper.ts';
-import { mapRubricaFornitoriData } from './mappers/rubrica-fornitori-mapper.ts';
-import { mapRubricaPuntiServizioData } from './mappers/rubrica-punti-servizio-mapper.ts';
-import { mapTariffaData } from './mappers/tariffa-mapper.ts';
+// Import mappers from the flattened structure
+import { mapClientData } from './client-mapper.ts';
+import { mapFornitoreData } from './fornitore-mapper.ts';
+import { mapOperatoreNetworkData } from './operatore-network-mapper.ts';
+import { mapPersonaleData } from './personale-mapper.ts';
+import { mapProceduraData } from './procedura-mapper.ts';
+import { mapPuntoServizioData } from './punto-servizio-mapper.ts';
+import { mapRubricaClientiData } from './rubrica-clienti-mapper.ts';
+import { mapRubricaFornitoriData } from './rubrica-fornitori-mapper.ts';
+import { mapRubricaPuntiServizioData } from './rubrica-punti-servizio-mapper.ts';
+import { mapTariffaData } from './tariffa-mapper.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { getFieldValue, toString, toBoolean, toDateString } from '../utils.ts';
+import { getFieldValue, toString, toBoolean, toDateString } from './utils.ts';
 
 /**
  * Mappa i dati di una riga Excel a un formato Personale.

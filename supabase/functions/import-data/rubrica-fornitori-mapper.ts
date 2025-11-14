@@ -1,26 +1,26 @@
 // @ts-nocheck
-import { getFieldValue, toString, isValidUuid } from '../utils.ts';
+import { getFieldValue, toString, isValidUuid } from './utils.ts';
 
 /**
- * Mappa i dati di una riga Excel a un formato Rubrica Punti Servizio.
+ * Mappa i dati di una riga Excel a un formato Rubrica Fornitori.
  * @param rowData L'oggetto riga da mappare.
- * @returns Un oggetto Rubrica Punti Servizio.
- * @throws Error se Tipo Recapito o ID Punto Servizio sono mancanti/non validi.
+ * @returns Un oggetto Rubrica Fornitori.
+ * @throws Error se Tipo Recapito o ID Fornitore sono mancanti/non validi.
  */
-export function mapRubricaPuntiServizioData(rowData: any) {
+export function mapRubricaFornitoriData(rowData: any) {
   const tipo_recapito = getFieldValue(rowData, ['Tipo Recapito', 'tipo_recapito', 'tipoRecapito'], toString);
   if (!tipo_recapito) {
     throw new Error('Tipo Recapito is required and cannot be empty.');
   }
 
-  let punto_servizio_id = getFieldValue(rowData, ['ID Punto Servizio', 'punto_servizio_id', 'puntoServizioId', 'ID Punto Servizio (UUID)'], toString);
-  punto_servizio_id = (punto_servizio_id && isValidUuid(punto_servizio_id)) ? punto_servizio_id : null;
-  if (!punto_servizio_id) {
-    throw new Error('ID Punto Servizio is required and must be a valid UUID.');
+  let fornitore_id = getFieldValue(rowData, ['ID Fornitore', 'fornitore_id', 'fornitoreId', 'ID Fornitore (UUID)'], toString);
+  fornitore_id = (fornitore_id && isValidUuid(fornitore_id)) ? fornitore_id : null;
+  if (!fornitore_id) {
+    throw new Error('ID Fornitore is required and must be a valid UUID.');
   }
 
   return {
-    punto_servizio_id: punto_servizio_id,
+    fornitore_id: fornitore_id,
     tipo_recapito: tipo_recapito,
     nome_persona: getFieldValue(rowData, ['Nome Persona', 'nome_persona', 'nomePersona'], toString),
     telefono_fisso: getFieldValue(rowData, ['Telefono Fisso', 'telefono_fisso', 'telefonoFisso'], toString),
