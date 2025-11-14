@@ -130,47 +130,54 @@ serve(async (req: Request) => {
     errorCount = 0;
     duplicateCount = 0; // Reset counts for actual import
 
-    for (const rowReport of report) {
-      if (rowReport.status === 'ERROR' || rowReport.status === 'INVALID_FK') {
-        errorCount++;
-        errors.push(`Riga con errore non importata: ${rowReport.message}`);
-        continue;
-      }
-      if (rowReport.status === 'DUPLICATE' && rowReport.updatedFields.length === 0) {
-        duplicateCount++;
-        errors.push(`Riga duplicata e senza modifiche, saltata: ${rowReport.message}`);
-        continue;
-      }
-
-      const dataToSave = { ...rowReport.processedData };
-      const now = new Date().toISOString();
-
-      try {
-        if (rowReport.status === 'NEW') {
-          const { error: insertError } = await supabaseAdmin
-            .from(anagraficaType)
-            .insert({ ...dataToSave, created_at: now, updated_at: now });
-          if (insertError) throw insertError;
-          successCount++;
-        } else if (rowReport.status === 'UPDATE' || (rowReport.status === 'DUPLICATE' && rowReport.updatedFields.length > 0)) {
-          // Se è un aggiornamento o un duplicato con modifiche, aggiorna il record esistente
-          const { error: updateError } = await supabaseAdmin
-            .from(anagraficaType)
-            .update({ ...dataToSave, updated_at: now })
-            .eq('id', rowReport.id);
-          if (updateError) throw updateError;
-          updateCount++;
+    const importPromise = (async () => { // Wrap the import logic in an async IIFE for waitUntil
+      for (const rowReport of report) {
+        if (rowReport.status === 'ERROR' || rowReport.status === 'INVALID_FK') {
+          errorCount++;
+          errors.push(`Riga con errore non importata: ${rowReport.message}`);
+          continue;
         }
-      } catch (dbError: any) {
-        errorCount++;
-        errors.push(`Errore DB per riga ${JSON.stringify(rowReport.originalRow)}: ${dbError.message}`);
-        console.error(`DB error during import for row:`, dbError);
+        if (rowReport.status === 'DUPLICATE' && rowReport.updatedFields.length === 0) {
+          duplicateCount++;
+          errors.push(`Riga duplicata e senza modifiche, saltata: ${rowReport.message}`);
+          continue;
+        }
+
+        const dataToSave = { ...rowReport.processedData };
+        const now = new Date().toISOString();
+
+        try {
+          if (rowReport.status === 'NEW') {
+            const { error: insertError } = await supabaseAdmin
+              .from(anagraficaType)
+              .insert({ ...dataToSave, created_at: now, updated_at: now });
+            if (insertError) throw insertError;
+            successCount++;
+          } else if (rowReport.status === 'UPDATE' || (rowReport.status === 'DUPLICATE' && rowReport.updatedFields.length > 0)) {
+            // Se è un aggiornamento o un duplicato con modifiche, aggiorna il record esistente
+            const { error: updateError } = await supabaseAdmin
+              .from(anagraficaType)
+              .update({ ...dataToSave, updated_at: now })
+              .eq('id', rowReport.id);
+            if (updateError) throw updateError;
+            updateCount++;
+          }
+        } catch (dbError: any) {
+          errorCount++;
+          errors.push(`Errore DB per riga ${JSON.stringify(rowReport.originalRow)}: ${dbError.message}`);
+          console.error(`DB error during import for row:`, dbError);
+        }
       }
-    }
+    })();
+
+    // Use EdgeRuntime.waitUntil to allow the response to be sent while import continues
+    // This is a placeholder for actual background job management.
+    // For very large files, a dedicated queue/worker system would be more robust.
+    req.waitUntil(importPromise);
 
     if (errorCount > 0 || duplicateCount > 0) {
       return new Response(JSON.stringify({
-        message: `Importazione completata con ${successCount} nuovi record, ${updateCount} aggiornamenti, ${duplicateCount} duplicati saltati e ${errorCount} errori.`,
+        message: `Importazione avviata. ${successCount} nuovi record, ${updateCount} aggiornamenti, ${duplicateCount} duplicati saltati e ${errorCount} errori. Controlla i log per i dettagli.`,
         successCount,
         updateCount,
         duplicateCount,
@@ -178,17 +185,17 @@ serve(async (req: Request) => {
         errors,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 207, // Partial Content
+        status: 202, // Accepted
       });
     }
 
     return new Response(JSON.stringify({
-      message: `Importazione completata con successo. ${successCount} nuovi record e ${updateCount} aggiornamenti.`,
+      message: `Importazione avviata con successo. ${successCount} nuovi record e ${updateCount} aggiornamenti.`,
       successCount,
       updateCount,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
+      status: 202, // Accepted
     });
 
   } catch (error) {
