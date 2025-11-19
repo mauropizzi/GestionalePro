@@ -73,12 +73,10 @@ serve(async (req: Request) => {
       throw new Error(`Import logic not implemented for anagrafica type: ${anagraficaType}`);
     }
 
-    let referenceDataForPreview: any = null;
-    if (mode === 'preview') {
-      console.log("Fetching reference data for preview mode...");
-      referenceDataForPreview = await fetchReferenceData(supabaseAdmin, anagraficaType);
-      console.log("Reference data fetched.");
-    }
+    // Fetch reference data once at the beginning for both preview and import modes
+    console.log("Fetching reference data...");
+    const referenceData = await fetchReferenceData(supabaseAdmin, anagraficaType);
+    console.log("Reference data fetched.");
 
     // Fase di anteprima/validazione
     for (const [rowIndex, row] of importData.entries()) {
@@ -92,14 +90,15 @@ serve(async (req: Request) => {
         // Pass supabaseAdmin to mappers that need it for lookups (e.g., punto_servizio)
         processedData = await mapper(row, supabaseAdmin);
 
-        const { status, message: checkMessage, updatedFields: fields, id } = await checkExistingRecord(supabaseAdmin, anagraficaType, processedData, referenceDataForPreview);
+        // Pass the fetched referenceData to checkExistingRecord and validateForeignKeys
+        const { status, message: checkMessage, updatedFields: fields, id } = await checkExistingRecord(supabaseAdmin, anagraficaType, processedData, referenceData);
         rowStatus = status;
         message = checkMessage;
         updatedFields = fields;
         existingRecordId = id;
 
         if (rowStatus !== 'ERROR' && rowStatus !== 'INVALID_FK') {
-          const { isValid, message: fkMessage } = await validateForeignKeys(supabaseAdmin, anagraficaType, processedData, referenceDataForPreview);
+          const { isValid, message: fkMessage } = await validateForeignKeys(supabaseAdmin, anagraficaType, processedData, referenceData);
           if (!isValid) {
             rowStatus = 'INVALID_FK';
             message = fkMessage;
