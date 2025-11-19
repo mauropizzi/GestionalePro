@@ -234,11 +234,11 @@ async function checkExistingRecord(supabaseAdmin: any, tableName: string, proces
       let allKeysPresent = true;
       for (const key of keyset) {
         const value = processedData[key];
-        if (value === null || value === undefined || toString(value) === '') {
+        if (value === null || value === undefined || String(value).trim() === '') {
           allKeysPresent = false;
           break;
         }
-        uniqueIdentifierParts.push(toString(value).toLowerCase());
+        uniqueIdentifierParts.push(String(value).trim().toLowerCase());
       }
       if (allKeysPresent) {
         const identifier = keyset.join('_') + ':' + uniqueIdentifierParts.join('|');
@@ -256,7 +256,7 @@ async function checkExistingRecord(supabaseAdmin: any, tableName: string, proces
 
       for (const key of keyset) {
         const value = processedData[key];
-        if (value === null || value === undefined || toString(value) === '') {
+        if (value === null || value === undefined || String(value).trim() === '') {
           allKeysPresent = false;
           break;
         }
@@ -278,10 +278,13 @@ async function checkExistingRecord(supabaseAdmin: any, tableName: string, proces
     let hasChanges = false;
     const updatedFields = [];
 
-    // Helper to normalize values for comparison (treat null, undefined, empty string as null; normalize numbers)
+    // Helper to normalize values for comparison (treat null, undefined, empty string as null; normalize strings to lowercase and trim; normalize numbers)
     const normalizeValue = (val: any) => {
       if (val === null || val === undefined || (typeof val === 'string' && val.trim() === '')) {
         return null;
+      }
+      if (typeof val === 'string') {
+        return val.trim().toLowerCase(); // Normalize strings to lowercase and trim
       }
       if (typeof val === 'number') {
         return parseFloat(val.toFixed(10)); // Normalize floating point precision
