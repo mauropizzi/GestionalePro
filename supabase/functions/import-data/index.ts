@@ -175,11 +175,11 @@ export async function fetchReferenceData(supabaseAdmin: any, tableName: string) 
         let allKeysPresent = true;
         for (const key of keyset) {
           const value = record[key];
-          if (value === null || value === undefined || String(value).trim() === '') {
+          if (value === null || value === undefined || toString(value) === '') {
             allKeysPresent = false;
             break;
           }
-          uniqueIdentifierParts.push(String(value).trim().toLowerCase());
+          uniqueIdentifierParts.push(toString(value).toLowerCase());
         }
         if (allKeysPresent) {
           const identifier = keyset.join('_') + ':' + uniqueIdentifierParts.join('|');
@@ -275,8 +275,28 @@ export async function checkExistingRecord(supabaseAdmin: any, tableName: string,
   if (existingRecord) {
     let hasChanges = false;
     const updatedFields = [];
+
+    // Helper to normalize values for comparison (treat null, undefined, empty string as null; normalize numbers)
+    const normalizeValue = (val: any) => {
+      if (val === null || val === undefined || (typeof val === 'string' && val.trim() === '')) {
+        return null;
+      }
+      if (typeof val === 'number') {
+        return parseFloat(val.toFixed(10)); // Normalize floating point precision
+      }
+      return val;
+    };
+
     for (const key in processedData) {
-      if (key !== 'created_at' && key !== 'updated_at' && processedData[key] !== existingRecord[key]) {
+      // Exclude 'created_at' and 'updated_at' from comparison
+      if (key === 'created_at' || key === 'updated_at') {
+        continue;
+      }
+
+      const normalizedProcessedValue = normalizeValue(processedData[key]);
+      const normalizedExistingValue = normalizeValue(existingRecord[key]);
+
+      if (normalizedProcessedValue !== normalizedExistingValue) {
         hasChanges = true;
         updatedFields.push(key);
       }
@@ -333,6 +353,7 @@ export async function validateForeignKeys(supabaseAdmin: any, tableName: string,
   return { isValid: true, message: null };
 }
 
+// --- Mappers (from mappers.ts) ---
 /**
  * Mappa i dati di una riga Excel a un formato Cliente.
  * @param rowData L'oggetto riga da mappare.
