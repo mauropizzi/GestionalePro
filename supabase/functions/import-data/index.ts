@@ -7,6 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// --- Utility Functions ---
 /**
  * Recupera il valore di un campo da un oggetto riga, provando diverse chiavi e convertendolo al tipo desiderato.
  * @param rowData L'oggetto riga da cui estrarre il valore.
@@ -14,7 +15,7 @@ const corsHeaders = {
  * @param typeConverter La funzione di conversione del tipo da applicare al valore trovato.
  * @returns Il valore convertito o null se non trovato o non valido.
  */
-export const getFieldValue = (rowData: any, keys: string[], typeConverter: (value: any) => any) => {
+const getFieldValue = (rowData: any, keys: string[], typeConverter: (value: any) => any) => {
   for (const key of keys) {
     const value = rowData[key];
     if (value !== undefined && value !== null && String(value).trim() !== '') {
@@ -25,16 +26,16 @@ export const getFieldValue = (rowData: any, keys: string[], typeConverter: (valu
 };
 
 /** Converte un valore in stringa, rimuovendo gli spazi bianchi. */
-export const toString = (value: any) => String(value).trim();
+const toString = (value: any) => String(value).trim();
 
 /** Converte un valore in numero. */
-export const toNumber = (value: any) => {
+const toNumber = (value: any) => {
   const num = Number(value);
   return isNaN(num) ? null : num;
 };
 
 /** Converte un valore in booleano (true per 'true'/'1', false per 'false'/'0'). */
-export const toBoolean = (value: any) => {
+const toBoolean = (value: any) => {
   if (typeof value === 'boolean') return value;
   const s = String(value).trim().toLowerCase();
   if (s === 'true' || s === '1') return true;
@@ -43,7 +44,7 @@ export const toBoolean = (value: any) => {
 };
 
 /** Converte un valore in stringa data (YYYY-MM-DD), gestendo anche i formati numerici di Excel. */
-export const toDateString = (value: any) => {
+const toDateString = (value: any) => {
   if (!value) return null;
   try {
     const date = new Date(value);
@@ -64,14 +65,14 @@ export const toDateString = (value: any) => {
 };
 
 /** Verifica se una stringa è un UUID valido. */
-export const isValidUuid = (uuid: any) => typeof uuid === 'string' && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid.trim());
+const isValidUuid = (uuid: any) => typeof uuid === 'string' && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid.trim());
 
-
+// --- Configuration Data ---
 /**
  * Configurazione delle chiavi uniche per il controllo dei duplicati per ogni tabella.
  * Ogni elemento nell'array è un set di chiavi che, se combinate, identificano un record unico.
  */
-export const UNIQUE_KEYS_CONFIG = {
+const UNIQUE_KEYS_CONFIG = {
   clienti: [
     ['ragione_sociale'],
     ['partita_iva'],
@@ -122,7 +123,7 @@ export const UNIQUE_KEYS_CONFIG = {
  * Configurazione delle chiavi esterne per la validazione per ogni tabella.
  * Definisce quali campi sono chiavi esterne e a quale tabella fanno riferimento.
  */
-export const FOREIGN_KEYS_CONFIG = {
+const FOREIGN_KEYS_CONFIG = {
   punti_servizio: [
     { field: 'id_cliente', refTable: 'clienti' },
     { field: 'fornitore_id', refTable: 'fornitori' },
@@ -146,6 +147,7 @@ export const FOREIGN_KEYS_CONFIG = {
   ],
 };
 
+// --- Database Operations ---
 /**
  * Fetches all necessary unique keys and foreign key IDs for a given table
  * to enable efficient in-memory lookups during the preview phase.
@@ -154,7 +156,7 @@ export const FOREIGN_KEYS_CONFIG = {
  * @returns An object containing maps/sets of existing records and foreign key values.
  * @throws Error in case of database query failure.
  */
-export async function fetchReferenceData(supabaseAdmin: any, tableName: string) {
+async function fetchReferenceData(supabaseAdmin: any, tableName: string) {
   const referenceData: {
     existingRecords: Map<string, any>; // Map of unique key combinations to existing record IDs/data
     foreignKeyValues: Map<string, Set<string>>; // Map of refTable to Set of valid IDs
@@ -217,7 +219,7 @@ export async function fetchReferenceData(supabaseAdmin: any, tableName: string) 
  * @returns Un oggetto con lo stato ('NEW', 'UPDATE', 'DUPLICATE'), un messaggio, i campi aggiornati e l'ID del record esistente.
  * @throws Error in caso di errore del database (solo se referenceData non è fornito).
  */
-export async function checkExistingRecord(supabaseAdmin: any, tableName: string, processedData: any, referenceData?: any) {
+async function checkExistingRecord(supabaseAdmin: any, tableName: string, processedData: any, referenceData?: any) {
   const uniqueKeys = UNIQUE_KEYS_CONFIG[tableName as keyof typeof UNIQUE_KEYS_CONFIG];
   let existingRecord = null;
 
@@ -232,11 +234,11 @@ export async function checkExistingRecord(supabaseAdmin: any, tableName: string,
       let allKeysPresent = true;
       for (const key of keyset) {
         const value = processedData[key];
-        if (value === null || value === undefined || String(value).trim() === '') {
+        if (value === null || value === undefined || toString(value) === '') {
           allKeysPresent = false;
           break;
         }
-        uniqueIdentifierParts.push(String(value).trim().toLowerCase());
+        uniqueIdentifierParts.push(toString(value).toLowerCase());
       }
       if (allKeysPresent) {
         const identifier = keyset.join('_') + ':' + uniqueIdentifierParts.join('|');
@@ -254,7 +256,7 @@ export async function checkExistingRecord(supabaseAdmin: any, tableName: string,
 
       for (const key of keyset) {
         const value = processedData[key];
-        if (value === null || value === undefined || String(value).trim() === '') {
+        if (value === null || value === undefined || toString(value) === '') {
           allKeysPresent = false;
           break;
         }
@@ -322,7 +324,7 @@ export async function checkExistingRecord(supabaseAdmin: any, tableName: string,
  * @returns Un oggetto con isValid (booleano) e un messaggio di errore se non valido.
  * @throws Error in caso di errore del database (solo se referenceData non è fornito).
  */
-export async function validateForeignKeys(supabaseAdmin: any, tableName: string, processedData: any, referenceData?: any) {
+async function validateForeignKeys(supabaseAdmin: any, tableName: string, processedData: any, referenceData?: any) {
   const fkDefinitions = FOREIGN_KEYS_CONFIG[tableName as keyof typeof FOREIGN_KEYS_CONFIG];
   if (!fkDefinitions || fkDefinitions.length === 0) {
     return { isValid: true, message: null };
@@ -353,14 +355,14 @@ export async function validateForeignKeys(supabaseAdmin: any, tableName: string,
   return { isValid: true, message: null };
 }
 
-// --- Mappers (from mappers.ts) ---
+// --- Data Mappers ---
 /**
  * Mappa i dati di una riga Excel a un formato Cliente.
  * @param rowData L'oggetto riga da mappare.
  * @returns Un oggetto Cliente.
  * @throws Error se la Ragione Sociale è mancante.
  */
-export function mapClientData(rowData: any) {
+function mapClientData(rowData: any) {
   const ragione_sociale = getFieldValue(rowData, ['Ragione Sociale', 'ragione_sociale', 'ragioneSociale'], toString);
   if (!ragione_sociale) {
     throw new Error('Ragione Sociale is required and cannot be empty.');
@@ -390,7 +392,7 @@ export function mapClientData(rowData: any) {
  * @returns Un oggetto Fornitore.
  * @throws Error se la Ragione Sociale è mancante.
  */
-export function mapFornitoreData(rowData: any) {
+function mapFornitoreData(rowData: any) {
   const ragione_sociale = getFieldValue(rowData, ['Ragione Sociale', 'ragione_sociale', 'ragioneSociale'], toString);
   if (!ragione_sociale) {
     throw new Error('Ragione Sociale is required and cannot be empty.');
@@ -420,7 +422,7 @@ export function mapFornitoreData(rowData: any) {
  * @returns Un oggetto Operatore Network.
  * @throws Error se Nome o Cognome sono mancanti.
  */
-export function mapOperatoreNetworkData(rowData: any) {
+function mapOperatoreNetworkData(rowData: any) {
   const nome = getFieldValue(rowData, ['Nome', 'nome'], toString);
   const cognome = getFieldValue(rowData, ['Cognome', 'cognome'], toString);
   if (!nome || !cognome) {
@@ -446,7 +448,7 @@ export function mapOperatoreNetworkData(rowData: any) {
  * @returns Un oggetto Personale.
  * @throws Error se Nome o Cognome sono mancanti.
  */
-export function mapPersonaleData(rowData: any) {
+function mapPersonaleData(rowData: any) {
   const nome = getFieldValue(rowData, ['Nome', 'nome'], toString);
   const cognome = getFieldValue(rowData, ['Cognome', 'cognome'], toString);
   if (!nome || !cognome) {
@@ -479,7 +481,7 @@ export function mapPersonaleData(rowData: any) {
  * @returns Un oggetto Procedura.
  * @throws Error se il Nome Procedura è mancante.
  */
-export function mapProceduraData(rowData: any) {
+function mapProceduraData(rowData: any) {
   const nome_procedura = getFieldValue(rowData, ['Nome Procedura', 'nome_procedura', 'nomeProcedura'], toString);
   if (!nome_procedura) {
     throw new Error('Nome Procedura is required and cannot be empty.');
@@ -505,7 +507,7 @@ export function mapProceduraData(rowData: any) {
  * @returns Un oggetto Punto Servizio.
  * @throws Error se il Nome Punto Servizio è mancante o se i lookup falliscono.
  */
-export async function mapPuntoServizioData(rowData: any, supabaseAdmin: any) {
+async function mapPuntoServizioData(rowData: any, supabaseAdmin: any) {
   const nome_punto_servizio = getFieldValue(rowData, ['Nome Punto Servizio', 'nome_punto_servizio', 'nomePuntoServizio'], toString);
   if (!nome_punto_servizio) {
     throw new Error('Nome Punto Servizio is required and cannot be empty.');
@@ -586,7 +588,7 @@ export async function mapPuntoServizioData(rowData: any, supabaseAdmin: any) {
  * @returns Un oggetto Rubrica Clienti.
  * @throws Error se Tipo Recapito o ID Cliente sono mancanti/non validi.
  */
-export function mapRubricaClientiData(rowData: any) {
+function mapRubricaClientiData(rowData: any) {
   const tipo_recapito = getFieldValue(rowData, ['Tipo Recapito', 'tipo_recapito', 'tipoRecapito'], toString);
   if (!tipo_recapito) {
     throw new Error('Tipo Recapito is required and cannot be empty.');
@@ -615,7 +617,7 @@ export function mapRubricaClientiData(rowData: any) {
  * @returns Un oggetto Rubrica Fornitori.
  * @throws Error se Tipo Recapito o ID Fornitore sono mancanti/non validi.
  */
-export function mapRubricaFornitoriData(rowData: any) {
+function mapRubricaFornitoriData(rowData: any) {
   const tipo_recapito = getFieldValue(rowData, ['Tipo Recapito', 'tipo_recapito', 'tipoRecapito'], toString);
   if (!tipo_recapito) {
     throw new Error('Tipo Recapito is required and cannot be empty.');
@@ -644,7 +646,7 @@ export function mapRubricaFornitoriData(rowData: any) {
  * @returns Un oggetto Rubrica Punti Servizio.
  * @throws Error se Tipo Recapito o ID Punto Servizio sono mancanti/non validi.
  */
-export function mapRubricaPuntiServizioData(rowData: any) {
+function mapRubricaPuntiServizioData(rowData: any) {
   const tipo_recapito = getFieldValue(rowData, ['Tipo Recapito', 'tipo_recapito', 'tipoRecapito'], toString);
   if (!tipo_recapito) {
     throw new Error('Tipo Recapito is required and cannot be empty.');
@@ -673,7 +675,7 @@ export function mapRubricaPuntiServizioData(rowData: any) {
  * @returns Un oggetto Tariffa.
  * @throws Error se Tipo Servizio o Importo sono mancanti.
  */
-export function mapTariffaData(rowData: any) {
+function mapTariffaData(rowData: any) {
   const tipo_servizio = getFieldValue(rowData, ['Tipo Servizio', 'tipo_servizio', 'tipoServizio'], toString);
   const importo = getFieldValue(rowData, ['Importo', 'importo'], toNumber);
   if (!tipo_servizio || importo === null) {
@@ -703,8 +705,7 @@ export function mapTariffaData(rowData: any) {
   };
 }
 
-
-export const dataMappers: { [key: string]: (rowData: any, supabaseAdmin: any) => Promise<any> | any } = {
+const dataMappers: { [key: string]: (rowData: any, supabaseAdmin: any) => Promise<any> | any } = {
   clienti: mapClientData,
   punti_servizio: mapPuntoServizioData,
   fornitori: mapFornitoreData,
@@ -717,6 +718,7 @@ export const dataMappers: { [key: string]: (rowData: any, supabaseAdmin: any) =>
   rubrica_fornitori: mapRubricaFornitoriData,
 };
 
+// --- Main Edge Function Logic ---
 serve(async (req: Request) => {
   console.log("import-data function invoked.");
 
