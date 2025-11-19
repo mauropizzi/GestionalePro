@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.0';
 
 // Import utility functions from the consolidated file
-import { isValidUuid, checkExistingRecord, validateForeignKeys } from './utils.ts';
+import { isValidUuid, checkExistingRecord, validateForeignKeys, fetchReferenceData } from './utils.ts'; // Added fetchReferenceData
 
 // Import mappers from the flattened structure
 import { mapClientData } from './client-mapper.ts';
@@ -73,6 +73,13 @@ serve(async (req: Request) => {
       throw new Error(`Import logic not implemented for anagrafica type: ${anagraficaType}`);
     }
 
+    let referenceDataForPreview: any = null;
+    if (mode === 'preview') {
+      console.log("Fetching reference data for preview mode...");
+      referenceDataForPreview = await fetchReferenceData(supabaseAdmin, anagraficaType);
+      console.log("Reference data fetched.");
+    }
+
     // Fase di anteprima/validazione
     for (const [rowIndex, row] of importData.entries()) {
       let processedData: any = {};
@@ -82,16 +89,17 @@ serve(async (req: Request) => {
       let existingRecordId: string | null = null;
 
       try {
+        // Pass supabaseAdmin to mappers that need it for lookups (e.g., punto_servizio)
         processedData = await mapper(row, supabaseAdmin);
 
-        const { status, message: checkMessage, updatedFields: fields, id } = await checkExistingRecord(supabaseAdmin, anagraficaType, processedData);
+        const { status, message: checkMessage, updatedFields: fields, id } = await checkExistingRecord(supabaseAdmin, anagraficaType, processedData, referenceDataForPreview);
         rowStatus = status;
         message = checkMessage;
         updatedFields = fields;
         existingRecordId = id;
 
         if (rowStatus !== 'ERROR' && rowStatus !== 'INVALID_FK') {
-          const { isValid, message: fkMessage } = await validateForeignKeys(supabaseAdmin, anagraficaType, processedData);
+          const { isValid, message: fkMessage } = await validateForeignKeys(supabaseAdmin, anagraficaType, processedData, referenceDataForPreview);
           if (!isValid) {
             rowStatus = 'INVALID_FK';
             message = fkMessage;
@@ -130,7 +138,7 @@ serve(async (req: Request) => {
     errorCount = 0;
     duplicateCount = 0; // Reset counts for actual import
 
-    const importPromise = (async () => { // Wrap the import logic in an async IIFE for waitUntil
+    const importPromise = (async () => {
       for (const rowReport of report) {
         if (rowReport.status === 'ERROR' || rowReport.status === 'INVALID_FK') {
           errorCount++;
@@ -154,7 +162,6 @@ serve(async (req: Request) => {
             if (insertError) throw insertError;
             successCount++;
           } else if (rowReport.status === 'UPDATE' || (rowReport.status === 'DUPLICATE' && rowReport.updatedFields.length > 0)) {
-            // Se è un aggiornamento o un duplicato con modifiche, aggiorna il record esistente
             const { error: updateError } = await supabaseAdmin
               .from(anagraficaType)
               .update({ ...dataToSave, updated_at: now })
@@ -170,9 +177,6 @@ serve(async (req: Request) => {
       }
     })();
 
-    // Use EdgeRuntime.waitUntil to allow the response to be sent while import continues
-    // This is a placeholder for actual background job management.
-    // For very large files, a dedicated queue/worker system would be more robust.
     req.waitUntil(importPromise);
 
     if (errorCount > 0 || duplicateCount > 0) {
@@ -185,7 +189,7 @@ serve(async (req: Request) => {
         errors,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 202, // Accepted
+        status: 202,
       });
     }
 
@@ -195,7 +199,7 @@ serve(async (req: Request) => {
       updateCount,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 202, // Accepted
+      status: 202,
     });
 
   } catch (error) {
