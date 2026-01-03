@@ -24,6 +24,7 @@ import {
   Euro,
   FileStack,
   Upload,
+  Sparkles, // Import Sparkles icon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -69,6 +70,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           label: "Tutte le Richieste",
           href: "/richieste-servizio",
           icon: <FileStack className="h-3.5 w-3.5" />,
+          roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
+        },
+        {
+          label: "Crea da Testo", // New sub-link
+          href: "/richieste-servizio/create-from-text",
+          icon: <Sparkles className="h-3.5 w-3.5" />,
           roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
         },
         ...SERVICE_TYPES.map(serviceType => ({
