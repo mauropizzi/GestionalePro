@@ -146,6 +146,8 @@ export default function CreateRichiestaFromTextPage() {
       if (lowerCaseText.includes("ritiro")) simulatedTipoGestioneChiavi = "RITIRO_CHIAVI";
       else if (lowerCaseText.includes("consegna")) simulatedTipoGestioneChiavi = "CONSEGNA_CHIAVI";
       else simulatedTipoGestioneChiavi = "VERIFICA_CHIAVI";
+    } else if (lowerCaseText.includes("servizio fiduciario")) { // Added missing condition
+      simulatedServiceType = "SERVIZIO_FIDUCIARIO";
     }
     console.log("Simulated Service Type:", simulatedServiceType);
 
@@ -153,12 +155,11 @@ export default function CreateRichiestaFromTextPage() {
     const hasParsedTimes = !!(parsedOraInizio && parsedOraFine);
     const updatedDailySchedules: z.infer<typeof dailyScheduleSchema>[] = defaultDailySchedules.map((schedule) => {
       return {
-        giorno_settimana: schedule.giorno_settimana,
+        ...schedule, // Spread existing properties to preserve 'id'
         h24: false,
         ora_inizio: hasParsedTimes ? parsedOraInizio : null,
         ora_fine: hasParsedTimes ? parsedOraFine : null,
         attivo: hasParsedTimes, // Explicitly ensure this is boolean
-        id: schedule.id, // Preserve existing ID if any
       };
     });
     console.log("Updated Daily Schedules:", updatedDailySchedules);
