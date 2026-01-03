@@ -26,6 +26,7 @@ import {
   AperturaChiusuraType,
   BonificaType,
   GestioneChiaviType,
+  timeRegex, // Import timeRegex
 } from "@/lib/richieste-servizio-utils";
 import { RichiestaServizioForm } from "@/components/richieste-servizio/richiesta-servizio-form";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,12 +44,14 @@ export default function CreateRichiestaFromTextPage() {
       client_id: "", // Will be filled by processing or user
       punto_servizio_id: null,
       fornitore_id: null,
-      tipo_servizio: "PIANTONAMENTO_ARMATO", // Default service type
+      tipo_servizio: "PIANTONAMENTO_ARMATO", // Initial default service type
       note: null,
       data_inizio_servizio: new Date(),
       data_fine_servizio: new Date(),
       numero_agenti: 1,
       daily_schedules: defaultDailySchedules,
+      // ISPEZIONI specific fields are omitted here as default type is PIANTONAMENTO_ARMATO
+      // These will be set by useEffect in RichiestaServizioForm if type changes to ISPEZIONI
     } as RichiestaServizioFormSchema,
   });
 
@@ -95,14 +98,18 @@ export default function CreateRichiestaFromTextPage() {
       parsedStartDate = new Date(year1, month1 - 1, day1);
       parsedEndDate = new Date(year1, month1 - 1, day1); // If only one date, assume it's for a single day
     }
+    console.log("Parsed Dates:", { parsedStartDate, parsedEndDate });
 
-    // 2. Parse Times (HH.mm)
-    const timeRegex = /(\d{2})\.(\d{2})/g;
-    const timesFound = [...inputText.matchAll(timeRegex)];
+
+    // 2. Parse Times (HH.mm or HH:mm)
+    const localTimeRegex = /(\d{2})[.:](\d{2})/g; // Use the imported timeRegex pattern
+    const timesFound = [...inputText.matchAll(localTimeRegex)];
     if (timesFound.length >= 2) {
       parsedOraInizio = `${timesFound[0][1]}:${timesFound[0][2]}`;
       parsedOraFine = `${timesFound[1][1]}:${timesFound[1][2]}`;
     }
+    console.log("Parsed Times:", { parsedOraInizio, parsedOraFine });
+
 
     // 3. Parse Cadenza (e.g., "ogni 3 ore")
     const cadenzaRegex = /ogni (\d+(\.\d+)?) ore/i;
@@ -110,6 +117,16 @@ export default function CreateRichiestaFromTextPage() {
     if (cadenzaMatch && cadenzaMatch[1]) {
       simulatedCadenzaOre = parseFloat(cadenzaMatch[1]);
     }
+    console.log("Parsed Cadenza:", simulatedCadenzaOre);
+
+    // 4. Parse Numero Agenti (e.g., "con 2 agenti")
+    const numAgentsRegex = /(\d+) agenti/i;
+    const numAgentsMatch = inputText.match(numAgentsRegex);
+    if (numAgentsMatch && numAgentsMatch[1]) {
+      simulatedNumAgents = parseInt(numAgentsMatch[1]);
+    }
+    console.log("Parsed Num Agents:", simulatedNumAgents);
+
 
     // Determine service type and specific fields
     if (lowerCaseText.includes("ispezione")) {
@@ -133,15 +150,33 @@ export default function CreateRichiestaFromTextPage() {
       else if (lowerCaseText.includes("consegna")) simulatedTipoGestioneChiavi = "CONSEGNA_CHIAVI";
       else simulatedTipoGestioneChiavi = "VERIFICA_CHIAVI";
     }
+    console.log("Simulated Service Type:", simulatedServiceType);
+
 
     // Update daily schedules based on parsed times
-    const updatedDailySchedules = defaultDailySchedules.map(schedule => ({
-      ...schedule,
-      attivo: true, // Assume all days are active if times are specified
-      h24: false, // Not H24 if specific times are given
-      ora_inizio: parsedOraInizio || schedule.ora_inizio,
-      ora_fine: parsedOraFine || schedule.ora_fine,
-    }));
+    const updatedDailySchedules = defaultDailySchedules.map(schedule => {
+      if (parsedOraInizio && parsedOraFine) {
+        // If times are parsed from text, apply them to all days and set active
+        return {
+          ...schedule,
+          attivo: true, // Set to active if times are provided
+          h24: false,
+          ora_inizio: parsedOraInizio,
+          ora_fine: parsedOraFine,
+        };
+      } else {
+        // If no times are parsed, set to inactive and null times
+        return {
+          ...schedule,
+          attivo: false,
+          h24: false,
+          ora_inizio: null,
+          ora_fine: null,
+        };
+      }
+    });
+    console.log("Updated Daily Schedules:", updatedDailySchedules);
+
 
     // Attempt to find a client and punto servizio based on keywords (very basic example)
     let foundClientId: string | null = null;
@@ -184,6 +219,8 @@ export default function CreateRichiestaFromTextPage() {
         tipo_gestione_chiavi: simulatedTipoGestioneChiavi,
       }),
     } as RichiestaServizioFormSchema); // Cast to ensure correct type
+
+    console.log("Form values after processing text:", form.getValues());
 
     setIsProcessing(false);
     setShowForm(true);

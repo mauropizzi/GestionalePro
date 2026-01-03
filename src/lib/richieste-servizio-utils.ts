@@ -2,7 +2,7 @@ import * as z from "zod";
 import { format, setHours, setMinutes, addDays } from "date-fns"; // Aggiunto addDays
 import { it } from "date-fns/locale";
 
-export const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+export const timeRegex = /^([01]\d|2[0-3])[.:]([0-5]\d)$/; // Modificato per accettare sia . che :
 
 // Define SERVICE_TYPES as an array of objects
 export const SERVICE_TYPES = [
