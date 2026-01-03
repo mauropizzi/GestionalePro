@@ -27,12 +27,12 @@ import {
   BonificaType,
   GestioneChiaviType,
   timeRegex,
-  dailyScheduleSchema, // Import dailyScheduleSchema for explicit typing
+  dailyScheduleSchema,
 } from "@/lib/richieste-servizio-utils";
 import { RichiestaServizioForm } from "@/components/richieste-servizio/richiesta-servizio-form";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import { z } from "zod"; // Import z for z.infer
+import { z } from "zod";
 
 export default function CreateRichiestaFromTextPage() {
   const [inputText, setInputText] = useState("");
@@ -83,7 +83,7 @@ export default function CreateRichiestaFromTextPage() {
     const lowerCaseText = inputText.toLowerCase();
 
     // 1. Parse Dates (DD.MM.YYYY)
-    const dateRegex = /(\d{2})\.(\d{2})\.(\d{4})/g; // Corrected: escaped dots
+    const dateRegex = /(\d{2})\.(\d{2})\.(\d{4})/g;
     const datesFound = [...inputText.matchAll(dateRegex)];
     console.log("Raw Dates Found:", datesFound);
 
@@ -146,22 +146,20 @@ export default function CreateRichiestaFromTextPage() {
       if (lowerCaseText.includes("ritiro")) simulatedTipoGestioneChiavi = "RITIRO_CHIAVI";
       else if (lowerCaseText.includes("consegna")) simulatedTipoGestioneChiavi = "CONSEGNA_CHIAVI";
       else simulatedTipoGestioneChiavi = "VERIFICA_CHIAVI";
-    } else if (lowerCaseText.includes("servizio fiduciario")) { // Added missing condition
+    } else if (lowerCaseText.includes("servizio fiduciario")) {
       simulatedServiceType = "SERVIZIO_FIDUCIARIO";
     }
     console.log("Simulated Service Type:", simulatedServiceType);
 
     // Update daily schedules based on parsed times
     const hasParsedTimes = !!(parsedOraInizio && parsedOraFine);
-    const updatedDailySchedules: z.infer<typeof dailyScheduleSchema>[] = defaultDailySchedules.map((schedule) => {
-      return {
-        ...schedule, // Spread existing properties to preserve 'id'
-        h24: false,
-        ora_inizio: hasParsedTimes ? parsedOraInizio : null,
-        ora_fine: hasParsedTimes ? parsedOraFine : null,
-        attivo: hasParsedTimes, // Explicitly ensure this is boolean
-      };
-    });
+    const updatedDailySchedules: z.infer<typeof dailyScheduleSchema>[] = defaultDailySchedules.map((schedule) => ({
+      ...schedule,
+      h24: false,
+      ora_inizio: hasParsedTimes ? parsedOraInizio : null,
+      ora_fine: hasParsedTimes ? parsedOraFine : null,
+      attivo: hasParsedTimes,
+    }));
     console.log("Updated Daily Schedules:", updatedDailySchedules);
 
     // Attempt to find a client and punto servizio based on keywords (very basic example)
@@ -204,49 +202,48 @@ export default function CreateRichiestaFromTextPage() {
         formValues = {
           ...baseValues,
           tipo_servizio: "PIANTONAMENTO_ARMATO",
-        };
+        } as RichiestaServizioFormSchema;
         break;
       case "SERVIZIO_FIDUCIARIO":
         formValues = {
           ...baseValues,
           tipo_servizio: "SERVIZIO_FIDUCIARIO",
-        };
+        } as RichiestaServizioFormSchema;
         break;
       case "ISPEZIONI":
         formValues = {
           ...baseValues,
           tipo_servizio: "ISPEZIONI",
-          cadenza_ore: simulatedCadenzaOre || 1, // Ensure a default if undefined
-          tipo_ispezione: simulatedTipoIspezione as any || "PERIMETRALE", // Cast to any to satisfy enum, default
-        };
+          cadenza_ore: simulatedCadenzaOre || 1,
+          tipo_ispezione: simulatedTipoIspezione || "PERIMETRALE",
+        } as RichiestaServizioFormSchema;
         break;
       case "APERTURA_CHIUSURA":
         formValues = {
           ...baseValues,
           tipo_servizio: "APERTURA_CHIUSURA",
-          tipo_apertura_chiusura: simulatedTipoAperturaChiusura as any || "APERTURA_E_CHIUSURA", // Cast to any, default
-        };
+          tipo_apertura_chiusura: simulatedTipoAperturaChiusura || "APERTURA_E_CHIUSURA",
+        } as RichiestaServizioFormSchema;
         break;
       case "BONIFICA":
         formValues = {
           ...baseValues,
           tipo_servizio: "BONIFICA",
-          tipo_bonifica: simulatedTipoBonifica as any || "BONIFICA_STANDARD", // Cast to any, default
-        };
+          tipo_bonifica: simulatedTipoBonifica || "BONIFICA_STANDARD",
+        } as RichiestaServizioFormSchema;
         break;
       case "GESTIONE_CHIAVI":
         formValues = {
           ...baseValues,
           tipo_servizio: "GESTIONE_CHIAVI",
-          tipo_gestione_chiavi: simulatedTipoGestioneChiavi as any || "RITIRO_CHIAVI", // Cast to any, default
-        };
+          tipo_gestione_chiavi: simulatedTipoGestioneChiavi || "RITIRO_CHIAVI",
+        } as RichiestaServizioFormSchema;
         break;
       default:
-        // Fallback for unexpected service types, though `simulatedServiceType` should always be one of the defined types
         formValues = {
           ...baseValues,
-          tipo_servizio: "PIANTONAMENTO_ARMATO", // Default to a safe type
-        };
+          tipo_servizio: "PIANTONAMENTO_ARMATO",
+        } as RichiestaServizioFormSchema;
         break;
     }
 
