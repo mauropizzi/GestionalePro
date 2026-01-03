@@ -11,8 +11,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { parse, addDays } from "date-fns"; // Import parse and addDays
-import { it } from "date-fns/locale"; // Import locale for date parsing
+import { parse, addDays } from "date-fns";
+import { it } from "date-fns/locale";
 import {
   RichiestaServizioFormSchema,
   richiestaServizioFormSchema,
@@ -26,7 +26,7 @@ import {
   AperturaChiusuraType,
   BonificaType,
   GestioneChiaviType,
-  timeRegex, // Import timeRegex
+  timeRegex,
 } from "@/lib/richieste-servizio-utils";
 import { RichiestaServizioForm } from "@/components/richieste-servizio/richiesta-servizio-form";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,17 +41,15 @@ export default function CreateRichiestaFromTextPage() {
   const form = useForm<RichiestaServizioFormSchema>({
     resolver: zodResolver(richiestaServizioFormSchema),
     defaultValues: {
-      client_id: "", // Will be filled by processing or user
+      client_id: "",
       punto_servizio_id: null,
       fornitore_id: null,
-      tipo_servizio: "PIANTONAMENTO_ARMATO", // Initial default service type
+      tipo_servizio: "PIANTONAMENTO_ARMATO",
       note: null,
       data_inizio_servizio: new Date(),
       data_fine_servizio: new Date(),
       numero_agenti: 1,
       daily_schedules: defaultDailySchedules,
-      // ISPEZIONI specific fields are omitted here as default type is PIANTONAMENTO_ARMATO
-      // These will be set by useEffect in RichiestaServizioForm if type changes to ISPEZIONI
     } as RichiestaServizioFormSchema,
   });
 
@@ -62,12 +60,9 @@ export default function CreateRichiestaFromTextPage() {
     }
 
     setIsProcessing(true);
-    setShowForm(false); // Hide form while processing
+    setShowForm(false);
 
-    // Simulate AI processing and data extraction
-    // In a real application, this would involve an API call to an NLP service
-    // For now, we'll use simple keyword matching and dummy data.
-    await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     let simulatedServiceType: ServiceType = "PIANTONAMENTO_ARMATO";
     let simulatedNotes = inputText;
@@ -98,13 +93,12 @@ export default function CreateRichiestaFromTextPage() {
     } else if (datesFound.length === 1) {
       const [day1, month1, year1] = datesFound[0].slice(1).map(Number);
       parsedStartDate = new Date(year1, month1 - 1, day1);
-      parsedEndDate = new Date(year1, month1 - 1, day1); // If only one date, assume it's for a single day
+      parsedEndDate = new Date(year1, month1 - 1, day1);
     }
     console.log("Parsed Dates:", { parsedStartDate, parsedEndDate });
 
-
     // 2. Parse Times (HH.mm or HH:mm)
-    const localTimeRegex = /(\d{2})[.:](\d{2})/g; // Use the imported timeRegex pattern
+    const localTimeRegex = /(\d{2})[.:](\d{2})/g;
     const timesFound = [...inputText.matchAll(localTimeRegex)];
     console.log("Raw Times Found:", timesFound);
     if (timesFound.length >= 2) {
@@ -112,7 +106,6 @@ export default function CreateRichiestaFromTextPage() {
       parsedOraFine = `${timesFound[1][1]}:${timesFound[1][2]}`;
     }
     console.log("Parsed Times:", { parsedOraInizio, parsedOraFine });
-
 
     // 3. Parse Cadenza (e.g., "ogni 3 ore")
     const cadenzaRegex = /ogni (\d+(\.\d+)?) ore/i;
@@ -130,11 +123,10 @@ export default function CreateRichiestaFromTextPage() {
     }
     console.log("Parsed Num Agents:", simulatedNumAgents);
 
-
     // Determine service type and specific fields
     if (lowerCaseText.includes("ispezione")) {
       simulatedServiceType = "ISPEZIONI";
-      simulatedCadenzaOre = simulatedCadenzaOre || 1; // Default to 1 if not found
+      simulatedCadenzaOre = simulatedCadenzaOre || 1;
       if (lowerCaseText.includes("perimetrale")) simulatedTipoIspezione = "PERIMETRALE";
       else if (lowerCaseText.includes("interna")) simulatedTipoIspezione = "INTERNA";
       else simulatedTipoIspezione = "COMPLETA";
@@ -155,59 +147,50 @@ export default function CreateRichiestaFromTextPage() {
     }
     console.log("Simulated Service Type:", simulatedServiceType);
 
-
     // Update daily schedules based on parsed times
+    const hasParsedTimes = parsedOraInizio && parsedOraFine;
     const updatedDailySchedules = defaultDailySchedules.map(schedule => {
-      if (parsedOraInizio && parsedOraFine) {
-        // If times are parsed from text, apply them to all days and set active
-        return {
-          ...schedule,
-          attivo: true, // Set to active if times are provided
-          h24: false,
-          ora_inizio: parsedOraInizio,
-          ora_fine: parsedOraFine,
-        };
-      } else {
-        // If no times are parsed, set to inactive and null times
-        return {
-          ...schedule,
-          attivo: false,
-          h24: false,
-          ora_inizio: null,
-          ora_fine: null,
-        };
-      }
+      return {
+        ...schedule,
+        attivo: hasParsedTimes,
+        h24: false,
+        ora_inizio: hasParsedTimes ? parsedOraInizio : null,
+        ora_fine: hasParsedTimes ? parsedOraFine : null,
+      };
     });
     console.log("Updated Daily Schedules:", updatedDailySchedules);
-
 
     // Attempt to find a client and punto servizio based on keywords (very basic example)
     let foundClientId: string | null = null;
     let foundPuntoServizioId: string | null = null;
 
-    // In a real scenario, you'd query your DB or use AI to find these IDs
-    // For this example, we'll just set dummy values if the text contains "cliente test"
     if (lowerCaseText.includes("cliente test")) {
-      // Replace with actual client ID from your DB for testing
-      foundClientId = "a1b2c3d4-e5f6-7890-1234-567890abcdef"; // Dummy UUID
+      foundClientId = "a1b2c3d4-e5f6-7890-1234-567890abcdef";
     }
     if (lowerCaseText.includes("punto servizio centrale")) {
-      // Replace with actual punto servizio ID from your DB for testing
-      foundPuntoServizioId = "b1c2d3e4-f5a6-7890-1234-567890abcdef"; // Dummy UUID
+      foundPuntoServizioId = "b1c2d3e4-f5a6-7890-1234-567890abcdef";
     }
 
-    // Reset form with processed data
+    console.log("--- Parsed Values Before Form Reset ---");
+    console.log("simulatedServiceType:", simulatedServiceType);
+    console.log("parsedStartDate:", parsedStartDate);
+    console.log("parsedEndDate:", parsedEndDate);
+    console.log("simulatedNumAgents:", simulatedNumAgents);
+    console.log("simulatedCadenzaOre (for ISPEZIONI):", simulatedCadenzaOre);
+    console.log("simulatedTipoIspezione (for ISPEZIONI):", simulatedTipoIspezione);
+    console.log("updatedDailySchedules:", updatedDailySchedules);
+    console.log("-------------------------------------");
+
     form.reset({
       client_id: foundClientId || "",
       punto_servizio_id: foundPuntoServizioId,
-      fornitore_id: null, // No automatic detection for now
+      fornitore_id: null,
       tipo_servizio: simulatedServiceType,
       note: simulatedNotes,
       data_inizio_servizio: parsedStartDate,
       data_fine_servizio: parsedEndDate,
       numero_agenti: simulatedNumAgents,
       daily_schedules: updatedDailySchedules,
-      // Service-specific fields
       ...(simulatedServiceType === "ISPEZIONI" && {
         cadenza_ore: simulatedCadenzaOre,
         tipo_ispezione: simulatedTipoIspezione,
@@ -221,9 +204,9 @@ export default function CreateRichiestaFromTextPage() {
       ...(simulatedServiceType === "GESTIONE_CHIAVI" && {
         tipo_gestione_chiavi: simulatedTipoGestioneChiavi,
       }),
-    } as RichiestaServizioFormSchema); // Cast to ensure correct type
+    } as RichiestaServizioFormSchema);
 
-    console.log("Form values after processing text:", form.getValues());
+    console.log("Form values after form.reset:", form.getValues());
 
     setIsProcessing(false);
     setShowForm(true);
@@ -240,13 +223,12 @@ export default function CreateRichiestaFromTextPage() {
     const dataInizioServizio = values.data_inizio_servizio;
     const dataFineServizio = values.data_fine_servizio;
 
-    // Recalculate total based on the final form values
     if (values.tipo_servizio === "ISPEZIONI") {
       totalCalculatedValue = calculateTotalInspections(
         dataInizioServizio,
         dataFineServizio,
         values.daily_schedules,
-        values.cadenza_ore!, // Assert non-null as it's required for ISPEZIONI
+        values.cadenza_ore!,
         values.numero_agenti
       );
     } else if (values.tipo_servizio === "APERTURA_CHIUSURA") {
@@ -412,9 +394,9 @@ export default function CreateRichiestaFromTextPage() {
               </p>
               <RichiestaServizioForm
                 form={form}
-                clients={[]} // Handled by searchable select
-                puntiServizio={[]} // Handled by searchable select
-                fornitori={[]} // Handled by searchable select
+                clients={[]}
+                puntiServizio={[]}
+                fornitori={[]}
                 onSubmit={onSubmit}
                 isSubmitting={isProcessing}
               />
