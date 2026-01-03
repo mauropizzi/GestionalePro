@@ -86,8 +86,10 @@ export default function CreateRichiestaFromTextPage() {
     const lowerCaseText = inputText.toLowerCase();
 
     // 1. Parse Dates (DD.MM.YYYY)
-    const dateRegex = /(\d{2})\.(\d{2})\.(\d{4})/g;
+    const dateRegex = /(\d{2})\.(\d{2})\.(\d{4})/g; // Corrected: escaped dots
     const datesFound = [...inputText.matchAll(dateRegex)];
+    console.log("Raw Dates Found:", datesFound);
+
     if (datesFound.length >= 2) {
       const [day1, month1, year1] = datesFound[0].slice(1).map(Number);
       const [day2, month2, year2] = datesFound[1].slice(1).map(Number);
@@ -104,6 +106,7 @@ export default function CreateRichiestaFromTextPage() {
     // 2. Parse Times (HH.mm or HH:mm)
     const localTimeRegex = /(\d{2})[.:](\d{2})/g; // Use the imported timeRegex pattern
     const timesFound = [...inputText.matchAll(localTimeRegex)];
+    console.log("Raw Times Found:", timesFound);
     if (timesFound.length >= 2) {
       parsedOraInizio = `${timesFound[0][1]}:${timesFound[0][2]}`;
       parsedOraFine = `${timesFound[1][1]}:${timesFound[1][2]}`;
