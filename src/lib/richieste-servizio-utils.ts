@@ -1,5 +1,5 @@
 import * as z from "zod";
-import { format, setHours, setMinutes } from "date-fns";
+import { format, setHours, setMinutes, addDays } from "date-fns"; // Aggiunto addDays
 import { it } from "date-fns/locale";
 
 export const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -75,13 +75,19 @@ export const dailyScheduleSchema = z.object({
   if (data.attivo && !data.h24 && data.ora_inizio && data.ora_fine) {
     const [startH, startM] = data.ora_inizio.split(':').map(Number);
     const [endH, endM] = data.ora_fine.split(':').map(Number);
-    const startTime = setMinutes(setHours(new Date(), startH), startM);
-    const endTime = setMinutes(setHours(new Date(), endH), endM); // Corretto: setMinutes(setHours(new Date(), endH), endM)
+    // Create dummy dates to compare times, allowing for overnight shifts
+    let startTime = setMinutes(setHours(new Date(2000, 0, 1), startH), startM); // Jan 1, 2000
+    let endTime = setMinutes(setHours(new Date(2000, 0, 1), endH), endM);     // Jan 1, 2000
+
+    // If end time is earlier than start time, it means it's an overnight shift, so add a day to end time
+    if (endTime <= startTime) {
+      endTime = addDays(endTime, 1);
+    }
     return endTime > startTime;
   }
   return true;
 }, {
-  message: "L'ora di fine deve essere successiva all'ora di inizio.",
+  message: "L'ora di fine deve essere successiva all'ora di inizio (anche per turni notturni).",
   path: ["ora_fine"],
 });
 
@@ -276,18 +282,16 @@ export const calculateTotalHours = (
         const [startH, startM] = schedule.ora_inizio.split(':').map(Number);
         const [endH, endM] = schedule.ora_fine.split(':').map(Number);
 
-        // Calculate start and end times in minutes from midnight for the current day
+        let durationMinutes = 0;
         let dayStartMinutes = startH * 60 + startM;
         let dayEndMinutes = endH * 60 + endM;
 
-        // For the first day of the service period, consider the global service start time if it's later than the daily schedule start
-        // For the last day of the service period, consider the global service end time if it's earlier than the daily schedule end
-        // Since global times are removed, we assume the daily schedule times are the effective boundaries.
-        // The `serviceStartDate` and `serviceEndDate` now only define the range of days.
-
         if (dayEndMinutes > dayStartMinutes) {
-          totalHours += (dayEndMinutes - dayStartMinutes) / 60; // Convert minutes difference to hours
+          durationMinutes = dayEndMinutes - dayStartMinutes;
+        } else { // Overnight shift, e.g., 20:00 to 06:00
+          durationMinutes = (24 * 60 - dayStartMinutes) + dayEndMinutes;
         }
+        totalHours += durationMinutes / 60;
       }
     }
     currentDate.setDate(currentDate.getDate() + 1);
@@ -323,12 +327,16 @@ export const calculateTotalInspections = (
       } else if (schedule.ora_inizio && schedule.ora_fine) {
         const [startH, startM] = schedule.ora_inizio.split(':').map(Number);
         const [endH, endM] = schedule.ora_fine.split(':').map(Number);
-        const dayStartMinutes = startH * 60 + startM;
-        const dayEndMinutes = endH * 60 + endM;
+        let dayStartMinutes = startH * 60 + startM;
+        let dayEndMinutes = endH * 60 + endM;
 
+        let durationMinutes = 0;
         if (dayEndMinutes > dayStartMinutes) {
-          durationHours = (dayEndMinutes - dayStartMinutes) / 60;
+          durationMinutes = dayEndMinutes - dayStartMinutes;
+        } else { // Overnight shift
+          durationMinutes = (24 * 60 - dayStartMinutes) + dayEndMinutes;
         }
+        durationHours = durationMinutes / 60;
       }
       totalInspections += Math.floor(durationHours / cadenzaOre);
     }

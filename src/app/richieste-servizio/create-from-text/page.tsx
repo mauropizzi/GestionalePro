@@ -11,9 +11,16 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { parse, addDays } from "date-fns"; // Import parse and addDays
+import { it } from "date-fns/locale"; // Import locale for date parsing
 import {
   RichiestaServizioFormSchema,
   richiestaServizioFormSchema,
+  calculateTotalHours,
+  calculateTotalInspections,
+  calculateAperturaChiusuraCount,
+  calculateBonificaCount,
+  calculateGestioneChiaviCount,
   defaultDailySchedules,
   ServiceType,
   AperturaChiusuraType,
@@ -68,11 +75,46 @@ export default function CreateRichiestaFromTextPage() {
     let simulatedTipoBonifica: BonificaType | undefined = undefined;
     let simulatedTipoGestioneChiavi: GestioneChiaviType | undefined = undefined;
 
+    let parsedStartDate: Date = new Date();
+    let parsedEndDate: Date = new Date();
+    let parsedOraInizio: string | null = null;
+    let parsedOraFine: string | null = null;
+
     const lowerCaseText = inputText.toLowerCase();
 
+    // 1. Parse Dates (DD.MM.YYYY)
+    const dateRegex = /(\d{2})\.(\d{2})\.(\d{4})/g;
+    const datesFound = [...inputText.matchAll(dateRegex)];
+    if (datesFound.length >= 2) {
+      const [day1, month1, year1] = datesFound[0].slice(1).map(Number);
+      const [day2, month2, year2] = datesFound[1].slice(1).map(Number);
+      parsedStartDate = new Date(year1, month1 - 1, day1);
+      parsedEndDate = new Date(year2, month2 - 1, day2);
+    } else if (datesFound.length === 1) {
+      const [day1, month1, year1] = datesFound[0].slice(1).map(Number);
+      parsedStartDate = new Date(year1, month1 - 1, day1);
+      parsedEndDate = new Date(year1, month1 - 1, day1); // If only one date, assume it's for a single day
+    }
+
+    // 2. Parse Times (HH.mm)
+    const timeRegex = /(\d{2})\.(\d{2})/g;
+    const timesFound = [...inputText.matchAll(timeRegex)];
+    if (timesFound.length >= 2) {
+      parsedOraInizio = `${timesFound[0][1]}:${timesFound[0][2]}`;
+      parsedOraFine = `${timesFound[1][1]}:${timesFound[1][2]}`;
+    }
+
+    // 3. Parse Cadenza (e.g., "ogni 3 ore")
+    const cadenzaRegex = /ogni (\d+(\.\d+)?) ore/i;
+    const cadenzaMatch = inputText.match(cadenzaRegex);
+    if (cadenzaMatch && cadenzaMatch[1]) {
+      simulatedCadenzaOre = parseFloat(cadenzaMatch[1]);
+    }
+
+    // Determine service type and specific fields
     if (lowerCaseText.includes("ispezione")) {
       simulatedServiceType = "ISPEZIONI";
-      simulatedCadenzaOre = 1;
+      simulatedCadenzaOre = simulatedCadenzaOre || 1; // Default to 1 if not found
       if (lowerCaseText.includes("perimetrale")) simulatedTipoIspezione = "PERIMETRALE";
       else if (lowerCaseText.includes("interna")) simulatedTipoIspezione = "INTERNA";
       else simulatedTipoIspezione = "COMPLETA";
@@ -91,6 +133,15 @@ export default function CreateRichiestaFromTextPage() {
       else if (lowerCaseText.includes("consegna")) simulatedTipoGestioneChiavi = "CONSEGNA_CHIAVI";
       else simulatedTipoGestioneChiavi = "VERIFICA_CHIAVI";
     }
+
+    // Update daily schedules based on parsed times
+    const updatedDailySchedules = defaultDailySchedules.map(schedule => ({
+      ...schedule,
+      attivo: true, // Assume all days are active if times are specified
+      h24: false, // Not H24 if specific times are given
+      ora_inizio: parsedOraInizio || schedule.ora_inizio,
+      ora_fine: parsedOraFine || schedule.ora_fine,
+    }));
 
     // Attempt to find a client and punto servizio based on keywords (very basic example)
     let foundClientId: string | null = null;
@@ -114,10 +165,10 @@ export default function CreateRichiestaFromTextPage() {
       fornitore_id: null, // No automatic detection for now
       tipo_servizio: simulatedServiceType,
       note: simulatedNotes,
-      data_inizio_servizio: new Date(),
-      data_fine_servizio: new Date(),
+      data_inizio_servizio: parsedStartDate,
+      data_fine_servizio: parsedEndDate,
       numero_agenti: simulatedNumAgents,
-      daily_schedules: defaultDailySchedules,
+      daily_schedules: updatedDailySchedules,
       // Service-specific fields
       ...(simulatedServiceType === "ISPEZIONI" && {
         cadenza_ore: simulatedCadenzaOre,
@@ -151,22 +202,44 @@ export default function CreateRichiestaFromTextPage() {
 
     // Recalculate total based on the final form values
     if (values.tipo_servizio === "ISPEZIONI") {
-      // Assuming calculateTotalInspections is available and correct
-      // totalCalculatedValue = calculateTotalInspections(...);
-      // For now, just a placeholder
-      totalCalculatedValue = 0; // Placeholder
+      totalCalculatedValue = calculateTotalInspections(
+        dataInizioServizio,
+        dataFineServizio,
+        values.daily_schedules,
+        values.cadenza_ore!, // Assert non-null as it's required for ISPEZIONI
+        values.numero_agenti
+      );
     } else if (values.tipo_servizio === "APERTURA_CHIUSURA") {
-      // totalCalculatedValue = calculateAperturaChiusuraCount(...);
-      totalCalculatedValue = 0; // Placeholder
+      totalCalculatedValue = calculateAperturaChiusuraCount(
+        dataInizioServizio,
+        dataFineServizio,
+        values.daily_schedules,
+        values.tipo_apertura_chiusura as AperturaChiusuraType,
+        values.numero_agenti
+      );
     } else if (values.tipo_servizio === "BONIFICA") {
-      // totalCalculatedValue = calculateBonificaCount(...);
-      totalCalculatedValue = 0; // Placeholder
+      totalCalculatedValue = calculateBonificaCount(
+        dataInizioServizio,
+        dataFineServizio,
+        values.daily_schedules,
+        values.tipo_bonifica as BonificaType,
+        values.numero_agenti
+      );
     } else if (values.tipo_servizio === "GESTIONE_CHIAVI") {
-      // totalCalculatedValue = calculateGestioneChiaviCount(...);
-      totalCalculatedValue = 0; // Placeholder
+      totalCalculatedValue = calculateGestioneChiaviCount(
+        dataInizioServizio,
+        dataFineServizio,
+        values.daily_schedules,
+        values.tipo_gestione_chiavi as GestioneChiaviType,
+        values.numero_agenti
+      );
     } else {
-      // totalCalculatedValue = calculateTotalHours(...);
-      totalCalculatedValue = 0; // Placeholder
+      totalCalculatedValue = calculateTotalHours(
+        dataInizioServizio,
+        dataFineServizio,
+        values.daily_schedules,
+        values.numero_agenti
+      );
     }
 
     richiestaData = {

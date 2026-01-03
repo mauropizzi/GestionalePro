@@ -193,7 +193,7 @@ export function useRichiestaServizioEditForm(richiestaId: string) {
         dataInizioServizio,
         dataFineServizio,
         values.daily_schedules,
-        values.cadenza_ore,
+        values.cadenza_ore!, // Assert non-null
         values.numero_agenti
       );
     } else if (values.tipo_servizio === "APERTURA_CHIUSURA") {
