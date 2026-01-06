@@ -11,7 +11,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { parse, addDays, isPast, startOfDay } from "date-fns";
+import { parse, addDays, isPast, startOfDay, format as formatDate } from "date-fns";
 import { it } from "date-fns/locale";
 import {
   RichiestaServizioFormSchema,
@@ -68,10 +68,11 @@ export default function CreateRichiestaFromTextPage() {
     setIsProcessing(true);
     setShowForm(false);
 
+    // Simulate processing time
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     let simulatedServiceType: ServiceType = "PIANTONAMENTO_ARMATO";
-    let simulatedNotes = inputText;
+    let simulatedNotes = inputText; // Keep original text in notes
     let simulatedNumAgents = 1;
     let simulatedCadenzaOre: number | undefined = undefined;
     let simulatedTipoIspezione: string | undefined = undefined;
@@ -85,11 +86,11 @@ export default function CreateRichiestaFromTextPage() {
     let parsedOraFine: string | null = null;
 
     const lowerCaseText = inputText.toLowerCase();
-
-    // 1. Parse Dates
     const today = startOfDay(new Date());
-    const dateRegexFull = /(\d{2})\.(\d{2})\.(\d{4})/g; // DD.MM.YYYY
-    const dateRegexPartial = /(\d{2})\.(\d{2})/g; // DD.MM
+
+    // --- 1. Parse Dates ---
+    const dateRegexFull = /(\d{2})[./](\d{2})[./](\d{4})/g; // DD.MM.YYYY or DD/MM/YYYY
+    const dateRegexPartial = /(\d{2})[./](\d{2})/g; // DD.MM or DD/MM
 
     let datesFound: Date[] = [];
 
@@ -98,14 +99,14 @@ export default function CreateRichiestaFromTextPage() {
       datesFound.push(today);
     }
 
-    // Check for full dates (DD.MM.YYYY)
+    // Check for full dates (DD.MM.YYYY or DD/MM/YYYY)
     const fullDateMatches = [...inputText.matchAll(dateRegexFull)];
     for (const match of fullDateMatches) {
       const [day, month, year] = match.slice(1).map(Number);
       datesFound.push(new Date(year, month - 1, day));
     }
 
-    // Check for partial dates (DD.MM) if no full dates or "oggi" found
+    // Check for partial dates (DD.MM or DD/MM) if no full dates or "oggi" found
     if (datesFound.length === 0) {
       const partialDateMatches = [...inputText.matchAll(dateRegexPartial)];
       for (const match of partialDateMatches) {
@@ -113,7 +114,7 @@ export default function CreateRichiestaFromTextPage() {
         let year = today.getFullYear();
         let tempDate = new Date(year, month - 1, day);
         // If the parsed date is in the past, assume next year
-        if (isPast(tempDate) && tempDate.getMonth() < today.getMonth()) { // Only increment year if month is also past
+        if (isPast(tempDate) && tempDate.getMonth() < today.getMonth()) {
           year++;
           tempDate = new Date(year, month - 1, day);
         }
@@ -125,46 +126,55 @@ export default function CreateRichiestaFromTextPage() {
       datesFound.sort((a, b) => a.getTime() - b.getTime());
       parsedStartDate = datesFound[0];
       parsedEndDate = datesFound[datesFound.length - 1];
-    }
-
-    // If only one date is found, use it for both start and end
-    if (datesFound.length === 1) {
-      parsedEndDate = parsedStartDate;
-    }
-    
-    // Default to today if no dates found
-    if (datesFound.length === 0 && !lowerCaseText.includes("oggi")) {
+    } else {
+      // Default to today if no dates found
       parsedStartDate = today;
       parsedEndDate = today;
     }
 
-
     console.log("Parsed Dates:", { parsedStartDate, parsedEndDate });
 
-    // 2. Parse Times (HH.mm or HH:mm or just HH)
-    const timeRegexDetailed = /(\d{2})[.:](\d{2})/g; // HH.mm or HH:mm
-    const timeRegexHourOnly = /(dalle|alle)\s+(\d{1,2})/gi; // "dalle 18", "alle 08"
+    // --- 2. Parse Times (HH.mm, HH:mm, or just HH) ---
+    const timeRegex = /(\d{1,2})[.:]?(\d{2})?/g; // Matches HH.mm, HH:mm, or just HH
+    const allTimeMatches = [...inputText.matchAll(timeRegex)];
+    const extractedTimes: string[] = [];
 
-    const timesFoundDetailed = [...inputText.matchAll(timeRegexDetailed)];
-    const timesFoundHourOnly = [...inputText.matchAll(timeRegexHourOnly)];
+    for (const match of allTimeMatches) {
+      const hour = match[1];
+      const minute = match[2] || '00'; // Default to '00' if minutes are not specified
+      extractedTimes.push(`${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`);
+    }
 
-    if (timesFoundDetailed.length >= 2) {
-      parsedOraInizio = `${timesFoundDetailed[0][1]}:${timesFoundDetailed[0][2]}`;
-      parsedOraFine = `${timesFoundDetailed[1][1]}:${timesFoundDetailed[1][2]}`;
-    } else if (timesFoundHourOnly.length >= 2) {
-      const firstTime = parseInt(timesFoundHourOnly[0][2]);
-      const secondTime = parseInt(timesFoundHourOnly[1][2]);
-      parsedOraInizio = `${String(firstTime).padStart(2, '0')}:00`;
-      parsedOraFine = `${String(secondTime).padStart(2, '0')}:00`;
-    } else if (timesFoundDetailed.length === 1 && timesFoundHourOnly.length === 1) {
-      // Mix of formats, prioritize detailed
-      parsedOraInizio = `${timesFoundDetailed[0][1]}:${timesFoundDetailed[0][2]}`;
-      const secondTime = parseInt(timesFoundHourOnly[0][2]);
-      parsedOraFine = `${String(secondTime).padStart(2, '0')}:00`;
+    // Try to find "dalle X alle Y" pattern
+    const dalleAlleRegex = /(dalle|da)\s+(\d{1,2}(?:[.:]\d{2})?)\s+(alle|a)\s+(\d{1,2}(?:[.:]\d{2})?)/i;
+    const dalleAlleMatch = inputText.match(dalleAlleRegex);
+
+    if (dalleAlleMatch) {
+      const startTimeRaw = dalleAlleMatch[2];
+      const endTimeRaw = dalleAlleMatch[4];
+
+      const parseTime = (timeStr: string) => {
+        const parts = timeStr.split(/[.:]/);
+        const hour = parts[0].padStart(2, '0');
+        const minute = parts[1] ? parts[1].padStart(2, '0') : '00';
+        return `${hour}:${minute}`;
+      };
+
+      parsedOraInizio = parseTime(startTimeRaw);
+      parsedOraFine = parseTime(endTimeRaw);
+
+    } else if (extractedTimes.length >= 2) {
+      parsedOraInizio = extractedTimes[0];
+      parsedOraFine = extractedTimes[1];
+    } else if (extractedTimes.length === 1) {
+      // If only one time is found, use it for both start and end (e.g., "alle 18")
+      parsedOraInizio = extractedTimes[0];
+      parsedOraFine = extractedTimes[0];
     }
     console.log("Parsed Times:", { parsedOraInizio, parsedOraFine });
 
-    // 3. Parse Cadenza (e.g., "ogni 3 ore")
+
+    // --- 3. Parse Cadenza (e.g., "ogni 3 ore") ---
     const cadenzaRegex = /ogni (\d+(\.\d+)?) ore/i;
     const cadenzaMatch = inputText.match(cadenzaRegex);
     if (cadenzaMatch && cadenzaMatch[1]) {
@@ -172,7 +182,7 @@ export default function CreateRichiestaFromTextPage() {
     }
     console.log("Parsed Cadenza:", simulatedCadenzaOre);
 
-    // 4. Parse Numero Agenti (e.g., "con 2 agenti")
+    // --- 4. Parse Numero Agenti (e.g., "con 2 agenti") ---
     const numAgentsRegex = /(\d+) agenti/i;
     const numAgentsMatch = inputText.match(numAgentsRegex);
     if (numAgentsMatch && numAgentsMatch[1]) {
@@ -180,7 +190,7 @@ export default function CreateRichiestaFromTextPage() {
     }
     console.log("Parsed Num Agents:", simulatedNumAgents);
 
-    // Determine service type and specific fields
+    // --- 5. Determine service type and specific fields ---
     if (lowerCaseText.includes("ispezione")) {
       simulatedServiceType = "ISPEZIONI";
       simulatedCadenzaOre = simulatedCadenzaOre || 1; // Default to 1 hour if not specified
@@ -206,7 +216,7 @@ export default function CreateRichiestaFromTextPage() {
     }
     console.log("Simulated Service Type:", simulatedServiceType);
 
-    // Update daily schedules based on parsed times
+    // --- 6. Update daily schedules based on parsed times ---
     const hasParsedTimes = !!(parsedOraInizio && parsedOraFine);
     const updatedDailySchedules: z.infer<typeof dailyScheduleSchema>[] = defaultDailySchedules.map((schedule) => ({
       ...schedule,
@@ -217,7 +227,7 @@ export default function CreateRichiestaFromTextPage() {
     }));
     console.log("Updated Daily Schedules:", updatedDailySchedules);
 
-    // Attempt to find a client and punto servizio based on keywords (very basic example)
+    // --- 7. Attempt to find a client and punto servizio based on keywords (very basic example) ---
     let foundClientId: string | null = null;
     let foundPuntoServizioId: string | null = null;
 
