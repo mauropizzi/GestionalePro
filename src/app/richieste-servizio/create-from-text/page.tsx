@@ -50,13 +50,15 @@ export default function CreateRichiestaFromTextPage() {
       client_id: "",
       punto_servizio_id: null,
       fornitore_id: null,
-      tipo_servizio: "PIANTONAMENTO_ARMATO",
+      tipo_servizio: "PIANTONAMENTO_ARMATO", // Initial default service type
       note: null,
       data_inizio_servizio: new Date(),
       data_fine_servizio: new Date(),
       numero_agenti: 1,
       daily_schedules: defaultDailySchedules,
-    } as RichiestaServizioFormSchema,
+      // ISPEZIONI specific fields are omitted here as default type is PIANTONAMENTO_ARMATO
+      // These will be set by useEffect in RichiestaServizioForm if type changes to ISPEZIONI
+    } as RichiestaServizioFormSchema, // Cast to ensure correct type for defaultValues
   });
 
   const handleProcessText = async () => {
@@ -88,55 +90,67 @@ export default function CreateRichiestaFromTextPage() {
     const lowerCaseText = inputText.toLowerCase();
     const today = startOfDay(new Date());
 
+    console.log("[handleProcessText] Input Text:", inputText);
+    console.log("[handleProcessText] Lowercase Text:", lowerCaseText);
+
     // --- 1. Parse Dates ---
     const dateRegexFull = /(\d{2})[./](\d{2})[./](\d{4})/g; // DD.MM.YYYY or DD/MM/YYYY
     const dateRegexPartial = /(\d{2})[./](\d{2})/g; // DD.MM or DD/MM
 
-    let datesFound: Date[] = [];
+    let allParsedDates: Date[] = [];
 
     // Check for "oggi"
     if (lowerCaseText.includes("oggi")) {
-      datesFound.push(today);
+      allParsedDates.push(today);
+      console.log("[handleProcessText] Found 'oggi', added:", today);
     }
 
     // Check for full dates (DD.MM.YYYY or DD/MM/YYYY)
     const fullDateMatches = [...inputText.matchAll(dateRegexFull)];
+    console.log("[handleProcessText] Full Date Matches:", fullDateMatches);
     for (const match of fullDateMatches) {
       const [day, month, year] = match.slice(1).map(Number);
-      datesFound.push(new Date(year, month - 1, day));
-    }
-
-    // Check for partial dates (DD.MM or DD/MM) if no full dates or "oggi" found
-    if (datesFound.length === 0) {
-      const partialDateMatches = [...inputText.matchAll(dateRegexPartial)];
-      for (const match of partialDateMatches) {
-        const [day, month] = match.slice(1).map(Number);
-        let year = today.getFullYear();
-        let tempDate = new Date(year, month - 1, day);
-        // If the parsed date is in the past, assume next year
-        if (isPast(tempDate) && tempDate.getMonth() < today.getMonth()) {
-          year++;
-          tempDate = new Date(year, month - 1, day);
-        }
-        datesFound.push(tempDate);
+      const date = new Date(year, month - 1, day);
+      if (!isNaN(date.getTime())) {
+        allParsedDates.push(startOfDay(date));
+        console.log("[handleProcessText] Found full date, added:", startOfDay(date));
       }
     }
 
-    if (datesFound.length > 0) {
-      datesFound.sort((a, b) => a.getTime() - b.getTime());
-      parsedStartDate = datesFound[0];
-      parsedEndDate = datesFound[datesFound.length - 1];
+    // Check for partial dates (DD.MM or DD/MM)
+    const partialDateMatches = [...inputText.matchAll(dateRegexPartial)];
+    console.log("[handleProcessText] Partial Date Matches:", partialDateMatches);
+    for (const match of partialDateMatches) {
+      const [day, month] = match.slice(1).map(Number);
+      let year = today.getFullYear();
+      let tempDate = new Date(year, month - 1, day);
+      // If the parsed date is in the past relative to today, assume next year
+      if (startOfDay(tempDate) < today) {
+        year++;
+        tempDate = new Date(year, month - 1, day);
+        console.log(`[handleProcessText] Adjusted year for partial date ${match[0]} to ${year}`);
+      }
+      if (!isNaN(tempDate.getTime())) {
+        allParsedDates.push(startOfDay(tempDate));
+        console.log("[handleProcessText] Found partial date, added:", startOfDay(tempDate));
+      }
+    }
+
+    if (allParsedDates.length > 0) {
+      allParsedDates.sort((a, b) => a.getTime() - b.getTime());
+      parsedStartDate = allParsedDates[0];
+      parsedEndDate = allParsedDates[allParsedDates.length - 1];
     } else {
       // Default to today if no dates found
       parsedStartDate = today;
       parsedEndDate = today;
     }
 
-    console.log("Parsed Dates:", { parsedStartDate, parsedEndDate });
+    console.log("[handleProcessText] Final Parsed Dates:", { parsedStartDate, parsedEndDate });
 
     // --- 2. Parse Times (HH.mm, HH:mm, or just HH) ---
-    const timeRegex = /(\d{1,2})[.:]?(\d{2})?/g; // Matches HH.mm, HH:mm, or just HH
-    const allTimeMatches = [...inputText.matchAll(timeRegex)];
+    const timeRegexFlexible = /(\d{1,2})[.:]?(\d{2})?/g; // Matches HH.mm, HH:mm, or just HH
+    const allTimeMatches = [...inputText.matchAll(timeRegexFlexible)];
     const extractedTimes: string[] = [];
 
     for (const match of allTimeMatches) {
@@ -171,7 +185,7 @@ export default function CreateRichiestaFromTextPage() {
       parsedOraInizio = extractedTimes[0];
       parsedOraFine = extractedTimes[0];
     }
-    console.log("Parsed Times:", { parsedOraInizio, parsedOraFine });
+    console.log("[handleProcessText] Parsed Times:", { parsedOraInizio, parsedOraFine });
 
 
     // --- 3. Parse Cadenza (e.g., "ogni 3 ore") ---
@@ -179,16 +193,20 @@ export default function CreateRichiestaFromTextPage() {
     const cadenzaMatch = inputText.match(cadenzaRegex);
     if (cadenzaMatch && cadenzaMatch[1]) {
       simulatedCadenzaOre = parseFloat(cadenzaMatch[1]);
+      console.log("[handleProcessText] Parsed Cadenza:", simulatedCadenzaOre);
+    } else {
+      console.log("[handleProcessText] No Cadenza found.");
     }
-    console.log("Parsed Cadenza:", simulatedCadenzaOre);
 
     // --- 4. Parse Numero Agenti (e.g., "con 2 agenti") ---
     const numAgentsRegex = /(\d+) agenti/i;
     const numAgentsMatch = inputText.match(numAgentsRegex);
     if (numAgentsMatch && numAgentsMatch[1]) {
       simulatedNumAgents = parseInt(numAgentsMatch[1]);
+      console.log("[handleProcessText] Parsed Num Agents:", simulatedNumAgents);
+    } else {
+      console.log("[handleProcessText] No Num Agents found, defaulting to 1.");
     }
-    console.log("Parsed Num Agents:", simulatedNumAgents);
 
     // --- 5. Determine service type and specific fields ---
     if (lowerCaseText.includes("ispezione")) {
@@ -214,18 +232,18 @@ export default function CreateRichiestaFromTextPage() {
     } else if (lowerCaseText.includes("servizio fiduciario")) {
       simulatedServiceType = "SERVIZIO_FIDUCIARIO";
     }
-    console.log("Simulated Service Type:", simulatedServiceType);
+    console.log("[handleProcessText] Simulated Service Type:", simulatedServiceType);
 
     // --- 6. Update daily schedules based on parsed times ---
     const hasParsedTimes = !!(parsedOraInizio && parsedOraFine);
     const updatedDailySchedules: z.infer<typeof dailyScheduleSchema>[] = defaultDailySchedules.map((schedule) => ({
       ...schedule,
-      h24: false, // Assume not H24 if specific times are given
-      ora_inizio: hasParsedTimes ? parsedOraInizio : null,
-      ora_fine: hasParsedTimes ? parsedOraFine : null,
+      h24: false, // Explicitly set to false if specific times are parsed
+      ora_inizio: parsedOraInizio, // Apply parsed start time to all days
+      ora_fine: parsedOraFine,     // Apply parsed end time to all days
       attivo: hasParsedTimes, // Set active if times are parsed
     }));
-    console.log("Updated Daily Schedules:", updatedDailySchedules);
+    console.log("[handleProcessText] Updated Daily Schedules:", updatedDailySchedules);
 
     // --- 7. Attempt to find a client and punto servizio based on keywords (very basic example) ---
     let foundClientId: string | null = null;
@@ -242,6 +260,9 @@ export default function CreateRichiestaFromTextPage() {
         .limit(1);
       if (!clientsError && clientsData && clientsData.length > 0) {
         foundClientId = clientsData[0].id;
+        console.log("[handleProcessText] Found Client ID:", foundClientId);
+      } else {
+        console.log("[handleProcessText] No Client found for name:", clientName);
       }
     }
 
@@ -256,26 +277,16 @@ export default function CreateRichiestaFromTextPage() {
         .limit(1);
       if (!puntiServizioError && puntiServizioData && puntiServizioData.length > 0) {
         foundPuntoServizioId = puntiServizioData[0].id;
+        console.log("[handleProcessText] Found Punto Servizio ID:", foundPuntoServizioId);
+      } else {
+        console.log("[handleProcessText] No Punto Servizio found for name:", puntoServizioName);
       }
     }
 
-
-    console.log("--- Parsed Values Before Form Reset ---");
-    console.log("simulatedServiceType:", simulatedServiceType);
-    console.log("parsedStartDate:", parsedStartDate);
-    console.log("parsedEndDate:", parsedEndDate);
-    console.log("simulatedNumAgents:", simulatedNumAgents);
-    console.log("simulatedCadenzaOre (for ISPEZIONI):", simulatedCadenzaOre);
-    console.log("simulatedTipoIspezione (for ISPEZIONI):", simulatedTipoIspezione);
-    console.log("updatedDailySchedules:", updatedDailySchedules);
-    console.log("foundClientId:", foundClientId);
-    console.log("foundPuntoServizioId:", foundPuntoServizioId);
-    console.log("-------------------------------------");
-
     // Construct the object for form.reset based on the discriminated union
-    let formValues: RichiestaServizioFormSchema;
+    let finalFormValues: RichiestaServizioFormSchema;
 
-    const baseValues = {
+    const commonBaseValues = {
       client_id: foundClientId || "",
       punto_servizio_id: foundPuntoServizioId,
       fornitore_id: null,
@@ -288,57 +299,57 @@ export default function CreateRichiestaFromTextPage() {
 
     switch (simulatedServiceType) {
       case "PIANTONAMENTO_ARMATO":
-        formValues = {
-          ...baseValues,
+        finalFormValues = {
+          ...commonBaseValues,
           tipo_servizio: "PIANTONAMENTO_ARMATO",
-        } as RichiestaServizioFormSchema;
+        };
         break;
       case "SERVIZIO_FIDUCIARIO":
-        formValues = {
-          ...baseValues,
+        finalFormValues = {
+          ...commonBaseValues,
           tipo_servizio: "SERVIZIO_FIDUCIARIO",
-        } as RichiestaServizioFormSchema;
+        };
         break;
       case "ISPEZIONI":
-        formValues = {
-          ...baseValues,
+        finalFormValues = {
+          ...commonBaseValues,
           tipo_servizio: "ISPEZIONI",
           cadenza_ore: simulatedCadenzaOre || 1,
           tipo_ispezione: simulatedTipoIspezione as (typeof INSPECTION_TYPES)[number]["value"] || "PERIMETRALE",
-        } as RichiestaServizioFormSchema;
+        };
         break;
       case "APERTURA_CHIUSURA":
-        formValues = {
-          ...baseValues,
+        finalFormValues = {
+          ...commonBaseValues,
           tipo_servizio: "APERTURA_CHIUSURA",
           tipo_apertura_chiusura: simulatedTipoAperturaChiusura || "APERTURA_E_CHIUSURA",
-        } as RichiestaServizioFormSchema;
+        };
         break;
       case "BONIFICA":
-        formValues = {
-          ...baseValues,
+        finalFormValues = {
+          ...commonBaseValues,
           tipo_servizio: "BONIFICA",
           tipo_bonifica: simulatedTipoBonifica || "BONIFICA_STANDARD",
-        } as RichiestaServizioFormSchema;
+        };
         break;
       case "GESTIONE_CHIAVI":
-        formValues = {
-          ...baseValues,
+        finalFormValues = {
+          ...commonBaseValues,
           tipo_servizio: "GESTIONE_CHIAVI",
           tipo_gestione_chiavi: simulatedTipoGestioneChiavi as (typeof GESTIONE_CHIAVI_TYPES)[number]["value"] || "RITIRO_CHIAVI",
-        } as RichiestaServizioFormSchema;
+        };
         break;
       default:
-        formValues = {
-          ...baseValues,
+        finalFormValues = {
+          ...commonBaseValues,
           tipo_servizio: "PIANTONAMENTO_ARMATO",
-        } as RichiestaServizioFormSchema;
+        };
         break;
     }
 
-    form.reset(formValues);
+    form.reset(finalFormValues);
 
-    console.log("Form values after form.reset:", form.getValues());
+    console.log("[handleProcessText] Form values after form.reset:", form.getValues());
 
     setIsProcessing(false);
     setShowForm(true);
