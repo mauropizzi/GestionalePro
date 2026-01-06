@@ -11,7 +11,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { parse, addDays } from "date-fns";
+import { parse, addDays, isPast, startOfDay } from "date-fns";
 import { it } from "date-fns/locale";
 import {
   RichiestaServizioFormSchema,
@@ -28,6 +28,10 @@ import {
   GestioneChiaviType,
   timeRegex,
   dailyScheduleSchema,
+  INSPECTION_TYPES,
+  APERTURA_CHIUSURA_TYPES,
+  BONIFICA_TYPES,
+  GESTIONE_CHIAVI_TYPES,
 } from "@/lib/richieste-servizio-utils";
 import { RichiestaServizioForm } from "@/components/richieste-servizio/richiesta-servizio-form";
 import { supabase } from "@/integrations/supabase/client";
@@ -75,37 +79,88 @@ export default function CreateRichiestaFromTextPage() {
     let simulatedTipoBonifica: BonificaType | undefined = undefined;
     let simulatedTipoGestioneChiavi: GestioneChiaviType | undefined = undefined;
 
-    let parsedStartDate: Date = new Date();
-    let parsedEndDate: Date = new Date();
+    let parsedStartDate: Date = startOfDay(new Date());
+    let parsedEndDate: Date = startOfDay(new Date());
     let parsedOraInizio: string | null = null;
     let parsedOraFine: string | null = null;
 
     const lowerCaseText = inputText.toLowerCase();
 
-    // 1. Parse Dates (DD.MM.YYYY)
-    const dateRegex = /(\d{2})\.(\d{2})\.(\d{4})/g;
-    const datesFound = [...inputText.matchAll(dateRegex)];
-    console.log("Raw Dates Found:", datesFound);
+    // 1. Parse Dates
+    const today = startOfDay(new Date());
+    const dateRegexFull = /(\d{2})\.(\d{2})\.(\d{4})/g; // DD.MM.YYYY
+    const dateRegexPartial = /(\d{2})\.(\d{2})/g; // DD.MM
 
-    if (datesFound.length >= 2) {
-      const [day1, month1, year1] = datesFound[0].slice(1).map(Number);
-      const [day2, month2, year2] = datesFound[1].slice(1).map(Number);
-      parsedStartDate = new Date(year1, month1 - 1, day1);
-      parsedEndDate = new Date(year2, month2 - 1, day2);
-    } else if (datesFound.length === 1) {
-      const [day1, month1, year1] = datesFound[0].slice(1).map(Number);
-      parsedStartDate = new Date(year1, month1 - 1, day1);
-      parsedEndDate = new Date(year1, month1 - 1, day1);
+    let datesFound: Date[] = [];
+
+    // Check for "oggi"
+    if (lowerCaseText.includes("oggi")) {
+      datesFound.push(today);
     }
+
+    // Check for full dates (DD.MM.YYYY)
+    const fullDateMatches = [...inputText.matchAll(dateRegexFull)];
+    for (const match of fullDateMatches) {
+      const [day, month, year] = match.slice(1).map(Number);
+      datesFound.push(new Date(year, month - 1, day));
+    }
+
+    // Check for partial dates (DD.MM) if no full dates or "oggi" found
+    if (datesFound.length === 0) {
+      const partialDateMatches = [...inputText.matchAll(dateRegexPartial)];
+      for (const match of partialDateMatches) {
+        const [day, month] = match.slice(1).map(Number);
+        let year = today.getFullYear();
+        let tempDate = new Date(year, month - 1, day);
+        // If the parsed date is in the past, assume next year
+        if (isPast(tempDate) && tempDate.getMonth() < today.getMonth()) { // Only increment year if month is also past
+          year++;
+          tempDate = new Date(year, month - 1, day);
+        }
+        datesFound.push(tempDate);
+      }
+    }
+
+    if (datesFound.length > 0) {
+      datesFound.sort((a, b) => a.getTime() - b.getTime());
+      parsedStartDate = datesFound[0];
+      parsedEndDate = datesFound[datesFound.length - 1];
+    }
+
+    // If only one date is found, use it for both start and end
+    if (datesFound.length === 1) {
+      parsedEndDate = parsedStartDate;
+    }
+    
+    // Default to today if no dates found
+    if (datesFound.length === 0 && !lowerCaseText.includes("oggi")) {
+      parsedStartDate = today;
+      parsedEndDate = today;
+    }
+
+
     console.log("Parsed Dates:", { parsedStartDate, parsedEndDate });
 
-    // 2. Parse Times (HH.mm or HH:mm)
-    const localTimeRegex = /(\d{2})[.:](\d{2})/g;
-    const timesFound = [...inputText.matchAll(localTimeRegex)];
-    console.log("Raw Times Found:", timesFound);
-    if (timesFound.length >= 2) {
-      parsedOraInizio = `${timesFound[0][1]}:${timesFound[0][2]}`;
-      parsedOraFine = `${timesFound[1][1]}:${timesFound[1][2]}`;
+    // 2. Parse Times (HH.mm or HH:mm or just HH)
+    const timeRegexDetailed = /(\d{2})[.:](\d{2})/g; // HH.mm or HH:mm
+    const timeRegexHourOnly = /(dalle|alle)\s+(\d{1,2})/gi; // "dalle 18", "alle 08"
+
+    const timesFoundDetailed = [...inputText.matchAll(timeRegexDetailed)];
+    const timesFoundHourOnly = [...inputText.matchAll(timeRegexHourOnly)];
+
+    if (timesFoundDetailed.length >= 2) {
+      parsedOraInizio = `${timesFoundDetailed[0][1]}:${timesFoundDetailed[0][2]}`;
+      parsedOraFine = `${timesFoundDetailed[1][1]}:${timesFoundDetailed[1][2]}`;
+    } else if (timesFoundHourOnly.length >= 2) {
+      const firstTime = parseInt(timesFoundHourOnly[0][2]);
+      const secondTime = parseInt(timesFoundHourOnly[1][2]);
+      parsedOraInizio = `${String(firstTime).padStart(2, '0')}:00`;
+      parsedOraFine = `${String(secondTime).padStart(2, '0')}:00`;
+    } else if (timesFoundDetailed.length === 1 && timesFoundHourOnly.length === 1) {
+      // Mix of formats, prioritize detailed
+      parsedOraInizio = `${timesFoundDetailed[0][1]}:${timesFoundDetailed[0][2]}`;
+      const secondTime = parseInt(timesFoundHourOnly[0][2]);
+      parsedOraFine = `${String(secondTime).padStart(2, '0')}:00`;
     }
     console.log("Parsed Times:", { parsedOraInizio, parsedOraFine });
 
@@ -128,7 +183,7 @@ export default function CreateRichiestaFromTextPage() {
     // Determine service type and specific fields
     if (lowerCaseText.includes("ispezione")) {
       simulatedServiceType = "ISPEZIONI";
-      simulatedCadenzaOre = simulatedCadenzaOre || 1;
+      simulatedCadenzaOre = simulatedCadenzaOre || 1; // Default to 1 hour if not specified
       if (lowerCaseText.includes("perimetrale")) simulatedTipoIspezione = "PERIMETRALE";
       else if (lowerCaseText.includes("interna")) simulatedTipoIspezione = "INTERNA";
       else simulatedTipoIspezione = "COMPLETA";
@@ -155,10 +210,10 @@ export default function CreateRichiestaFromTextPage() {
     const hasParsedTimes = !!(parsedOraInizio && parsedOraFine);
     const updatedDailySchedules: z.infer<typeof dailyScheduleSchema>[] = defaultDailySchedules.map((schedule) => ({
       ...schedule,
-      h24: false,
+      h24: false, // Assume not H24 if specific times are given
       ora_inizio: hasParsedTimes ? parsedOraInizio : null,
       ora_fine: hasParsedTimes ? parsedOraFine : null,
-      attivo: hasParsedTimes,
+      attivo: hasParsedTimes, // Set active if times are parsed
     }));
     console.log("Updated Daily Schedules:", updatedDailySchedules);
 
@@ -166,12 +221,34 @@ export default function CreateRichiestaFromTextPage() {
     let foundClientId: string | null = null;
     let foundPuntoServizioId: string | null = null;
 
-    if (lowerCaseText.includes("cliente test")) {
-      foundClientId = "a1b2c3d4-e5f6-7890-1234-567890abcdef";
+    // Example: Search for client by name in the text
+    const clientSearchMatch = lowerCaseText.match(/cliente\s+([a-z0-9\s]+?)(?:\s+presso|\s+dal|\s+con|$)/);
+    if (clientSearchMatch && clientSearchMatch[1]) {
+      const clientName = clientSearchMatch[1].trim();
+      const { data: clientsData, error: clientsError } = await supabase
+        .from("clienti")
+        .select("id")
+        .ilike("ragione_sociale", `%${clientName}%`)
+        .limit(1);
+      if (!clientsError && clientsData && clientsData.length > 0) {
+        foundClientId = clientsData[0].id;
+      }
     }
-    if (lowerCaseText.includes("punto servizio centrale")) {
-      foundPuntoServizioId = "b1c2d3e4-f5a6-7890-1234-567890abcdef";
+
+    // Example: Search for punto servizio by name in the text
+    const puntoServizioSearchMatch = lowerCaseText.match(/punto servizio\s+([a-z0-9\s]+?)(?:\s+dal|\s+con|$)/);
+    if (puntoServizioSearchMatch && puntoServizioSearchMatch[1]) {
+      const puntoServizioName = puntoServizioSearchMatch[1].trim();
+      const { data: puntiServizioData, error: puntiServizioError } = await supabase
+        .from("punti_servizio")
+        .select("id")
+        .ilike("nome_punto_servizio", `%${puntoServizioName}%`)
+        .limit(1);
+      if (!puntiServizioError && puntiServizioData && puntiServizioData.length > 0) {
+        foundPuntoServizioId = puntiServizioData[0].id;
+      }
     }
+
 
     console.log("--- Parsed Values Before Form Reset ---");
     console.log("simulatedServiceType:", simulatedServiceType);
@@ -181,6 +258,8 @@ export default function CreateRichiestaFromTextPage() {
     console.log("simulatedCadenzaOre (for ISPEZIONI):", simulatedCadenzaOre);
     console.log("simulatedTipoIspezione (for ISPEZIONI):", simulatedTipoIspezione);
     console.log("updatedDailySchedules:", updatedDailySchedules);
+    console.log("foundClientId:", foundClientId);
+    console.log("foundPuntoServizioId:", foundPuntoServizioId);
     console.log("-------------------------------------");
 
     // Construct the object for form.reset based on the discriminated union
@@ -215,7 +294,7 @@ export default function CreateRichiestaFromTextPage() {
           ...baseValues,
           tipo_servizio: "ISPEZIONI",
           cadenza_ore: simulatedCadenzaOre || 1,
-          tipo_ispezione: simulatedTipoIspezione || "PERIMETRALE",
+          tipo_ispezione: simulatedTipoIspezione as (typeof INSPECTION_TYPES)[number]["value"] || "PERIMETRALE",
         } as RichiestaServizioFormSchema;
         break;
       case "APERTURA_CHIUSURA":
@@ -236,7 +315,7 @@ export default function CreateRichiestaFromTextPage() {
         formValues = {
           ...baseValues,
           tipo_servizio: "GESTIONE_CHIAVI",
-          tipo_gestione_chiavi: simulatedTipoGestioneChiavi || "RITIRO_CHIAVI",
+          tipo_gestione_chiavi: simulatedTipoGestioneChiavi as (typeof GESTIONE_CHIAVI_TYPES)[number]["value"] || "RITIRO_CHIAVI",
         } as RichiestaServizioFormSchema;
         break;
       default:
