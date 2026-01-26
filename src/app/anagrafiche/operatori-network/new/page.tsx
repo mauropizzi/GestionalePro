@@ -59,11 +59,11 @@ export default function NewNetworkOperatorPage() {
     async function fetchClients() {
       const { data, error } = await supabase
         .from("clienti")
-        .select("id, ragione_sociale")
+        .select("*") // Select all fields to match Client type
         .order("ragione_sociale", { ascending: true });
 
       if (error) {
-        console.error("Supabase fetch clients error:", error); // Added for debugging
+        console.error("Supabase fetch clients error:", error);
         toast.error("Errore nel recupero dei clienti: " + error.message);
       } else {
         setClients(data || []);
@@ -87,7 +87,7 @@ export default function NewNetworkOperatorPage() {
       .insert({ ...operatorData, created_at: now, updated_at: now });
 
     if (error) {
-      console.error("Supabase insert error:", error); // Added for debugging
+      console.error("Supabase insert error:", error);
       toast.error("Errore durante il salvataggio dell'operatore network: " + error.message);
     } else {
       toast.success("Operatore network salvato con successo!");

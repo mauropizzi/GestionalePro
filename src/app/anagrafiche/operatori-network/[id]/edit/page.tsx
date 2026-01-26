@@ -66,11 +66,11 @@ export default function EditNetworkOperatorPage() {
       // Fetch clients
       const { data: clientsData, error: clientsError } = await supabase
         .from("clienti")
-        .select("id, ragione_sociale")
+        .select("*") // Select all fields to match Client type
         .order("ragione_sociale", { ascending: true });
 
       if (clientsError) {
-        console.error("Supabase fetch clients error:", clientsError); // Added for debugging
+        console.error("Supabase fetch clients error:", clientsError);
         toast.error("Errore nel recupero dei clienti: " + clientsError.message);
       } else {
         setClients(clientsData || []);
@@ -84,7 +84,7 @@ export default function EditNetworkOperatorPage() {
         .single();
 
       if (operatorError) {
-        console.error("Supabase fetch operator error:", operatorError); // Added for debugging
+        console.error("Supabase fetch operator error:", operatorError);
         toast.error("Errore nel recupero dell'operatore network: " + operatorError.message);
         router.push("/anagrafiche/operatori-network");
       } else if (operatorData) {
@@ -119,7 +119,7 @@ export default function EditNetworkOperatorPage() {
       .eq("id", operatorId);
 
     if (error) {
-      console.error("Supabase update error:", error); // Added for debugging
+      console.error("Supabase update error:", error);
       toast.error("Errore durante l'aggiornamento dell'operatore network: " + error.message);
     } else {
       toast.success("Operatore network aggiornato con successo!");

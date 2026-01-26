@@ -26,7 +26,7 @@ import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { format, parseISO } from "date-fns";
 import { it } from "date-fns/locale";
-import { cn } => "@/lib/utils";
+import { cn } from "@/lib/utils"; // Corrected syntax
 import { Loader2, ArrowLeft } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
@@ -47,7 +47,7 @@ const formSchema = z.object({
   provincia: z.string().nullable(),
   data_assunzione: z.date().nullable(),
   data_cessazione: z.date().nullable(),
-  attivo: z.boolean(), // Changed to z.boolean()
+  attivo: z.boolean(),
   note: z.string().nullable(),
 });
 
@@ -78,7 +78,7 @@ export default function EditPersonalePage() {
       provincia: null,
       data_assunzione: null,
       data_cessazione: null,
-      attivo: true, // Ensure this is boolean
+      attivo: true,
       note: null,
     },
   });
@@ -94,7 +94,7 @@ export default function EditPersonalePage() {
         .single();
 
       if (error) {
-        console.error("Supabase fetch error:", error); // Added for debugging
+        console.error("Supabase fetch error:", error);
         toast.error("Errore nel recupero del personale: " + error.message);
         router.push("/anagrafiche/personale");
       } else if (data) {
@@ -150,7 +150,7 @@ export default function EditPersonalePage() {
       .eq("id", personaleId);
 
     if (error) {
-      console.error("Supabase update error:", error); // Added for debugging
+      console.error("Supabase update error:", error);
       toast.error("Errore durante l'aggiornamento del personale: " + error.message);
     } else {
       toast.success("Personale aggiornato con successo!");

@@ -102,15 +102,15 @@ export default function CentraleOperativaPage() {
       request_time_co: format(new Date(), "HH:mm"),
       intervention_start_time: null,
       intervention_end_time: null,
-      full_site_access: false, // Explicitly set to false
-      caveau_access: false,    // Explicitly set to false
+      full_site_access: false,
+      caveau_access: false,
       network_operator_id: null,
-      gpg_intervention_made: false, // Explicitly set to false
+      gpg_intervention_made: false,
       anomalies_found: null,
       delay_minutes: null,
       service_outcome: null,
       client_request_barcode: null,
-    },
+    } as AlarmEntryFormSchema, // Explicitly cast to ensure type alignment
   });
 
   const searchForm = useForm<z.infer<typeof historicalSearchSchema>>({
@@ -134,7 +134,7 @@ export default function CentraleOperativaPage() {
     // Fetch Personale (for Operatore C.O. Security Service)
     const { data: personaleData, error: personaleError } = await supabase
       .from("personale")
-      .select("id, nome, cognome")
+      .select("*") // Select all fields to match Personale type
       .eq("attivo", true)
       .order("cognome", { ascending: true });
 
@@ -147,7 +147,7 @@ export default function CentraleOperativaPage() {
     // Fetch Operatori Network
     const { data: networkData, error: networkError } = await supabase
       .from("operatori_network")
-      .select("id, nome, cognome")
+      .select("*") // Select all fields to match NetworkOperator type
       .order("cognome", { ascending: true });
 
     if (networkError) {
@@ -265,7 +265,7 @@ export default function CentraleOperativaPage() {
         delay_minutes: null,
         service_outcome: null,
         client_request_barcode: null,
-      });
+      } as AlarmEntryFormSchema); // Explicitly cast for reset
       fetchCurrentAlarms();
       fetchHistoricalAlarms();
     }
