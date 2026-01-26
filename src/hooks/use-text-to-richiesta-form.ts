@@ -265,6 +265,7 @@ export function useTextToRichiestaForm() {
     // --- 8. Prepare form values based on parsed data ---
     let finalFormValues: RichiestaServizioFormSchema;
     
+    // Prepare base values, explicitly clearing out service-specific fields for a clean slate
     const baseValues = {
       client_id: foundClientId || "",
       punto_servizio_id: foundPuntoServizioId,
@@ -274,6 +275,12 @@ export function useTextToRichiestaForm() {
       data_fine_servizio: parsedEndDate,
       numero_agenti: simulatedNumAgents,
       daily_schedules: updatedDailySchedules,
+      // Explicitly clear service-specific fields for a clean slate
+      cadenza_ore: undefined,
+      tipo_ispezione: undefined,
+      tipo_apertura_chiusura: undefined,
+      tipo_bonifica: undefined,
+      tipo_gestione_chiavi: undefined,
     };
 
     switch (simulatedServiceType) {
