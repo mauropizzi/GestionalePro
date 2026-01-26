@@ -61,12 +61,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo", "pending_approval"],
     },
     {
-      label: "Centrale Operativa", // Nuovo link
-      href: "/operations/centrale-operativa",
-      icon: <ShieldCheck className="h-3.5 w-3.5" />,
-      roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
-    },
-    {
       label: "Richieste Servizio",
       href: "/richieste-servizio",
       icon: <Briefcase className="h-3.5 w-3.5" />,

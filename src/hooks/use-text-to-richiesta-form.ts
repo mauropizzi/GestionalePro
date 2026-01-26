@@ -1,11 +1,30 @@
 "use client";
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { isPast, startOfDay, format as formatDate, parse } from "date-fns";
-import { RichiestaServizioFormSchema, richiestaServizioFormSchema, calculateTotalHours, calculateTotalInspections, calculateAperturaChiusuraCount, calculateBonificaCount, calculateGestioneChiaviCount, defaultDailySchedules, ServiceType, AperturaChiusuraType, BonificaType, GestioneChiaviType, INSPECTION_TYPES, APERTURA_CHIUSURA_TYPES, BONIFICA_TYPES, GESTIONE_CHIAVI_TYPES, dailyScheduleSchema, } from "@/lib/richieste-servizio-utils";
+import { isPast, startOfDay, format as formatDate } from "date-fns";
+import {
+  RichiestaServizioFormSchema,
+  richiestaServizioFormSchema,
+  calculateTotalHours,
+  calculateTotalInspections,
+  calculateAperturaChiusuraCount,
+  calculateBonificaCount,
+  calculateGestioneChiaviCount,
+  defaultDailySchedules,
+  ServiceType,
+  AperturaChiusuraType,
+  BonificaType,
+  GestioneChiaviType,
+  INSPECTION_TYPES,
+  APERTURA_CHIUSURA_TYPES,
+  BONIFICA_TYPES,
+  GESTIONE_CHIAVI_TYPES,
+  dailyScheduleSchema,
+} from "@/lib/richieste-servizio-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 
@@ -38,8 +57,7 @@ export function useTextToRichiestaForm() {
 
     setIsProcessing(true);
     setShowForm(false);
-    
-    // Simuliamo un piccolo ritardo per dare feedback all'utente
+
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     let simulatedServiceType: ServiceType = "PIANTONAMENTO_ARMATO";
@@ -50,7 +68,7 @@ export function useTextToRichiestaForm() {
     let simulatedTipoAperturaChiusura: AperturaChiusuraType | undefined = undefined;
     let simulatedTipoBonifica: BonificaType | undefined = undefined;
     let simulatedTipoGestioneChiavi: GestioneChiaviType | undefined = undefined;
-    
+
     let parsedStartDate: Date = startOfDay(new Date());
     let parsedEndDate: Date = startOfDay(new Date());
     let parsedOraInizio: string | null = null;
@@ -63,7 +81,7 @@ export function useTextToRichiestaForm() {
     const dateRegexFull = /(\d{2})[./](\d{2})[./](\d{4})/g; // DD.MM.YYYY or DD/MM/YYYY
     const dateRegexPartial = /(\d{2})[./](\d{2})/g; // DD.MM or DD/MM
     const monthNames = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];
-    
+
     let allParsedDates: Date[] = [];
 
     if (lowerCaseText.includes("oggi")) {
@@ -81,42 +99,38 @@ export function useTextToRichiestaForm() {
       const [day, month] = match.slice(1).map(Number);
       let year = today.getFullYear();
       let tempDate = new Date(year, month - 1, day);
-      
       if (isPast(tempDate) && tempDate.getMonth() < today.getMonth()) {
         year++;
         tempDate = new Date(year, month - 1, day);
       }
-      
       allParsedDates.push(tempDate);
     }
-
+    
     // Parse dates like "31.01" or "31 gennaio"
     const dayMonthRegex = /(\d{1,2})[.\s]+(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre|\d{1,2})/gi;
     const dayMonthMatches = [...inputText.matchAll(dayMonthRegex)];
     for (const match of dayMonthMatches) {
-      const day = parseInt(match[1]);
-      let monthIndex;
-      
-      if (isNaN(parseInt(match[2]))) { // Month name
-        monthIndex = monthNames.findIndex(name => name === match[2].toLowerCase());
-      } else { // Month number
-        monthIndex = parseInt(match[2]) - 1;
-      }
-      
-      if (monthIndex !== -1) {
-        let year = today.getFullYear();
-        let tempDate = new Date(year, monthIndex, day);
-        
-        if (isPast(tempDate) && tempDate.getMonth() < today.getMonth()) {
-          year++;
-          tempDate = new Date(year, monthIndex, day);
+        const day = parseInt(match[1]);
+        let monthIndex;
+        if (isNaN(parseInt(match[2]))) { // Month name
+            monthIndex = monthNames.findIndex(name => name === match[2].toLowerCase());
+        } else { // Month number
+            monthIndex = parseInt(match[2]) - 1;
         }
-        
-        if (!isNaN(tempDate.getTime())) {
-          allParsedDates.push(startOfDay(tempDate));
+
+        if (monthIndex !== -1) {
+            let year = today.getFullYear();
+            let tempDate = new Date(year, monthIndex, day);
+            if (isPast(tempDate) && tempDate.getMonth() < today.getMonth()) {
+                year++;
+                tempDate = new Date(year, monthIndex, day);
+            }
+            if (!isNaN(tempDate.getTime())) {
+                allParsedDates.push(startOfDay(tempDate));
+            }
         }
-      }
     }
+
 
     if (allParsedDates.length > 0) {
       allParsedDates.sort((a, b) => a.getTime() - b.getTime());
@@ -131,7 +145,7 @@ export function useTextToRichiestaForm() {
     const timeRegexFlexible = /(\d{1,2})[.:]?(\d{2})?/g;
     const allTimeMatches = [...inputText.matchAll(timeRegexFlexible)];
     const extractedTimes: string[] = [];
-    
+
     for (const match of allTimeMatches) {
       const hour = match[1];
       const minute = match[2] || '00';
@@ -140,20 +154,21 @@ export function useTextToRichiestaForm() {
 
     const dalleAlleRegex = /(dalle|da)\s+(\d{1,2}(?:[.:]\d{2})?)\s+(alle|a)\s+(\d{1,2}(?:[.:]\d{2})?)/i;
     const dalleAlleMatch = inputText.match(dalleAlleRegex);
-    
+
     if (dalleAlleMatch) {
       const startTimeRaw = dalleAlleMatch[2];
       const endTimeRaw = dalleAlleMatch[4];
-      
+
       const parseTime = (timeStr: string) => {
         const parts = timeStr.split(/[.:]/);
         const hour = parts[0].padStart(2, '0');
         const minute = parts[1] ? parts[1].padStart(2, '0') : '00';
         return `${hour}:${minute}`;
       };
-      
+
       parsedOraInizio = parseTime(startTimeRaw);
       parsedOraFine = parseTime(endTimeRaw);
+
     } else if (extractedTimes.length >= 2) {
       parsedOraInizio = extractedTimes[0];
       parsedOraFine = extractedTimes[1];
@@ -163,14 +178,14 @@ export function useTextToRichiestaForm() {
     }
 
     // --- 3. Parse Cadenza (e.g., "ogni 3 ore") ---
-    const cadenzaRegex = /ogni\s+(\d+(?:\.\d+)?)\s+ore/i;
+    const cadenzaRegex = /ogni (\d+(\.\d+)?) ore/i;
     const cadenzaMatch = inputText.match(cadenzaRegex);
     if (cadenzaMatch && cadenzaMatch[1]) {
       simulatedCadenzaOre = parseFloat(cadenzaMatch[1]);
     }
 
     // --- 4. Parse Numero Agenti (e.g., "con 2 agenti") ---
-    const numAgentsRegex = /(\d+)\s+agenti/i;
+    const numAgentsRegex = /(\d+) agenti/i;
     const numAgentsMatch = inputText.match(numAgentsRegex);
     if (numAgentsMatch && numAgentsMatch[1]) {
       simulatedNumAgents = parseInt(numAgentsMatch[1]);
@@ -179,43 +194,24 @@ export function useTextToRichiestaForm() {
     // --- 5. Determine service type and specific fields ---
     if (lowerCaseText.includes("ispezione")) {
       simulatedServiceType = "ISPEZIONI";
-      simulatedCadenzaOre = simulatedCadenzaOre || 1; // Default to 1 hour if not specified
-      
-      if (lowerCaseText.includes("perimetrale")) {
-        simulatedTipoIspezione = "PERIMETRALE";
-      } else if (lowerCaseText.includes("interna")) {
-        simulatedTipoIspezione = "INTERNA";
-      } else {
-        simulatedTipoIspezione = "COMPLETA";
-      }
+      simulatedCadenzaOre = simulatedCadenzaOre || 1;
+      if (lowerCaseText.includes("perimetrale")) simulatedTipoIspezione = "PERIMETRALE";
+      else if (lowerCaseText.includes("interna")) simulatedTipoIspezione = "INTERNA";
+      else simulatedTipoIspezione = "COMPLETA";
     } else if (lowerCaseText.includes("apertura") || lowerCaseText.includes("chiusura")) {
       simulatedServiceType = "APERTURA_CHIUSURA";
-      
-      if (lowerCaseText.includes("solo apertura")) {
-        simulatedTipoAperturaChiusura = "SOLO_APERTURA";
-      } else if (lowerCaseText.includes("solo chiusura")) {
-        simulatedTipoAperturaChiusura = "SOLO_CHIUSURA";
-      } else {
-        simulatedTipoAperturaChiusura = "APERTURA_E_CHIUSURA";
-      }
+      if (lowerCaseText.includes("solo apertura")) simulatedTipoAperturaChiusura = "SOLO_APERTURA";
+      else if (lowerCaseText.includes("solo chiusura")) simulatedTipoAperturaChiusura = "SOLO_CHIUSURA";
+      else simulatedTipoAperturaChiusura = "APERTURA_E_CHIUSURA";
     } else if (lowerCaseText.includes("bonifica")) {
       simulatedServiceType = "BONIFICA";
-      
-      if (lowerCaseText.includes("urgente")) {
-        simulatedTipoBonifica = "BONIFICA_URGENTE";
-      } else {
-        simulatedTipoBonifica = "BONIFICA_STANDARD";
-      }
+      if (lowerCaseText.includes("urgente")) simulatedTipoBonifica = "BONIFICA_URGENTE";
+      else simulatedTipoBonifica = "BONIFICA_STANDARD";
     } else if (lowerCaseText.includes("chiavi") || lowerCaseText.includes("gestione chiavi")) {
       simulatedServiceType = "GESTIONE_CHIAVI";
-      
-      if (lowerCaseText.includes("ritiro")) {
-        simulatedTipoGestioneChiavi = "RITIRO_CHIAVI";
-      } else if (lowerCaseText.includes("consegna")) {
-        simulatedTipoGestioneChiavi = "CONSEGNA_CHIAVI";
-      } else {
-        simulatedTipoGestioneChiavi = "VERIFICA_CHIAVI";
-      }
+      if (lowerCaseText.includes("ritiro")) simulatedTipoGestioneChiavi = "RITIRO_CHIAVI";
+      else if (lowerCaseText.includes("consegna")) simulatedTipoGestioneChiavi = "CONSEGNA_CHIAVI";
+      else simulatedTipoGestioneChiavi = "VERIFICA_CHIAVI";
     } else if (lowerCaseText.includes("servizio fiduciario")) {
       simulatedServiceType = "SERVIZIO_FIDUCIARIO";
     }
@@ -233,7 +229,7 @@ export function useTextToRichiestaForm() {
     // --- 7. Attempt to find a client and punto servizio based on keywords (very basic example) ---
     let foundClientId: string | null = null;
     let foundPuntoServizioId: string | null = null;
-    
+
     const clientSearchMatch = lowerCaseText.match(/cliente\s+([a-z0-9\s]+?)(?:\s+presso|\s+dal|\s+con|$)/);
     if (clientSearchMatch && clientSearchMatch[1]) {
       const clientName = clientSearchMatch[1].trim();
@@ -242,12 +238,11 @@ export function useTextToRichiestaForm() {
         .select("id")
         .ilike("ragione_sociale", `%${clientName}%`)
         .limit(1);
-      
       if (!clientsError && clientsData && clientsData.length > 0) {
         foundClientId = clientsData[0].id;
       }
     }
-    
+
     const puntoServizioSearchMatch = lowerCaseText.match(/punto servizio\s+([a-z0-9\s]+?)(?:\s+dal|\s+con|$)/);
     if (puntoServizioSearchMatch && puntoServizioSearchMatch[1]) {
       const puntoServizioName = puntoServizioSearchMatch[1].trim();
@@ -256,16 +251,13 @@ export function useTextToRichiestaForm() {
         .select("id")
         .ilike("nome_punto_servizio", `%${puntoServizioName}%`)
         .limit(1);
-      
       if (!puntiServizioError && puntiServizioData && puntiServizioData.length > 0) {
         foundPuntoServizioId = puntiServizioData[0].id;
       }
     }
 
-    // --- 8. Prepare form values based on parsed data ---
     let finalFormValues: RichiestaServizioFormSchema;
-    
-    // Prepare base values, explicitly clearing out service-specific fields for a clean slate
+
     const baseValues = {
       client_id: foundClientId || "",
       punto_servizio_id: foundPuntoServizioId,
@@ -275,12 +267,6 @@ export function useTextToRichiestaForm() {
       data_fine_servizio: parsedEndDate,
       numero_agenti: simulatedNumAgents,
       daily_schedules: updatedDailySchedules,
-      // Explicitly clear service-specific fields for a clean slate
-      cadenza_ore: undefined,
-      tipo_ispezione: undefined,
-      tipo_apertura_chiusura: undefined,
-      tipo_bonifica: undefined,
-      tipo_gestione_chiavi: undefined,
     };
 
     switch (simulatedServiceType) {
@@ -290,14 +276,12 @@ export function useTextToRichiestaForm() {
           tipo_servizio: "PIANTONAMENTO_ARMATO",
         } as RichiestaServizioFormSchema;
         break;
-        
       case "SERVIZIO_FIDUCIARIO":
         finalFormValues = {
           ...baseValues,
           tipo_servizio: "SERVIZIO_FIDUCIARIO",
         } as RichiestaServizioFormSchema;
         break;
-        
       case "ISPEZIONI":
         finalFormValues = {
           ...baseValues,
@@ -306,7 +290,6 @@ export function useTextToRichiestaForm() {
           tipo_ispezione: simulatedTipoIspezione as (typeof INSPECTION_TYPES)[number]["value"] || "PERIMETRALE",
         } as RichiestaServizioFormSchema;
         break;
-        
       case "APERTURA_CHIUSURA":
         finalFormValues = {
           ...baseValues,
@@ -314,7 +297,6 @@ export function useTextToRichiestaForm() {
           tipo_apertura_chiusura: simulatedTipoAperturaChiusura || "APERTURA_E_CHIUSURA",
         } as RichiestaServizioFormSchema;
         break;
-        
       case "BONIFICA":
         finalFormValues = {
           ...baseValues,
@@ -322,7 +304,6 @@ export function useTextToRichiestaForm() {
           tipo_bonifica: simulatedTipoBonifica || "BONIFICA_STANDARD",
         } as RichiestaServizioFormSchema;
         break;
-        
       case "GESTIONE_CHIAVI":
         finalFormValues = {
           ...baseValues,
@@ -330,7 +311,6 @@ export function useTextToRichiestaForm() {
           tipo_gestione_chiavi: simulatedTipoGestioneChiavi as (typeof GESTIONE_CHIAVI_TYPES)[number]["value"] || "RITIRO_CHIAVI",
         } as RichiestaServizioFormSchema;
         break;
-        
       default:
         finalFormValues = {
           ...baseValues,
@@ -340,6 +320,7 @@ export function useTextToRichiestaForm() {
     }
 
     form.reset(finalFormValues);
+
     setIsProcessing(false);
     setShowForm(true);
     toast.success("Testo elaborato! Rivedi i dettagli della richiesta.");
@@ -347,12 +328,11 @@ export function useTextToRichiestaForm() {
 
   async function onSubmit(values: RichiestaServizioFormSchema) {
     setIsProcessing(true);
-    
     const now = new Date().toISOString();
     let totalCalculatedValue: number | null = null;
     let richiestaData: any;
     let inspectionDetailsToInsert: any = null;
-    
+
     const dataInizioServizio = values.data_inizio_servizio;
     const dataFineServizio = values.data_fine_servizio;
 
@@ -440,11 +420,10 @@ export function useTextToRichiestaForm() {
       return;
     }
 
-    const isSingleTimeService = values.tipo_servizio === "BONIFICA" || 
-      (values.tipo_servizio === "APERTURA_CHIUSURA" && 
-       (values.tipo_apertura_chiusura === "SOLO_APERTURA" || values.tipo_apertura_chiusura === "SOLO_CHIUSURA")) ||
+    const isSingleTimeService = values.tipo_servizio === "BONIFICA" ||
+      (values.tipo_servizio === "APERTURA_CHIUSURA" && (values.tipo_apertura_chiusura === "SOLO_APERTURA" || values.tipo_apertura_chiusura === "SOLO_CHIUSURA")) ||
       values.tipo_servizio === "GESTIONE_CHIAVI";
-      
+
     const schedulesToInsert = values.daily_schedules.map((schedule) => ({
       ...schedule,
       richiesta_servizio_id: newRichiesta.id,
@@ -465,10 +444,7 @@ export function useTextToRichiestaForm() {
     if (values.tipo_servizio === "ISPEZIONI" && inspectionDetailsToInsert) {
       const { error: inspectionError } = await supabase
         .from("richieste_servizio_ispezioni")
-        .insert({
-          ...inspectionDetailsToInsert,
-          richiesta_servizio_id: newRichiesta.id
-        });
+        .insert({ ...inspectionDetailsToInsert, richiesta_servizio_id: newRichiesta.id });
 
       if (inspectionError) {
         toast.error("Errore durante il salvataggio dei dettagli dell'ispezione: " + inspectionError.message);
