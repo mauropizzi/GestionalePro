@@ -27,21 +27,7 @@ import {
 } from "@/lib/richieste-servizio-utils";
 import { DailySchedule } from "@/types/richieste-servizio";
 import { RichiestaServizioForm } from "@/components/richieste-servizio/richiesta-servizio-form";
-
-interface Client {
-  id: string;
-  ragione_sociale: string;
-}
-
-interface PuntoServizio {
-  id: string;
-  nome_punto_servizio: string;
-}
-
-interface Fornitore {
-  id: string;
-  ragione_sociale: string;
-}
+import { Client, PuntoServizio, Fornitore } from "@/types/anagrafiche"; // Updated import
 
 export default function NewRichiestaServizioPage() {
   const [isLoading, setIsLoading] = useState(false);

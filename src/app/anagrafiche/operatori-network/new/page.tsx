@@ -27,11 +27,7 @@ import {
 import { Loader2, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-
-interface Client {
-  id: string;
-  ragione_sociale: string;
-}
+import { Client } from "@/types/anagrafiche"; // Updated import
 
 const formSchema = z.object({
   nome: z.string().min(1, "Il nome è richiesto."),

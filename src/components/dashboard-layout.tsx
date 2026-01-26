@@ -24,7 +24,8 @@ import {
   Euro,
   FileStack,
   Upload,
-  Sparkles, // Import Sparkles icon
+  Sparkles,
+  BellRing, // Import BellRing icon for Centrale Operativa
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -61,6 +62,21 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo", "pending_approval"],
     },
     {
+      label: "Operazioni", // Nuova sezione principale
+      href: "/operations",
+      icon: <Briefcase className="h-3.5 w-3.5" />,
+      roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
+      subLinks: [
+        {
+          label: "Centrale Operativa", // Nuova sottosezione
+          href: "/operations/centrale-operativa",
+          icon: <BellRing className="h-3.5 w-3.5" />,
+          roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
+        },
+        // Altri link operativi qui
+      ],
+    },
+    {
       label: "Richieste Servizio",
       href: "/richieste-servizio",
       icon: <Briefcase className="h-3.5 w-3.5" />,
@@ -73,7 +89,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
         },
         {
-          label: "Crea da Testo", // New sub-link
+          label: "Crea da Testo",
           href: "/richieste-servizio/create-from-text",
           icon: <Sparkles className="h-3.5 w-3.5" />,
           roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
@@ -88,7 +104,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     },
     {
       label: "Anagrafiche",
-      href: "/anagrafiche/clienti", // Aggiunto href per risolvere l'errore TypeScript
+      href: "/anagrafiche/clienti",
       icon: <Building2 className="h-3.5 w-3.5" />,
       roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
       subLinks: [

@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useRichiestaServizioEditForm } from "@/hooks/use-richiesta-servizio-edit-form";
 import { RichiestaServizioForm } from "@/components/richieste-servizio/richiesta-servizio-form";
+import { Client, PuntoServizio, Fornitore } from "@/types/richieste-servizio"; // Keep these imports for now, as they are used in the hook's return type
 
 export default function EditRichiestaServizioPage() {
   const params = useParams();

@@ -81,7 +81,8 @@ export function DailySchedulesFormField({ value, onChange, selectedServiceType, 
     if (isSingleTimeService) {
       let changed = false;
       const newSchedules = schedules.map((schedule: z.infer<typeof dailyScheduleSchema>) => {
-        if (schedule.h24 || schedule.ora_fine !== null) { // If h24 is true or ora_fine is not null
+        // Only modify if h24 is true or ora_fine is not null, to avoid unnecessary re-renders/dirtying
+        if (schedule.h24 || schedule.ora_fine !== null) {
           changed = true;
           return {
             ...schedule,
@@ -130,7 +131,7 @@ export function DailySchedulesFormField({ value, onChange, selectedServiceType, 
           id="group-weekdays"
           checked={groupWeekdays}
           onCheckedChange={handleGroupWeekdaysToggle}
-          disabled={isSoloAperturaChiusura} // Disabilita solo per SOLO_APERTURA/SOLO_CHIUSURA
+          disabled={isSoloAperturaChiusura || isBonifica || isGestioneChiavi} // Disabilita per servizi a orario singolo
         />
         <Label htmlFor="group-weekdays" className="text-sm font-medium">Raggruppa Giorni Feriali (Lunedì-Venerdì)</Label>
       </div>

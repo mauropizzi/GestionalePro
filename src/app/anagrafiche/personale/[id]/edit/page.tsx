@@ -26,32 +26,11 @@ import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { format, parseISO } from "date-fns";
 import { it } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn } => "@/lib/utils";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-
-interface Personale {
-  id: string;
-  nome: string;
-  cognome: string;
-  codice_fiscale: string | null;
-  ruolo: string | null;
-  telefono: string | null;
-  email: string | null;
-  data_nascita: string | null; // ISO string for date
-  luogo_nascita: string | null;
-  indirizzo: string | null;
-  cap: string | null;
-  citta: string | null;
-  provincia: string | null;
-  data_assunzione: string | null; // ISO string for date
-  data_cessazione: string | null; // ISO string for date
-  attivo: boolean;
-  note: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import { Personale } from "@/types/anagrafiche"; // Updated import
 
 const formSchema = z.object({
   nome: z.string().min(1, "Il nome è richiesto."),
