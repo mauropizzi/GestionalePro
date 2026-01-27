@@ -57,10 +57,10 @@ const alarmEntryFormSchema = z.object({
   request_time_co: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Formato orario non valido (HH:mm)"),
   intervention_start_time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Formato orario non valido (HH:mm)").nullable(),
   intervention_end_time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Formato orario non valido (HH:mm)").nullable(),
-  full_site_access: z.boolean().default(false),
-  caveau_access: z.boolean().default(false),
+  full_site_access: z.boolean(), // Changed from .default(false)
+  caveau_access: z.boolean(),    // Changed from .default(false)
   network_operator_id: z.string().uuid("Seleziona un operatore network valido.").nullable(),
-  gpg_intervention_made: z.boolean().default(false),
+  gpg_intervention_made: z.boolean(), // Changed from .default(false)
   anomalies_found: z.string().nullable(),
   delay_minutes: z.coerce.number().int().min(0, "Il ritardo non può essere negativo.").nullable(),
   service_outcome: z.enum(["Risolto", "Non Risolto", "Falso Allarme", "Annullato"]).nullable(),
