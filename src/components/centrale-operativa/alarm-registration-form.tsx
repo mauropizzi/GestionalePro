@@ -22,7 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format, addHours, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { AlarmEntryFormSchema } from "@/lib/centrale-operativa-schemas";
@@ -48,10 +48,10 @@ export function AlarmRegistrationForm({
   onSubmit,
   submitButtonText,
 }: AlarmRegistrationFormProps) {
-  // Handle punto servizio selection to update intervention_due_by
+  // Handle punto servizio selection to update intervention_due_by (in minuti)
   const handlePuntoServizioChange = async (puntoServizioId: string | null) => {
     form.setValue("punto_servizio_id", puntoServizioId);
-    
+
     if (puntoServizioId) {
       try {
         const { data, error } = await supabase
@@ -59,19 +59,22 @@ export function AlarmRegistrationForm({
           .select("tempo_intervento")
           .eq("id", puntoServizioId)
           .single();
-        
-        if (!error && data?.tempo_intervento) {
-          // Parse the tempo_intervento and calculate due date
-          const registrationDate = form.getValues("registration_date") || new Date();
-          const interventionHours = parseFloat(data.tempo_intervento);
-          
-          if (!isNaN(interventionHours) && interventionHours > 0) {
-            const dueBy = addHours(registrationDate, interventionHours);
-            form.setValue("intervention_due_by", dueBy);
+
+        if (!error && data?.tempo_intervento !== undefined && data?.tempo_intervento !== null) {
+          // tempo_intervento è espresso in minuti: impostalo direttamente
+          const minutes = Number(data.tempo_intervento);
+          if (!isNaN(minutes) && minutes >= 0) {
+            form.setValue("intervention_due_by", minutes);
+          } else {
+            // se il valore non è numerico, pulisci il campo
+            form.setValue("intervention_due_by", null);
           }
+        } else {
+          form.setValue("intervention_due_by", null);
         }
       } catch (err) {
         console.error("Errore nel recupero del tempo di intervento:", err);
+        form.setValue("intervention_due_by", null);
       }
     } else {
       // Clear the intervention_due_by when no punto servizio is selected
@@ -144,57 +147,19 @@ export function AlarmRegistrationForm({
           name="intervention_due_by"
           render={({ field }) => (
             <FormItem className="flex flex-col">
-              <FormLabel>Intervento da effettuarsi ENTRO</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground"
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP HH:mm", { locale: it })
-                      ) : (
-                        <span>Seleziona data e ora</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value || undefined}
-                    onSelect={(date) => {
-                      if (date) {
-                        const now = new Date();
-                        const newDateWithTime = new Date(date.setHours(now.getHours(), now.getMinutes()));
-                        field.onChange(newDateWithTime);
-                      } else {
-                        field.onChange(null);
-                      }
-                    }}
-                    initialFocus
-                    locale={it}
-                  />
-                  {field.value && (
-                    <Input
-                      type="time"
-                      value={format(field.value, "HH:mm")}
-                      onChange={(e) => {
-                        const [hours, minutes] = e.target.value.split(':').map(Number);
-                        const newDate = new Date(field.value!);
-                        newDate.setHours(hours, minutes);
-                        field.onChange(newDate);
-                      }}
-                      className="mt-2"
-                    />
-                  )}
-                </PopoverContent>
-              </Popover>
+              <FormLabel>Intervento da effettuarsi ENTRO (minuti)</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  min={0}
+                  step={1}
+                  placeholder="Minuti"
+                  value={field.value ?? ""}
+                  onChange={(e) =>
+                    field.onChange(e.target.value === "" ? null : Number(e.target.value))
+                  }
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

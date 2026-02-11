@@ -27,7 +27,8 @@ export function formatAlarmDataForSubmission(values: AlarmEntryFormSchema) {
   return {
     ...values,
     registration_date: format(values.registration_date, "yyyy-MM-dd"),
-    intervention_due_by: values.intervention_due_by ? values.intervention_due_by.toISOString() : null,
+    // intervention_due_by è un numero di minuti (o null)
+    intervention_due_by: values.intervention_due_by === null ? null : values.intervention_due_by,
     operator_co_id: values.operator_co_id === "" ? null : values.operator_co_id,
     network_operator_id: values.network_operator_id === "" ? null : values.network_operator_id,
     anomalies_found: values.anomalies_found === "" ? null : values.anomalies_found,

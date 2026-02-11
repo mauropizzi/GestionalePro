@@ -69,7 +69,13 @@ export default function CentraleOperativaPage() {
       form.reset({
         ...currentAlarm,
         registration_date: new Date(currentAlarm.registration_date),
-        intervention_due_by: currentAlarm.intervention_due_by ? new Date(currentAlarm.intervention_due_by) : null,
+        // intervention_due_by viene memorizzato come minuti (numero) nel DB
+        intervention_due_by:
+          currentAlarm.intervention_due_by !== undefined && currentAlarm.intervention_due_by !== null
+            ? (typeof currentAlarm.intervention_due_by === "number"
+                ? currentAlarm.intervention_due_by
+                : Number(currentAlarm.intervention_due_by))
+            : null,
         request_time_co: currentAlarm.request_time_co || "",
         intervention_start_time: currentAlarm.intervention_start_time || null,
         intervention_end_time: currentAlarm.intervention_end_time || null,
