@@ -27,22 +27,7 @@ import {
 import { Loader2, ArrowLeft } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-
-interface Client {
-  id: string;
-  ragione_sociale: string;
-}
-
-interface NetworkOperator {
-  id: string;
-  nome: string;
-  cognome: string;
-  cliente_id: string | null;
-  telefono: string | null;
-  email: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import { Client, NetworkOperator } from "@/types/anagrafiche"; // Updated import
 
 const formSchema = z.object({
   nome: z.string().min(1, "Il nome è richiesto."),
@@ -81,11 +66,11 @@ export default function EditNetworkOperatorPage() {
       // Fetch clients
       const { data: clientsData, error: clientsError } = await supabase
         .from("clienti")
-        .select("id, ragione_sociale")
+        .select("*") // Select all fields to match Client type
         .order("ragione_sociale", { ascending: true });
 
       if (clientsError) {
-        console.error("Supabase fetch clients error:", clientsError); // Added for debugging
+        console.error("Supabase fetch clients error:", clientsError);
         toast.error("Errore nel recupero dei clienti: " + clientsError.message);
       } else {
         setClients(clientsData || []);
@@ -99,7 +84,7 @@ export default function EditNetworkOperatorPage() {
         .single();
 
       if (operatorError) {
-        console.error("Supabase fetch operator error:", operatorError); // Added for debugging
+        console.error("Supabase fetch operator error:", operatorError);
         toast.error("Errore nel recupero dell'operatore network: " + operatorError.message);
         router.push("/anagrafiche/operatori-network");
       } else if (operatorData) {
@@ -134,7 +119,7 @@ export default function EditNetworkOperatorPage() {
       .eq("id", operatorId);
 
     if (error) {
-      console.error("Supabase update error:", error); // Added for debugging
+      console.error("Supabase update error:", error);
       toast.error("Errore durante l'aggiornamento dell'operatore network: " + error.message);
     } else {
       toast.success("Operatore network aggiornato con successo!");

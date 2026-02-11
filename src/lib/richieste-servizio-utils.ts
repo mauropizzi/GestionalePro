@@ -55,18 +55,16 @@ export const dailyScheduleSchema = z.object({
   ora_fine: z.string().regex(timeRegex, "Formato ora non valido (HH:mm)").nullable(),
   attivo: z.boolean(),
 }).refine(data => {
-  if (!data.attivo) {
-    return data.h24 === false && data.ora_inizio === null && data.ora_fine === null;
+  // Se il giorno è attivo e non H24, ora_inizio è sempre richiesto.
+  if (data.attivo && !data.h24 && !data.ora_inizio) {
+    return false;
   }
-  if (data.h24) {
-    return data.ora_inizio === null && data.ora_fine === null;
-  } else {
-    return data.ora_inizio !== null && data.ora_fine !== null;
-  }
+  return true;
 }, {
-  message: "Specificare orari di inizio e fine o selezionare h24 se il giorno è attivo.",
+  message: "L'ora di inizio è richiesta se il giorno è attivo e non H24.",
   path: ["ora_inizio"],
 }).refine(data => {
+  // La validazione ora_fine > ora_inizio si applica solo se entrambi gli orari sono presenti
   if (data.attivo && !data.h24 && data.ora_inizio && data.ora_fine) {
     const [startH, startM] = data.ora_inizio.split(':').map(Number);
     const [endH, endM] = data.ora_fine.split(':').map(Number);
@@ -153,85 +151,40 @@ export const richiestaServizioFormSchema = z.discriminatedUnion("tipo_servizio",
   bonificaBaseSchema,
   gestioneChiaviBaseSchema,
 ]).superRefine((data, ctx) => {
-  if (data.tipo_servizio === "BONIFICA") {
-    data.daily_schedules.forEach((schedule, index) => {
-      if (schedule.attivo) {
+  const isSingleTimeService = data.tipo_servizio === "BONIFICA" ||
+    (data.tipo_servizio === "APERTURA_CHIUSURA" && (data.tipo_apertura_chiusura === "SOLO_APERTURA" || data.tipo_apertura_chiusura === "SOLO_CHIUSURA")) ||
+    data.tipo_servizio === "GESTIONE_CHIAVI";
+
+  data.daily_schedules.forEach((schedule, index) => {
+    if (schedule.attivo) {
+      if (isSingleTimeService) {
+        // Per servizi a orario singolo, H24 non è permesso e ora_fine deve essere null
         if (schedule.h24) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `Per il servizio Bonifica, il giorno ${schedule.giorno_settimana} non può essere H24.`,
+            message: `Per il servizio ${data.tipo_servizio.replace(/_/g, ' ')}, il giorno ${schedule.giorno_settimana} non può essere H24.`,
             path: [`daily_schedules`, index, `h24`],
-          });
-        }
-        if (!schedule.ora_inizio) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `Per il servizio Bonifica, il giorno ${schedule.giorno_settimana} deve avere un orario.`,
-            path: [`daily_schedules`, index, `ora_inizio`],
           });
         }
         if (schedule.ora_fine !== null) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `Per il servizio Bonifica, il giorno ${schedule.giorno_settimana} deve avere solo un orario di inizio.`,
+            message: `Per il servizio ${data.tipo_servizio.replace(/_/g, ' ')}, il giorno ${schedule.giorno_settimana} deve avere solo un orario di inizio.`,
+            path: [`daily_schedules`, index, `ora_fine`],
+          });
+        }
+      } else {
+        // Per altri servizi, se attivo e non H24, ora_fine è richiesto
+        if (!schedule.h24 && !schedule.ora_fine) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `L'ora di fine è richiesta per il giorno ${schedule.giorno_settimana} se il servizio non è H24.`,
             path: [`daily_schedules`, index, `ora_fine`],
           });
         }
       }
-    });
-  } else if (data.tipo_servizio === "APERTURA_CHIUSURA" && (data.tipo_apertura_chiusura === "SOLO_APERTURA" || data.tipo_apertura_chiusura === "SOLO_CHIUSURA")) {
-    data.daily_schedules.forEach((schedule, index) => {
-      if (schedule.attivo) {
-        if (schedule.h24) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `Per il servizio ${data.tipo_apertura_chiusura.replace(/_/g, ' ')}, il giorno ${schedule.giorno_settimana} non può essere H24.`,
-            path: [`daily_schedules`, index, `h24`],
-          });
-        }
-        if (!schedule.ora_inizio) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `Per il servizio ${data.tipo_apertura_chiusura.replace(/_/g, ' ')}, il giorno ${schedule.giorno_settimana} deve avere un orario.`,
-            path: [`daily_schedules`, index, `ora_inizio`],
-          });
-        }
-        if (schedule.ora_fine !== null) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `Per il servizio ${data.tipo_apertura_chiusura.replace(/_/g, ' ')}, il giorno ${schedule.giorno_settimana} deve avere solo un orario di inizio.`,
-            path: [`daily_schedules`, index, `ora_fine`],
-          });
-        }
-      }
-    });
-  } else if (data.tipo_servizio === "GESTIONE_CHIAVI") {
-    data.daily_schedules.forEach((schedule, index) => {
-      if (schedule.attivo) {
-        if (schedule.h24) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `Per il servizio Gestione Chiavi, il giorno ${schedule.giorno_settimana} non può essere H24.`,
-            path: [`daily_schedules`, index, `h24`],
-          });
-        }
-        if (!schedule.ora_inizio) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `Per il servizio Gestione Chiavi, il giorno ${schedule.giorno_settimana} deve avere un orario.`,
-            path: [`daily_schedules`, index, `ora_inizio`],
-          });
-        }
-        if (schedule.ora_fine !== null) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `Per il servizio Gestione Chiavi, il giorno ${schedule.giorno_settimana} deve avere solo un orario di inizio.`,
-            path: [`daily_schedules`, index, `ora_fine`],
-          });
-        }
-      }
-    });
-  }
+    }
+  });
 });
 
 export type RichiestaServizioFormSchema = z.infer<typeof richiestaServizioFormSchema>;
