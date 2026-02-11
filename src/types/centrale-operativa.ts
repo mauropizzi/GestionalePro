@@ -6,14 +6,20 @@ export type InterventionOutcome = "Risolto" | "Non Risolto" | "Falso Allarme" | 
 
 export interface AlarmEntry {
   id: string;
-  registration_date: string; // ISO Date string
-  punto_servizio_id: string;
-  intervention_due_by: string | null; // ISO Date string with time
+  registration_date: string;
+  punto_servizio_id: string | null;
+  intervention_due_by: number | null;
   service_type_requested: string;
-  operator_co_id: string;
-  request_time_co: string; // HH:mm
-  intervention_start_time: string | null; // HH:mm
-  intervention_end_time: string | null; // HH:mm
+  operator_co_id: string | null;
+  request_time_co: string;
+  intervention_start_time: string | null;
+  intervention_end_time: string | null;
+  intervention_start_lat: number | null;
+  intervention_start_long: number | null;
+  intervention_start_full_timestamp: string | null;
+  intervention_end_lat: number | null;
+  intervention_end_long: number | null;
+  intervention_end_full_timestamp: string | null;
   full_site_access: boolean;
   caveau_access: boolean;
   network_operator_id: string | null;

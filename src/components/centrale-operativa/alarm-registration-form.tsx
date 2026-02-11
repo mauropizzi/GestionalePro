@@ -28,8 +28,9 @@ import { cn } from "@/lib/utils";
 import { AlarmEntryFormSchema } from "@/lib/centrale-operativa-schemas";
 import { Personale, NetworkOperator } from "@/types/anagrafiche";
 import { SearchablePuntoServizioSelect } from "@/components/richieste-servizio/searchable-punto-servizio-select";
-import { Loader2 } from "lucide-react";
+import { Loader2, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface AlarmRegistrationFormProps {
   form: UseFormReturn<AlarmEntryFormSchema>;
@@ -79,6 +80,41 @@ export function AlarmRegistrationForm({
     } else {
       // Clear the intervention_due_by when no punto servizio is selected
       form.setValue("intervention_due_by", null);
+    }
+  };
+
+  const recordInterventionTime = (type: 'start' | 'end') => {
+    const now = new Date();
+    const timeString = format(now, "HH:mm");
+    
+    if (type === 'start') {
+      form.setValue("intervention_start_time", timeString);
+      form.setValue("intervention_start_full_timestamp", now);
+    } else {
+      form.setValue("intervention_end_time", timeString);
+      form.setValue("intervention_end_full_timestamp", now);
+    }
+
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          if (type === 'start') {
+            form.setValue("intervention_start_lat", latitude);
+            form.setValue("intervention_start_long", longitude);
+          } else {
+            form.setValue("intervention_end_lat", latitude);
+            form.setValue("intervention_end_long", longitude);
+          }
+          toast.success(`Posizione acquisita per ${type === 'start' ? 'inizio' : 'fine'} intervento.`);
+        },
+        (error) => {
+          console.error("Errore geolocalizzazione:", error);
+          toast.error("Impossibile acquisire la posizione. Assicurati che i permessi siano attivi.");
+        }
+      );
+    } else {
+      toast.error("Geolocalizzazione non supportata dal browser.");
     }
   };
 
@@ -206,10 +242,27 @@ export function AlarmRegistrationForm({
           name="intervention_start_time"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Inizio Intervento</FormLabel>
+              <FormLabel className="flex justify-between items-center">
+                Inizio Intervento
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 px-2 text-xs" 
+                  onClick={() => recordInterventionTime('start')}
+                >
+                  <MapPin className="h-3 w-3 mr-1" /> Registra
+                </Button>
+              </FormLabel>
               <FormControl>
                 <Input type="time" {...field} value={field.value ?? ""} />
               </FormControl>
+              {form.watch("intervention_start_lat") && (
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  📍 {form.watch("intervention_start_lat")?.toFixed(4)}, {form.watch("intervention_start_long")?.toFixed(4)} 
+                  {form.watch("intervention_start_full_timestamp") && ` - ${format(form.watch("intervention_start_full_timestamp")!, "dd/MM HH:mm")}`}
+                </p>
+              )}
               <FormMessage />
             </FormItem>
           )}
@@ -219,10 +272,27 @@ export function AlarmRegistrationForm({
           name="intervention_end_time"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Fine Intervento</FormLabel>
+              <FormLabel className="flex justify-between items-center">
+                Fine Intervento
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 px-2 text-xs" 
+                  onClick={() => recordInterventionTime('end')}
+                >
+                  <MapPin className="h-3 w-3 mr-1" /> Registra
+                </Button>
+              </FormLabel>
               <FormControl>
                 <Input type="time" {...field} value={field.value ?? ""} />
               </FormControl>
+              {form.watch("intervention_end_lat") && (
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  📍 {form.watch("intervention_end_lat")?.toFixed(4)}, {form.watch("intervention_end_long")?.toFixed(4)}
+                  {form.watch("intervention_end_full_timestamp") && ` - ${format(form.watch("intervention_end_full_timestamp")!, "dd/MM HH:mm")}`}
+                </p>
+              )}
               <FormMessage />
             </FormItem>
           )}
