@@ -34,24 +34,35 @@ serve(async (req: Request) => {
       payload: 'reload config'
     });
 
-    // Method 3: Touch the table with a DDL-like operation
-    // Re-adding the comment with a new timestamp forces a schema change detection
-    await supabaseAdmin.rpc('sql', {
-      query: `COMMENT ON TABLE public.operatori_network IS 'Tabella operatori network - Cache refreshed at ${new Date().toISOString()}';`
-    });
-
-    // Method 4: Create and drop a dummy view - very effective at forcing reload
-    await supabaseAdmin.rpc('sql', {
-      query: `
-        CREATE OR REPLACE VIEW public.operatori_network_cache_buster AS SELECT 1;
-        DROP VIEW public.operatori_network_cache_buster;
-      `
-    });
+    // Method 3: Touch the table with a DDL-like operation via SQL RPC
+    // If the SQL RPC doesn't exist yet, we'll try to create it or skip it
+    try {
+      await supabaseAdmin.rpc('sql', {
+        query: `COMMENT ON TABLE public.operatori_network IS 'Tabella operatori network - Cache refreshed at ${new Date().toISOString()}';`
+      });
+      
+      await supabaseAdmin.rpc('sql', {
+        query: `
+          CREATE OR REPLACE VIEW public.operatori_network_cache_buster AS SELECT 1;
+          DROP VIEW public.operatori_network_cache_buster;
+        `
+      });
+    } catch (sqlErr) {
+      console.warn("[refresh-schema] SQL RPC method failed, likely function doesn't exist yet:", sqlErr.message);
+    }
 
     console.log("[refresh-schema] Cache busting methods executed.");
 
-    // Wait a bit longer for the cache to actually refresh
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    // Wait for the cache to actually refresh
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    // Diagnostic check: check information_schema directly
+    const { data: dbColumnCheck, error: dbCheckError } = await supabaseAdmin.rpc('sql', {
+      query: "SELECT COUNT(*) as count FROM information_schema.columns WHERE table_name = 'operatori_network' AND column_name = 'note';"
+    });
+
+    const columnActuallyExistsInDB = dbColumnCheck && dbColumnCheck[0] && dbColumnCheck[0].count > 0;
+    console.log("[refresh-schema] DB check for 'note' column:", columnActuallyExistsInDB ? "EXISTS" : "NOT FOUND");
 
     // Test if the column is visible to the service role client
     const { error: testError } = await supabaseAdmin
@@ -62,16 +73,11 @@ serve(async (req: Request) => {
     if (testError) {
       console.error("[refresh-schema] Schema refresh test failed for service role:", testError.message);
       
-      // If it still fails, let's try to check if the column actually exists in information_schema
-      const { data: columnExists } = await supabaseAdmin.rpc('sql', {
-        query: "SELECT 1 FROM information_schema.columns WHERE table_name = 'operatori_network' AND column_name = 'note';"
-      });
-
-      if (!columnExists || columnExists.length === 0) {
+      if (!columnActuallyExistsInDB) {
         return new Response(JSON.stringify({ 
           success: false, 
           error: "Column 'note' does not exist in the database table 'operatori_network'.",
-          message: "The migration to add the column might have failed or wasn't run."
+          message: "The migration to add the column has not been applied to the database. Please check the migrations execution log."
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 500,
@@ -81,7 +87,7 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ 
         success: false, 
         error: testError.message,
-        message: "Column exists in DB but PostgREST still hasn't refreshed its cache. Try again in a few seconds."
+        message: "Column exists in DB but PostgREST still hasn't refreshed its cache. This is a persistent cache issue. Try running the diagnostics again in a few minutes."
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
@@ -92,7 +98,7 @@ serve(async (req: Request) => {
     
     return new Response(JSON.stringify({ 
       success: true, 
-      message: "PostgREST schema cache refreshed successfully. The 'note' column is now visible."
+      message: "PostgREST schema cache refreshed successfully. The 'note' column is now visible and accessible."
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,

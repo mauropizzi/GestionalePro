@@ -13,15 +13,19 @@ export async function testOperatoriNetworkNoteColumn() {
     if (error) {
       console.error('[test-schema-cache] Error selecting note column:', error);
       
-      if (error.code === 'PGRST204' || error.message.includes('column "note" does not exist')) {
-        return { 
-          success: false, 
-          error: "Cache postgREST non aggiornata: la colonna 'note' non è ancora visibile all'API.",
-          code: error.code
-        };
+      let errorMsg = error.message;
+      if (error.code === '42703' || error.message.includes('column "note" does not exist')) {
+        errorMsg = "ERRORE CRITICO: La colonna 'note' non esiste fisicamente nella tabella 'operatori_network' nel database.";
+      } else if (error.code === 'PGRST204') {
+        errorMsg = "ERRORE CACHE: La colonna potrebbe esistere ma PostgREST non l'ha ancora caricata nella sua cache schema.";
       }
       
-      return { success: false, error: error.message, code: error.code };
+      return { 
+        success: false, 
+        error: errorMsg,
+        code: error.code,
+        details: error
+      };
     }
     
     console.log('[test-schema-cache] Successfully selected note column:', data);
