@@ -8,8 +8,6 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useRichiestaServizioEditForm } from "@/hooks/use-richiesta-servizio-edit-form";
 import { RichiestaServizioForm } from "@/components/richieste-servizio/richiesta-servizio-form";
-import { Client, Fornitore } from "@/types/anagrafiche"; // Updated import
-import { PuntoServizio } from "@/types/richieste-servizio"; // Corrected import
 
 export default function EditRichiestaServizioPage() {
   const params = useParams();

@@ -26,11 +26,32 @@ import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { format, parseISO } from "date-fns";
 import { it } from "date-fns/locale";
-import { cn } from "@/lib/utils"; // Corrected syntax
+import { cn } from "@/lib/utils";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { Personale } from "@/types/anagrafiche"; // Updated import
+
+interface Personale {
+  id: string;
+  nome: string;
+  cognome: string;
+  codice_fiscale: string | null;
+  ruolo: string | null;
+  telefono: string | null;
+  email: string | null;
+  data_nascita: string | null; // ISO string for date
+  luogo_nascita: string | null;
+  indirizzo: string | null;
+  cap: string | null;
+  citta: string | null;
+  provincia: string | null;
+  data_assunzione: string | null; // ISO string for date
+  data_cessazione: string | null; // ISO string for date
+  attivo: boolean;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 const formSchema = z.object({
   nome: z.string().min(1, "Il nome è richiesto."),
@@ -47,7 +68,7 @@ const formSchema = z.object({
   provincia: z.string().nullable(),
   data_assunzione: z.date().nullable(),
   data_cessazione: z.date().nullable(),
-  attivo: z.boolean(),
+  attivo: z.boolean(), // Changed to z.boolean()
   note: z.string().nullable(),
 });
 
@@ -78,7 +99,7 @@ export default function EditPersonalePage() {
       provincia: null,
       data_assunzione: null,
       data_cessazione: null,
-      attivo: true,
+      attivo: true, // Ensure this is boolean
       note: null,
     },
   });
@@ -94,7 +115,7 @@ export default function EditPersonalePage() {
         .single();
 
       if (error) {
-        console.error("Supabase fetch error:", error);
+        console.error("Supabase fetch error:", error); // Added for debugging
         toast.error("Errore nel recupero del personale: " + error.message);
         router.push("/anagrafiche/personale");
       } else if (data) {
@@ -150,7 +171,7 @@ export default function EditPersonalePage() {
       .eq("id", personaleId);
 
     if (error) {
-      console.error("Supabase update error:", error);
+      console.error("Supabase update error:", error); // Added for debugging
       toast.error("Errore durante l'aggiornamento del personale: " + error.message);
     } else {
       toast.success("Personale aggiornato con successo!");

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useSession } from "@/components/session-context-provider";
-import { ShieldAlert, Search, Loader2, Trash, Edit, PlusCircle, Phone } from "lucide-react";
+import { ShieldAlert, Search, Loader2, Trash, Edit, PlusCircle, CheckCircle, XCircle, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -30,7 +30,25 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import Link from "next/link"; // Import Link for navigation
-import { Client } from "@/types/anagrafiche"; // Updated import
+
+interface Client {
+  id: string;
+  ragione_sociale: string;
+  codice_fiscale: string | null;
+  partita_iva: string | null;
+  indirizzo: string | null;
+  citta: string | null;
+  cap: string | null;
+  provincia: string | null;
+  telefono: string | null;
+  email: string | null;
+  pec: string | null;
+  sdi: string | null;
+  attivo: boolean;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 export default function ClientiPage() {
   const { profile: currentUserProfile, isLoading: isSessionLoading } = useSession();

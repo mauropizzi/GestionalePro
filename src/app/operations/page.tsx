@@ -1,41 +1,20 @@
 "use client";
 
-import React, { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import React from "react";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useSession } from "@/components/session-context-provider";
-import { ShieldAlert, Loader2 } from "lucide-react";
+import { ShieldAlert, Briefcase, ListChecks, TrendingUp, Users, Settings } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default function OperationsPage() {
   const { profile, isLoading } = useSession();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isLoading && profile) {
-      const hasAccess =
-        profile.role === "super_admin" ||
-        profile.role === "amministrazione" ||
-        profile.role === "responsabile_operativo" ||
-        profile.role === "operativo";
-
-      if (hasAccess) {
-        // Reindirizza alla pagina della Centrale Operativa se l'utente ha accesso
-        router.replace("/operations/centrale-operativa");
-      }
-    }
-  }, [profile, isLoading, router]);
 
   if (isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex justify-center items-center h-full">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </DashboardLayout>
-    );
+    return null; // Il layout gestisce già lo stato di caricamento
   }
 
-  // Se l'utente non ha accesso e non è in caricamento, mostra il messaggio di accesso negato
+  // Verifica se l'utente ha il ruolo appropriato per accedere a questa pagina
   const hasAccess =
     profile?.role === "super_admin" ||
     profile?.role === "amministrazione" ||
@@ -54,12 +33,79 @@ export default function OperationsPage() {
     );
   }
 
-  // Questo non dovrebbe essere raggiunto se il reindirizzamento funziona
   return (
     <DashboardLayout>
-      <div className="flex flex-col items-center justify-center h-full text-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-sm text-muted-foreground">Reindirizzamento in corso...</p>
+      <div className="container mx-auto py-6">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold">Sezione Operazioni</h1>
+          <Button>Nuova Operazione</Button>
+        </div>
+        <p className="text-sm text-muted-foreground mb-6">
+          Benvenuto nella sezione dedicata alle attività operative. Qui puoi gestire i tuoi compiti, monitorare i progressi e accedere agli strumenti specifici del tuo ruolo.
+        </p>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs font-medium">
+                <ListChecks className="h-4 w-4 text-muted-foreground" />
+              </CardTitle>
+              <CardTitle className="text-base font-bold">I Miei Compiti</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription className="text-xs text-muted-foreground">
+                Visualizza e gestisci i compiti assegnati a te o al tuo team.
+              </CardDescription>
+              <Button variant="link" className="px-0 mt-1 text-xs">Vai ai Compiti</Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs font-medium">
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardTitle>
+              <CardTitle className="text-base font-bold">Monitoraggio Progetti</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription className="text-xs text-muted-foreground">
+                Tieni traccia dello stato di avanzamento dei progetti e delle scadenze.
+              </CardDescription>
+              <Button variant="link" className="px-0 mt-1 text-xs">Vedi Progetti</Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs font-medium">
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardTitle>
+              <CardTitle className="text-base font-bold">Gestione Risorse</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription className="text-xs text-muted-foreground">
+                Assegna e gestisci le risorse disponibili per le operazioni.
+              </CardDescription>
+              <Button variant="link" className="px-0 mt-1 text-xs">Gestisci Risorse</Button>
+            </CardContent>
+          </Card>
+
+          {/* Aggiungi altre card o sezioni qui in base alle esigenze future */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs font-medium">
+                <Settings className="h-4 w-4 text-muted-foreground" />
+              </CardTitle>
+              <CardTitle className="text-base font-bold">Configurazione Operativa</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription className="text-xs text-muted-foreground">
+                Configura le impostazioni specifiche per le tue operazioni.
+              </CardDescription>
+              <Button variant="link" className="px-0 mt-1 text-xs">Configura</Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </DashboardLayout>
   );

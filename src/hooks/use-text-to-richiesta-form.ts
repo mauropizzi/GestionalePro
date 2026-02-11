@@ -224,10 +224,10 @@ export function useTextToRichiestaForm() {
     const hasParsedTimes = !!(parsedOraInizio && parsedOraFine);
     const updatedDailySchedules: z.infer<typeof dailyScheduleSchema>[] = defaultDailySchedules.map((schedule) => ({
       ...schedule,
-      h24: false, // Default to false, can be overridden by text if needed
+      h24: false,
       ora_inizio: hasParsedTimes ? parsedOraInizio : null,
       ora_fine: hasParsedTimes ? parsedOraFine : null,
-      attivo: hasParsedTimes, // Set active if times are parsed
+      attivo: hasParsedTimes,
     }));
 
     // --- 7. Attempt to find a client and punto servizio based on keywords (very basic example) ---
@@ -331,9 +331,6 @@ export function useTextToRichiestaForm() {
         } as RichiestaServizioFormSchema;
         break;
     }
-
-    // Log final values for debugging
-    console.log("Final Form Values before reset:", finalFormValues);
 
     form.reset(finalFormValues);
     setIsProcessing(false);

@@ -26,11 +26,10 @@ import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
-import { cn } from "@/lib/utils"; // Corrected syntax
+import { cn } from "@/lib/utils";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Personale } from "@/types/anagrafiche"; // Updated import
 
 const formSchema = z.object({
   nome: z.string().min(1, "Il nome è richiesto."),
@@ -47,7 +46,7 @@ const formSchema = z.object({
   provincia: z.string().nullable(),
   data_assunzione: z.date().nullable(),
   data_cessazione: z.date().nullable(),
-  attivo: z.boolean(),
+  attivo: z.boolean(), // Changed to z.boolean()
   note: z.string().nullable(),
 });
 
@@ -74,7 +73,7 @@ export default function NewPersonalePage() {
       provincia: null,
       data_assunzione: null,
       data_cessazione: null,
-      attivo: true,
+      attivo: true, // Ensure this is boolean
       note: null,
     },
   });
@@ -89,7 +88,7 @@ export default function NewPersonalePage() {
       ruolo: values.ruolo === "" ? null : values.ruolo,
       telefono: values.telefono === "" ? null : values.telefono,
       data_nascita: values.data_nascita ? format(values.data_nascita, "yyyy-MM-dd") : null,
-      luogo_nascita: values.luogo_nascita === "" ? null : values.luogo_nascita, // Corrected typo
+      luogo_nascita: values.luogo_nascita === "" ? null : values.luogo_nascita,
       indirizzo: values.indirizzo === "" ? null : values.indirizzo,
       cap: values.cap === "" ? null : values.cap,
       citta: values.citta === "" ? null : values.citta,
@@ -104,7 +103,7 @@ export default function NewPersonalePage() {
       .insert({ ...personaleData, created_at: now, updated_at: now });
 
     if (error) {
-      console.error("Supabase insert error:", error);
+      console.error("Supabase insert error:", error); // Added for debugging
       toast.error("Errore durante il salvataggio del personale: " + error.message);
     } else {
       toast.success("Personale salvato con successo!");

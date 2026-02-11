@@ -22,7 +22,7 @@ import {
 import { Search, Loader2, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Client } from "@/types/anagrafiche"; // Updated import
+import { Client } from "@/types/richieste-servizio";
 import { useDebounce } from "@/hooks/use-debounce";
 
 interface SearchableClientSelectProps {

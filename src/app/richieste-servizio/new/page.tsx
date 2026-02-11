@@ -25,9 +25,23 @@ import {
   BonificaType,
   GestioneChiaviType, // Importa il tipo GestioneChiaviType
 } from "@/lib/richieste-servizio-utils";
-import { DailySchedule, PuntoServizio } from "@/types/richieste-servizio"; // Corrected import for PuntoServizio
+import { DailySchedule } from "@/types/richieste-servizio";
 import { RichiestaServizioForm } from "@/components/richieste-servizio/richiesta-servizio-form";
-import { Client, Fornitore } from "@/types/anagrafiche"; // Updated import
+
+interface Client {
+  id: string;
+  ragione_sociale: string;
+}
+
+interface PuntoServizio {
+  id: string;
+  nome_punto_servizio: string;
+}
+
+interface Fornitore {
+  id: string;
+  ragione_sociale: string;
+}
 
 export default function NewRichiestaServizioPage() {
   const [isLoading, setIsLoading] = useState(false);
