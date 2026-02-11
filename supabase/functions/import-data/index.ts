@@ -1,21 +1,21 @@
 // @ts-nocheck
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.0';
-import { fetchReferenceData, checkExistingRecord, validateForeignKeys } from './utils/db-ops.ts';
-import { mapClientData } from './utils/mappers/client-mapper.ts';
-import { mapFornitoreData } from './utils/mappers/fornitore-mapper.ts';
-import { mapOperatoreNetworkData } from './utils/mappers/operatore-network-mapper.ts';
-import { mapPersonaleData } from './utils/mappers/personale-mapper.ts';
-import { mapProceduraData } from './utils/mappers/procedura-mapper.ts';
-import { mapPuntoServizioData } from './utils/mappers/punto-servizio-mapper.ts';
-import { mapRubricaClientiData } from './utils/mappers/rubrica-clienti-mapper.ts';
-import { mapRubricaFornitoriData } from './utils/mappers/rubrica-fornitori-mapper.ts';
-import { mapRubricaPuntiServizioData } from './utils/mappers/rubrica-punti-servizio-mapper.ts';
-import { mapTariffaData } from './utils/mappers/tariffa-mapper.ts';
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.0";
+import { fetchReferenceData, checkExistingRecord, validateForeignKeys } from "./utils/db-ops.ts";
+import { mapClientData } from "./utils/mappers/client-mapper.ts";
+import { mapFornitoreData } from "./utils/mappers/fornitore-mapper.ts";
+import { mapOperatoreNetworkData } from "./utils/mappers/operatore-network-mapper.ts";
+import { mapPersonaleData } from "./utils/mappers/personale-mapper.ts";
+import { mapProceduraData } from "./utils/mappers/procedura-mapper.ts";
+import { mapPuntoServizioData } from "./utils/mappers/punto-servizio-mapper.ts";
+import { mapRubricaClientiData } from "./utils/mappers/rubrica-clienti-mapper.ts";
+import { mapRubricaFornitoriData } from "./utils/mappers/rubrica-fornitori-mapper.ts";
+import { mapRubricaPuntiServizioData } from "./utils/mappers/rubrica-punti-servizio-mapper.ts";
+import { mapTariffaData } from "./utils/mappers/tariffa-mapper.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 const dataMappers: { [key: string]: (rowData: any, supabaseAdmin: any) => Promise<any> | any } = {
@@ -32,68 +32,115 @@ const dataMappers: { [key: string]: (rowData: any, supabaseAdmin: any) => Promis
 };
 
 serve(async (req: Request) => {
-  console.log("import-data function invoked.");
+  console.log("[import-data] invoked", { method: req.method });
 
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const { anagraficaType, data: importData, mode } = await req.json();
 
+    console.log("[import-data] request", {
+      anagraficaType,
+      mode,
+      rows: Array.isArray(importData) ? importData.length : null,
+    });
+
     if (!anagraficaType || !importData || !Array.isArray(importData) || !mode) {
-      return new Response(JSON.stringify({ error: 'Invalid request' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      console.error("[import-data] invalid request", {
+        hasAnagraficaType: !!anagraficaType,
+        isArray: Array.isArray(importData),
+        mode,
+      });
+      return new Response(JSON.stringify({ error: "Invalid request" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
     }
 
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
     const mapper = dataMappers[anagraficaType];
     if (!mapper) throw new Error(`Import logic not implemented for: ${anagraficaType}`);
 
+    console.log("[import-data] fetching reference data", { anagraficaType });
     const referenceData = await fetchReferenceData(supabaseAdmin, anagraficaType);
+
     const report: any[] = [];
     let errorCount = 0;
 
     for (const [rowIndex, row] of importData.entries()) {
       let processedData: any = {};
-      let rowStatus = 'UNKNOWN';
-      let message: string | null = '';
+      let rowStatus = "UNKNOWN";
+      let message: string | null = "";
       let updatedFields: string[] = [];
       let existingRecordId: string | null = null;
 
       try {
         processedData = await mapper(row, supabaseAdmin);
-        const { status, message: checkMessage, updatedFields: fields, id } = await checkExistingRecord(supabaseAdmin, anagraficaType, processedData, referenceData);
+        const { status, message: checkMessage, updatedFields: fields, id } = await checkExistingRecord(
+          supabaseAdmin,
+          anagraficaType,
+          processedData,
+          referenceData
+        );
         rowStatus = status;
         message = checkMessage;
         updatedFields = fields;
         existingRecordId = id;
 
-        if (rowStatus !== 'ERROR' && rowStatus !== 'INVALID_FK') {
-          const { isValid, message: fkMessage } = await validateForeignKeys(supabaseAdmin, anagraficaType, processedData, referenceData);
+        if (rowStatus !== "ERROR" && rowStatus !== "INVALID_FK") {
+          const { isValid, message: fkMessage } = await validateForeignKeys(
+            supabaseAdmin,
+            anagraficaType,
+            processedData,
+            referenceData
+          );
           if (!isValid) {
-            rowStatus = 'INVALID_FK';
+            rowStatus = "INVALID_FK";
             message = fkMessage;
             errorCount++;
           }
         }
       } catch (rowError: any) {
-        rowStatus = 'ERROR';
+        rowStatus = "ERROR";
         message = `Errore: ${rowError.message}`;
         errorCount++;
+
+        // Log first few validation errors to keep logs readable
+        if (errorCount <= 5) {
+          console.error("[import-data] row validation error", {
+            rowIndex: rowIndex + 1,
+            message,
+            row,
+          });
+        }
       }
 
-      report.push({ originalRow: row, processedData, status: rowStatus, message, updatedFields, id: existingRecordId });
+      report.push({
+        originalRow: row,
+        processedData,
+        status: rowStatus,
+        message,
+        updatedFields,
+        id: existingRecordId,
+      });
     }
 
-    if (mode === 'preview') {
-      return new Response(JSON.stringify({ report }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+    if (mode === "preview") {
+      console.log("[import-data] preview complete", {
+        anagraficaType,
+        rows: report.length,
+        errorCount,
+      });
+      return new Response(JSON.stringify({ report }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
     }
 
     // Import logic
@@ -103,12 +150,12 @@ serve(async (req: Request) => {
     const errors: string[] = [];
 
     for (const [rowIndex, rowReport] of report.entries()) {
-      if (rowReport.status === 'ERROR' || rowReport.status === 'INVALID_FK') {
+      if (rowReport.status === "ERROR" || rowReport.status === "INVALID_FK") {
         errorCount++;
         errors.push(`Riga ${rowIndex + 1}: ${rowReport.message}`);
         continue;
       }
-      if (rowReport.status === 'DUPLICATE' && rowReport.updatedFields.length === 0) {
+      if (rowReport.status === "DUPLICATE" && rowReport.updatedFields.length === 0) {
         duplicateCount++;
         continue;
       }
@@ -117,27 +164,65 @@ serve(async (req: Request) => {
       const now = new Date().toISOString();
 
       try {
-        if (rowReport.status === 'NEW') {
-          const { error: insertError } = await supabaseAdmin.from(anagraficaType).insert({ ...dataToSave, created_at: now, updated_at: now });
+        if (rowReport.status === "NEW") {
+          const { error: insertError } = await supabaseAdmin
+            .from(anagraficaType)
+            .insert({ ...dataToSave, created_at: now, updated_at: now });
           if (insertError) throw insertError;
           successCount++;
-        } else if (rowReport.status === 'UPDATE' || (rowReport.status === 'DUPLICATE' && rowReport.updatedFields.length > 0)) {
-          const { error: updateError } = await supabaseAdmin.from(anagraficaType).update({ ...dataToSave, updated_at: now }).eq('id', rowReport.id);
+        } else if (rowReport.status === "UPDATE" || (rowReport.status === "DUPLICATE" && rowReport.updatedFields.length > 0)) {
+          const { error: updateError } = await supabaseAdmin
+            .from(anagraficaType)
+            .update({ ...dataToSave, updated_at: now })
+            .eq("id", rowReport.id);
           if (updateError) throw updateError;
           updateCount++;
         }
       } catch (dbError: any) {
         errorCount++;
-        errors.push(`Errore DB riga ${rowIndex + 1}: ${dbError.message}`);
+        const msg = `Errore DB riga ${rowIndex + 1}: ${dbError.message}`;
+        errors.push(msg);
+
+        if (errors.length <= 5) {
+          console.error("[import-data] db error", {
+            rowIndex: rowIndex + 1,
+            anagraficaType,
+            message: dbError.message,
+            processedData: rowReport.processedData,
+          });
+        }
       }
     }
 
-    return new Response(JSON.stringify({
+    const payload = {
       message: `Importazione completata. ${successCount} nuovi, ${updateCount} aggiornati, ${duplicateCount} saltati, ${errorCount} errori.`,
-      successCount, updateCount, duplicateCount, errorCount, errors
-    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+      successCount,
+      updateCount,
+      duplicateCount,
+      errorCount,
+      errors,
+    };
 
+    console.log("[import-data] import complete", {
+      anagraficaType,
+      successCount,
+      updateCount,
+      duplicateCount,
+      errorCount,
+    });
+
+    // IMPORTANT: return 207 when there are errors so the UI can show the detailed report
+    const status = errorCount > 0 ? 207 : 200;
+
+    return new Response(JSON.stringify(payload), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status,
+    });
   } catch (error) {
-    return new Response(JSON.stringify({ error: (error as Error).message }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 });
+    console.error("[import-data] unhandled error", { message: (error as Error).message });
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
   }
 });
