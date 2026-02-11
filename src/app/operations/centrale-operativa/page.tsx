@@ -44,7 +44,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { AlarmEntry, AccessType, InterventionOutcome, HistoricalSearchFilters } from "@/types/centrale-operativa";
 import { PuntoServizio } from "@/types/richieste-servizio";
-import { Personale, NetworkOperator } from "@/types/anagrafiche";
+import { Personale, NetworkOperator } from "@/types/anagrafiche"; // Updated import
 import { SearchablePuntoServizioSelect } from "@/components/richieste-servizio/searchable-punto-servizio-select";
 
 // Schemi di validazione
@@ -57,10 +57,10 @@ const alarmEntryFormSchema = z.object({
   request_time_co: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Formato orario non valido (HH:mm)"),
   intervention_start_time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Formato orario non valido (HH:mm)").nullable(),
   intervention_end_time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Formato orario non valido (HH:mm)").nullable(),
-  full_site_access: z.boolean(), // Changed from .default(false)
-  caveau_access: z.boolean(),    // Changed from .default(false)
+  full_site_access: z.boolean().default(false),
+  caveau_access: z.boolean().default(false),
   network_operator_id: z.string().uuid("Seleziona un operatore network valido.").nullable(),
-  gpg_intervention_made: z.boolean(), // Changed from .default(false)
+  gpg_intervention_made: z.boolean().default(false),
   anomalies_found: z.string().nullable(),
   delay_minutes: z.coerce.number().int().min(0, "Il ritardo non può essere negativo.").nullable(),
   service_outcome: z.enum(["Risolto", "Non Risolto", "Falso Allarme", "Annullato"]).nullable(),
@@ -91,28 +91,26 @@ export default function CentraleOperativaPage() {
     currentUserProfile?.role === "responsabile_operativo" ||
     currentUserProfile?.role === "operativo";
 
-  const defaultAlarmFormValues: AlarmEntryFormSchema = {
-    registration_date: new Date(),
-    punto_servizio_id: null,
-    intervention_due_by: null,
-    service_type_requested: "",
-    operator_co_id: null,
-    request_time_co: format(new Date(), "HH:mm"),
-    intervention_start_time: null,
-    intervention_end_time: null,
-    full_site_access: false,
-    caveau_access: false,
-    network_operator_id: null,
-    gpg_intervention_made: false,
-    anomalies_found: null,
-    delay_minutes: null,
-    service_outcome: null,
-    client_request_barcode: null,
-  };
-
   const form = useForm<AlarmEntryFormSchema>({
     resolver: zodResolver(alarmEntryFormSchema),
-    defaultValues: defaultAlarmFormValues,
+    defaultValues: {
+      registration_date: new Date(),
+      punto_servizio_id: null,
+      intervention_due_by: null,
+      service_type_requested: "",
+      operator_co_id: null,
+      request_time_co: format(new Date(), "HH:mm"),
+      intervention_start_time: null,
+      intervention_end_time: null,
+      full_site_access: false,
+      caveau_access: false,
+      network_operator_id: null,
+      gpg_intervention_made: false,
+      anomalies_found: null,
+      delay_minutes: null,
+      service_outcome: null,
+      client_request_barcode: null,
+    } as AlarmEntryFormSchema, // Explicitly cast to ensure type alignment
   });
 
   const searchForm = useForm<z.infer<typeof historicalSearchSchema>>({
@@ -136,7 +134,7 @@ export default function CentraleOperativaPage() {
     // Fetch Personale (for Operatore C.O. Security Service)
     const { data: personaleData, error: personaleError } = await supabase
       .from("personale")
-      .select("*")
+      .select("*") // Select all fields to match Personale type
       .eq("attivo", true)
       .order("cognome", { ascending: true });
 
@@ -149,7 +147,7 @@ export default function CentraleOperativaPage() {
     // Fetch Operatori Network
     const { data: networkData, error: networkError } = await supabase
       .from("operatori_network")
-      .select("*")
+      .select("*") // Select all fields to match NetworkOperator type
       .order("cognome", { ascending: true });
 
     if (networkError) {
@@ -161,7 +159,7 @@ export default function CentraleOperativaPage() {
     // Fetch Punti Servizio (for historical search filter)
     const { data: puntiServizioData, error: psError } = await supabase
       .from("punti_servizio")
-      .select("*")
+      .select("*") // Select all fields to match PuntoServizio type
       .order("nome_punto_servizio", { ascending: true });
 
     if (psError) {
@@ -250,7 +248,24 @@ export default function CentraleOperativaPage() {
       toast.error("Errore durante la registrazione dell'allarme: " + error.message);
     } else {
       toast.success("Allarme registrato con successo!");
-      form.reset(defaultAlarmFormValues); // Use the explicitly typed default values
+      form.reset({
+        registration_date: new Date(),
+        punto_servizio_id: null,
+        intervention_due_by: null,
+        service_type_requested: "",
+        operator_co_id: null,
+        request_time_co: format(new Date(), "HH:mm"),
+        intervention_start_time: null,
+        intervention_end_time: null,
+        full_site_access: false,
+        caveau_access: false,
+        network_operator_id: null,
+        gpg_intervention_made: false,
+        anomalies_found: null,
+        delay_minutes: null,
+        service_outcome: null,
+        client_request_barcode: null,
+      } as AlarmEntryFormSchema); // Explicitly cast for reset
       fetchCurrentAlarms();
       fetchHistoricalAlarms();
     }
