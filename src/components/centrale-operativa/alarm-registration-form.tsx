@@ -118,6 +118,54 @@ export function AlarmRegistrationForm({
     }
   };
 
+  // Calcolo automatico del ritardo in minuti
+  useEffect(() => {
+    const regDate = form.getValues("registration_date");
+    const dueBy = form.getValues("intervention_due_by");
+    const startFull = form.getValues("intervention_start_full_timestamp");
+    const startTimeStr = form.getValues("intervention_start_time");
+
+    // Serve la data/ora di registrazione e almeno un'informazione di inizio (timestamp completo o HH:mm)
+    if (!regDate || (startFull == null && !startTimeStr) || dueBy == null) {
+      return;
+    }
+
+    // Determina la data/ora di inizio intervento
+    const startDate = startFull
+      ? new Date(startFull as Date)
+      : (() => {
+          const d = new Date(regDate as Date);
+          if (startTimeStr) {
+            const [h, m] = String(startTimeStr).split(":").map(Number);
+            if (!isNaN(h) && !isNaN(m)) {
+              d.setHours(h, m, 0, 0);
+            }
+          }
+          return d;
+        })();
+
+    const reg = new Date(regDate as Date);
+    const diffMs = startDate.getTime() - reg.getTime();
+    const elapsedMin = Math.max(0, Math.round(diffMs / 60000));
+    const due = Number(dueBy);
+
+    if (isNaN(due)) {
+      return;
+    }
+
+    const delay = Math.max(0, elapsedMin - due);
+    const currentDelay = form.getValues("delay_minutes");
+
+    if (currentDelay !== delay) {
+      form.setValue("delay_minutes", delay, { shouldValidate: true, shouldDirty: true });
+    }
+  }, [
+    form.watch("registration_date"),
+    form.watch("intervention_start_time"),
+    form.watch("intervention_start_full_timestamp"),
+    form.watch("intervention_due_by"),
+  ]);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
