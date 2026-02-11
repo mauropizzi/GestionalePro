@@ -66,33 +66,35 @@ export default function CentraleOperativaPage() {
   useEffect(() => {
     if (currentAlarm) {
       // Populate form with current alarm data for editing
+      const { service_type_requested: _ignored, ...alarmRest } = currentAlarm;
+
       form.reset({
-        ...currentAlarm,
-        registration_date: new Date(currentAlarm.registration_date),
+        ...alarmRest,
+        registration_date: new Date(alarmRest.registration_date),
         // intervention_due_by viene memorizzato come minuti (numero) nel DB
         intervention_due_by:
-          currentAlarm.intervention_due_by !== undefined && currentAlarm.intervention_due_by !== null
-            ? (typeof currentAlarm.intervention_due_by === "number"
-                ? currentAlarm.intervention_due_by
-                : Number(currentAlarm.intervention_due_by))
+          alarmRest.intervention_due_by !== undefined && alarmRest.intervention_due_by !== null
+            ? (typeof alarmRest.intervention_due_by === "number"
+                ? alarmRest.intervention_due_by
+                : Number(alarmRest.intervention_due_by))
             : null,
-        request_time_co: currentAlarm.request_time_co || "",
-        intervention_start_time: currentAlarm.intervention_start_time || null,
-        intervention_end_time: currentAlarm.intervention_end_time || null,
-        intervention_start_lat: currentAlarm.intervention_start_lat || null,
-        intervention_start_long: currentAlarm.intervention_start_long || null,
-        intervention_start_full_timestamp: currentAlarm.intervention_start_full_timestamp ? new Date(currentAlarm.intervention_start_full_timestamp) : null,
-        intervention_end_lat: currentAlarm.intervention_end_lat || null,
-        intervention_end_long: currentAlarm.intervention_end_long || null,
-        intervention_end_full_timestamp: currentAlarm.intervention_end_full_timestamp ? new Date(currentAlarm.intervention_end_full_timestamp) : null,
-        full_site_access: currentAlarm.full_site_access || false,
-        caveau_access: currentAlarm.caveau_access || false,
-        network_operator_id: currentAlarm.network_operator_id || null,
-        gpg_intervention_made: currentAlarm.gpg_intervention_made || false,
-        anomalies_found: currentAlarm.anomalies_found || null,
-        delay_minutes: currentAlarm.delay_minutes || null,
-        service_outcome: currentAlarm.service_outcome || null,
-        client_request_barcode: currentAlarm.client_request_barcode || null,
+        request_time_co: alarmRest.request_time_co || "",
+        intervention_start_time: alarmRest.intervention_start_time || null,
+        intervention_end_time: alarmRest.intervention_end_time || null,
+        intervention_start_lat: alarmRest.intervention_start_lat || null,
+        intervention_start_long: alarmRest.intervention_start_long || null,
+        intervention_start_full_timestamp: alarmRest.intervention_start_full_timestamp ? new Date(alarmRest.intervention_start_full_timestamp) : null,
+        intervention_end_lat: alarmRest.intervention_end_lat || null,
+        intervention_end_long: alarmRest.intervention_end_long || null,
+        intervention_end_full_timestamp: alarmRest.intervention_end_full_timestamp ? new Date(alarmRest.intervention_end_full_timestamp) : null,
+        full_site_access: alarmRest.full_site_access || false,
+        caveau_access: alarmRest.caveau_access || false,
+        network_operator_id: alarmRest.network_operator_id || null,
+        gpg_intervention_made: alarmRest.gpg_intervention_made || false,
+        anomalies_found: alarmRest.anomalies_found || null,
+        delay_minutes: alarmRest.delay_minutes || null,
+        service_outcome: alarmRest.service_outcome || null,
+        client_request_barcode: alarmRest.client_request_barcode || null,
       });
     }
   }, [currentAlarm, form]);

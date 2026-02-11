@@ -7,8 +7,6 @@ export function getDefaultAlarmFormValues(): AlarmEntryFormSchema {
     registration_date: new Date(),
     punto_servizio_id: null,
     intervention_due_by: null,
-    // NUOVO: default vuoto, obbligatorio da compilare
-    service_type_requested: "",
     operator_co_id: null,
     request_time_co: format(new Date(), "HH:mm"),
     intervention_start_time: null,
@@ -35,8 +33,8 @@ export function formatAlarmDataForSubmission(values: AlarmEntryFormSchema) {
   return {
     ...values,
     registration_date: format(values.registration_date, "yyyy-MM-dd"),
-    // Assicura che il tipo servizio sia una stringa non vuota (NOT NULL nel DB)
-    service_type_requested: values.service_type_requested.trim(),
+    // Imposta automaticamente il tipo servizio richiesto per la tabella (NOT NULL)
+    service_type_requested: "Allarme",
     // intervention_due_by è un numero di minuti (o null)
     intervention_due_by: values.intervention_due_by === null ? null : values.intervention_due_by,
     intervention_start_full_timestamp: values.intervention_start_full_timestamp?.toISOString() || null,
