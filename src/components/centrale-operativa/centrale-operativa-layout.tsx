@@ -46,7 +46,7 @@ export function CentraleOperativaLayout({
       {/* Sezione Registrazione Servizi */}
       <div className="p-6 border rounded-lg shadow-sm mb-8">
         <h2 className="text-xl font-semibold mb-4 flex items-center">
-          <BellRing className="h-5 w-5 mr-2" /> Registrazione Servizi
+          <BellRing className="h-5 w-5 mr-2" /> Registrazione Allarmi
         </h2>
         <AlarmRegistrationForm
           form={form}
