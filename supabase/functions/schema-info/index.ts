@@ -20,7 +20,13 @@ const ALLOWED_TABLES = new Set([
   "rubrica_punti_servizio",
 ]);
 
-const ALLOWED_ROLES = new Set(["super_admin", "amministrazione"]);
+// Match the roles that can access anagrafiche pages
+const ALLOWED_ROLES = new Set([
+  "super_admin",
+  "amministrazione",
+  "responsabile_operativo",
+  "operativo",
+]);
 
 type ColumnInfo = {
   column_name: string;
@@ -93,25 +99,16 @@ serve(async (req: Request) => {
       });
     }
 
-    const sqlQuery = `
-      SELECT column_name, data_type, is_nullable, column_default
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
-        AND table_name = '${tableName.replaceAll("'", "''")}'
-      ORDER BY ordinal_position;
-    `;
+    const { data: cols, error: colsErr } = await admin.rpc("get_table_columns", {
+      table_name: tableName,
+    });
 
-    const { data: cols, error: sqlErr } = await admin.rpc("sql", { query: sqlQuery });
-
-    if (sqlErr) {
-      console.error("[schema-info] sql rpc failed", { sqlErr });
-      return new Response(
-        JSON.stringify({ error: "SQL RPC non disponibile per leggere lo schema." }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+    if (colsErr) {
+      console.error("[schema-info] get_table_columns rpc failed", { colsErr });
+      return new Response(JSON.stringify({ error: colsErr.message }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     return new Response(
