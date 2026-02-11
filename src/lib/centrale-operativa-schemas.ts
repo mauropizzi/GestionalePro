@@ -4,7 +4,6 @@ export const alarmEntryFormSchema = z.object({
   registration_date: z.date({ required_error: "La data di registrazione è richiesta." }),
   punto_servizio_id: z.string().uuid("Seleziona un punto servizio valido.").nullable(),
   intervention_due_by: z.date().nullable(),
-  service_type_requested: z.string().min(1, "La tipologia di servizio è richiesta."),
   operator_co_id: z.string().uuid("Seleziona un operatore valido.").nullable(),
   request_time_co: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Formato orario non valido (HH:mm)"),
   intervention_start_time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Formato orario non valido (HH:mm)").nullable(),

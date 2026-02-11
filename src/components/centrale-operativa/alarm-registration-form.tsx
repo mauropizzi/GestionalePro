@@ -169,19 +169,6 @@ export function AlarmRegistrationForm({
         />
         <FormField
           control={form.control}
-          name="service_type_requested"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tipologia Servizio Richiesto</FormLabel>
-              <FormControl>
-                <Input placeholder="Es. Ispezione, Ronda, Intervento Allarme" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
           name="operator_co_id"
           render={({ field }) => (
             <FormItem>

@@ -24,7 +24,6 @@ export function HistoricalAlarmsTable({ alarms }: HistoricalAlarmsTableProps) {
           <TableRow>
             <TableHead>Data Reg.</TableHead>
             <TableHead>Punto Servizio</TableHead>
-            <TableHead>Tipo Servizio</TableHead>
             <TableHead>Operatore C.O.</TableHead>
             <TableHead>Inizio Intervento</TableHead>
             <TableHead>Fine Intervento</TableHead>
@@ -38,7 +37,6 @@ export function HistoricalAlarmsTable({ alarms }: HistoricalAlarmsTableProps) {
             <TableRow key={alarm.id}>
               <TableCell>{format(parseISO(alarm.registration_date), "dd/MM/yyyy", { locale: it })}</TableCell>
               <TableCell>{alarm.punti_servizio?.nome_punto_servizio || "N/A"}</TableCell>
-              <TableCell>{alarm.service_type_requested}</TableCell>
               <TableCell>{alarm.personale ? `${alarm.personale.nome} ${alarm.personale.cognome}` : "N/A"}</TableCell>
               <TableCell>{alarm.intervention_start_time || "N/A"}</TableCell>
               <TableCell>{alarm.intervention_end_time || "N/A"}</TableCell>

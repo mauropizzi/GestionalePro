@@ -7,7 +7,6 @@ export function getDefaultAlarmFormValues(): AlarmEntryFormSchema {
     registration_date: new Date(),
     punto_servizio_id: null,
     intervention_due_by: null,
-    service_type_requested: "",
     operator_co_id: null,
     request_time_co: format(new Date(), "HH:mm"),
     intervention_start_time: null,
