@@ -54,16 +54,27 @@ TableFooter.displayName = "TableFooter"
 const TableRow = React.forwardRef<
   HTMLTableRowElement,
   React.HTMLAttributes<HTMLTableRowElement>
->(({ className, ...props }, ref) => (
-  <tr
-    ref={ref}
-    className={cn(
-      "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
-      className
-    )}
-    {...props}
-  />
-))
+>(({ className, children, ...props }, ref) => {
+  // React can emit whitespace text nodes between <td>/<th> when JSX is formatted
+  // across multiple lines. Those text nodes are invalid children of <tr> and cause
+  // validateTextNesting / validateDOMNesting warnings.
+  const safeChildren = React.Children.toArray(children).filter((child) => {
+    return !(typeof child === "string" && child.trim() === "")
+  })
+
+  return (
+    <tr
+      ref={ref}
+      className={cn(
+        "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+        className
+      )}
+      {...props}
+    >
+      {safeChildren}
+    </tr>
+  )
+})
 TableRow.displayName = "TableRow"
 
 const TableHead = React.forwardRef<
