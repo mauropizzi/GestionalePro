@@ -259,7 +259,7 @@ export function AlarmRegistrationForm({
               </FormControl>
               {form.watch("intervention_start_lat") && (
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  📍 {form.watch("intervention_start_lat")?.toFixed(4)}, {form.watch("intervention_start_long")?.toFixed(4)} 
+                  Pos: {form.watch("intervention_start_lat")?.toFixed(4)}, {form.watch("intervention_start_long")?.toFixed(4)} 
                   {form.watch("intervention_start_full_timestamp") && ` - ${format(form.watch("intervention_start_full_timestamp")!, "dd/MM HH:mm")}`}
                 </p>
               )}
@@ -289,7 +289,7 @@ export function AlarmRegistrationForm({
               </FormControl>
               {form.watch("intervention_end_lat") && (
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  📍 {form.watch("intervention_end_lat")?.toFixed(4)}, {form.watch("intervention_end_long")?.toFixed(4)}
+                  Pos: {form.watch("intervention_end_lat")?.toFixed(4)}, {form.watch("intervention_end_long")?.toFixed(4)}
                   {form.watch("intervention_end_full_timestamp") && ` - ${format(form.watch("intervention_end_full_timestamp")!, "dd/MM HH:mm")}`}
                 </p>
               )}
