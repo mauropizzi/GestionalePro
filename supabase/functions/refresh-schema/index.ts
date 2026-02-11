@@ -23,66 +23,76 @@ serve(async (req: Request) => {
     console.log("[refresh-schema] Forcing PostgREST schema cache refresh...");
 
     // Method 1: Using NOTIFY to trigger pgrst reload
-    const { error: notifyError } = await supabaseAdmin.rpc('pg_notify', {
+    await supabaseAdmin.rpc('pg_notify', {
       channel: 'pgrst',
       payload: 'reload schema'
     });
 
-    // Method 2: Force reload by performing a DDL-like operation (comment update)
-    // We use a direct SQL approach if possible, but since we are using the client:
-    const { error: sqlError } = await supabaseAdmin.from('operatori_network').select('id').limit(1);
-    
-    // We can also try to "touch" the schema by altering a comment directly via RPC if available
-    // or just assume the NOTIFY is enough if the column actually exists now.
+    // Method 2: Another NOTIFY for config reload
+    await supabaseAdmin.rpc('pg_notify', {
+      channel: 'pgrst',
+      payload: 'reload config'
+    });
 
-    if (notifyError) {
-      console.error("[refresh-schema] NOTIFY method failed:", notifyError);
-    } else {
-      console.log("[refresh-schema] NOTIFY method successful");
-    }
+    // Method 3: Touch the table with a DDL-like operation
+    // Re-adding the comment with a new timestamp forces a schema change detection
+    await supabaseAdmin.rpc('sql', {
+      query: `COMMENT ON TABLE public.operatori_network IS 'Tabella operatori network - Cache refreshed at ${new Date().toISOString()}';`
+    });
 
-    // Method 3: Touch the schema by running a simple query
-    // We wrap this in a try/catch to avoid function failure if column still not "seen"
-    let touchSuccess = false;
-    try {
-      const { error: touchError } = await supabaseAdmin
-        .from('operatori_network')
-        .select('id, note')
-        .limit(1);
-      
-      if (!touchError) touchSuccess = true;
-      console.log("[refresh-schema] Touch method result:", touchError ? touchError.message : "Success");
-    } catch (e) {
-      console.error("[refresh-schema] Touch method crashed:", e);
-    }
+    // Method 4: Create and drop a dummy view - very effective at forcing reload
+    await supabaseAdmin.rpc('sql', {
+      query: `
+        CREATE OR REPLACE VIEW public.operatori_network_cache_buster AS SELECT 1;
+        DROP VIEW public.operatori_network_cache_buster;
+      `
+    });
 
-    // Wait a moment for the cache to refresh
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    console.log("[refresh-schema] Cache busting methods executed.");
 
-    // Test if the refresh worked
-    const { data: testData, error: testError } = await supabaseAdmin
+    // Wait a bit longer for the cache to actually refresh
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Test if the column is visible to the service role client
+    const { error: testError } = await supabaseAdmin
       .from('operatori_network')
-      .select('id, nome, cognome, note')
+      .select('note')
       .limit(1);
 
     if (testError) {
-      console.error("[refresh-schema] Schema refresh test failed:", testError);
+      console.error("[refresh-schema] Schema refresh test failed for service role:", testError.message);
+      
+      // If it still fails, let's try to check if the column actually exists in information_schema
+      const { data: columnExists } = await supabaseAdmin.rpc('sql', {
+        query: "SELECT 1 FROM information_schema.columns WHERE table_name = 'operatori_network' AND column_name = 'note';"
+      });
+
+      if (!columnExists || columnExists.length === 0) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: "Column 'note' does not exist in the database table 'operatori_network'.",
+          message: "The migration to add the column might have failed or wasn't run."
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        });
+      }
+
       return new Response(JSON.stringify({ 
         success: false, 
         error: testError.message,
-        message: "Schema cache refresh attempted but test query still failed"
+        message: "Column exists in DB but PostgREST still hasn't refreshed its cache. Try again in a few seconds."
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
     }
 
-    console.log("[refresh-schema] Schema refresh test successful");
+    console.log("[refresh-schema] Schema refresh test successful for service role.");
     
     return new Response(JSON.stringify({ 
       success: true, 
-      message: "PostgREST schema cache refreshed successfully",
-      testData: testData
+      message: "PostgREST schema cache refreshed successfully. The 'note' column is now visible."
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,

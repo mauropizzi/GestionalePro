@@ -12,7 +12,16 @@ export async function testOperatoriNetworkNoteColumn() {
     
     if (error) {
       console.error('[test-schema-cache] Error selecting note column:', error);
-      return { success: false, error: error.message };
+      
+      if (error.code === 'PGRST204' || error.message.includes('column "note" does not exist')) {
+        return { 
+          success: false, 
+          error: "Cache postgREST non aggiornata: la colonna 'note' non è ancora visibile all'API.",
+          code: error.code
+        };
+      }
+      
+      return { success: false, error: error.message, code: error.code };
     }
     
     console.log('[test-schema-cache] Successfully selected note column:', data);
@@ -41,7 +50,16 @@ export async function testInsertOperatoriNetworkWithNote() {
     
     if (error) {
       console.error('[test-schema-cache] Error inserting with note:', error);
-      return { success: false, error: error.message };
+      
+      if (error.code === 'PGRST204' || error.message.includes('column "note" does not exist')) {
+        return { 
+          success: false, 
+          error: "Impossibile inserire: la colonna 'note' non è riconosciuta dalla cache dello schema.",
+          code: error.code
+        };
+      }
+      
+      return { success: false, error: error.message, code: error.code };
     }
     
     // Clean up test record
