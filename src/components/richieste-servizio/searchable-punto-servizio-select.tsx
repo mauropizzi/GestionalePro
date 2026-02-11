@@ -37,6 +37,7 @@ export function SearchablePuntoServizioSelect({
   const [searchTerm, setSearchTerm] = useState("");
   const [puntiServizio, setPuntiServizio] = useState<PuntoServizio[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<PuntoServizio | null>(null);
 
   // Debounced search function
   const debouncedSearch = useMemo(() => {
@@ -81,8 +82,8 @@ export function SearchablePuntoServizioSelect({
   useEffect(() => {
     if (open) {
       // Load initial data when popover opens
-      if (value) {
-        // If there's a selected value, fetch that specific item
+      if (value && !selectedItem) {
+        // If there's a selected value and we don't have it cached, fetch it
         supabase
           .from("punti_servizio")
           .select("*")
@@ -90,10 +91,11 @@ export function SearchablePuntoServizioSelect({
           .single()
           .then(({ data, error }) => {
             if (!error && data) {
+              setSelectedItem(data);
               setPuntiServizio([data]);
             }
           });
-      } else {
+      } else if (!value) {
         // Load first 20 items for initial display
         supabase
           .from("punti_servizio")
@@ -107,7 +109,14 @@ export function SearchablePuntoServizioSelect({
           });
       }
     }
-  }, [open, value]);
+  }, [open, value, selectedItem]);
+
+  useEffect(() => {
+    // Reset selected item when value changes to null
+    if (!value) {
+      setSelectedItem(null);
+    }
+  }, [value]);
 
   useEffect(() => {
     debouncedSearch(searchTerm);
@@ -117,14 +126,23 @@ export function SearchablePuntoServizioSelect({
   }, [searchTerm, debouncedSearch]);
 
   const selectedPuntoServizio = useMemo(() => {
+    // First check if we have the selected item cached
+    if (selectedItem && selectedItem.id === value) {
+      return selectedItem;
+    }
+    // Then check in the search results
     return puntiServizio.find((ps) => ps.id === value);
-  }, [puntiServizio, value]);
+  }, [puntiServizio, value, selectedItem]);
 
   const handleSelect = useCallback((selectedValue: string) => {
+    const selected = puntiServizio.find((ps) => ps.id === selectedValue);
+    if (selected) {
+      setSelectedItem(selected);
+    }
     onChange(selectedValue);
     setOpen(false);
     setSearchTerm("");
-  }, [onChange]);
+  }, [onChange, puntiServizio]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
