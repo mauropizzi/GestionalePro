@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { CalendarIcon } from "lucide-react";
 import {
@@ -22,13 +22,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { format, addHours, parseISO } from "date-fns";
 import { it } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { AlarmEntryFormSchema } from "@/lib/centrale-operativa-schemas";
 import { Personale, NetworkOperator } from "@/types/anagrafiche";
 import { SearchablePuntoServizioSelect } from "@/components/richieste-servizio/searchable-punto-servizio-select";
 import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AlarmRegistrationFormProps {
   form: UseFormReturn<AlarmEntryFormSchema>;
@@ -47,6 +48,37 @@ export function AlarmRegistrationForm({
   onSubmit,
   submitButtonText,
 }: AlarmRegistrationFormProps) {
+  // Handle punto servizio selection to update intervention_due_by
+  const handlePuntoServizioChange = async (puntoServizioId: string | null) => {
+    form.setValue("punto_servizio_id", puntoServizioId);
+    
+    if (puntoServizioId) {
+      try {
+        const { data, error } = await supabase
+          .from("punti_servizio")
+          .select("tempo_intervento")
+          .eq("id", puntoServizioId)
+          .single();
+        
+        if (!error && data?.tempo_intervento) {
+          // Parse the tempo_intervento and calculate due date
+          const registrationDate = form.getValues("registration_date") || new Date();
+          const interventionHours = parseFloat(data.tempo_intervento);
+          
+          if (!isNaN(interventionHours) && interventionHours > 0) {
+            const dueBy = addHours(registrationDate, interventionHours);
+            form.setValue("intervention_due_by", dueBy);
+          }
+        }
+      } catch (err) {
+        console.error("Errore nel recupero del tempo di intervento:", err);
+      }
+    } else {
+      // Clear the intervention_due_by when no punto servizio is selected
+      form.setValue("intervention_due_by", null);
+    }
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -98,7 +130,7 @@ export function AlarmRegistrationForm({
               <FormControl>
                 <SearchablePuntoServizioSelect
                   value={field.value}
-                  onChange={field.onChange}
+                  onChange={handlePuntoServizioChange}
                   disabled={field.disabled}
                   placeholder="Cerca e seleziona un punto servizio"
                 />
