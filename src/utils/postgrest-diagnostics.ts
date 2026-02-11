@@ -20,6 +20,13 @@ export type AnagraficaTable =
   | "rubrica_fornitori"
   | "rubrica_punti_servizio";
 
+export type ColumnInfo = {
+  column_name: string;
+  data_type: string;
+  is_nullable: "YES" | "NO";
+  column_default: string | null;
+};
+
 export const ANAGRAFICA_TABLE_OPTIONS: { value: AnagraficaTable; label: string }[] = [
   { value: "clienti", label: "Clienti" },
   { value: "fornitori", label: "Fornitori" },
@@ -33,15 +40,14 @@ export const ANAGRAFICA_TABLE_OPTIONS: { value: AnagraficaTable; label: string }
   { value: "rubrica_fornitori", label: "Rubrica Fornitori" },
 ];
 
+const EXCLUDED_INSERT_COLUMNS = new Set([
+  "id",
+  "created_at",
+  "updated_at",
+]);
+
 function uniqueText(prefix: string) {
   return `${prefix}-${Date.now()}`;
-}
-
-function parseColumns(input: string): string[] {
-  return input
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
 }
 
 async function getFirstId(table: "clienti" | "fornitori" | "punti_servizio") {
@@ -70,7 +76,9 @@ async function buildBaseInsertPayload(table: AnagraficaTable): Promise<Record<st
     case "rubrica_clienti": {
       const clientId = await getFirstId("clienti");
       if (!clientId) {
-        throw new Error("Impossibile fare il test INSERT su rubrica_clienti: non esiste alcun Cliente (serve almeno 1 record in clienti). ");
+        throw new Error(
+          "Impossibile fare il test INSERT su rubrica_clienti: non esiste alcun Cliente (serve almeno 1 record in clienti)."
+        );
       }
       return { client_id: clientId, tipo_recapito: "Test" };
     }
@@ -97,57 +105,44 @@ async function buildBaseInsertPayload(table: AnagraficaTable): Promise<Record<st
   }
 }
 
-function applyExtraColumns(payload: Record<string, unknown>, extraColumns: string[]) {
-  for (const col of extraColumns) {
-    if (!col) continue;
-    if (payload[col] !== undefined) continue;
-
-    // Default: treat as text. Most "diagnostic" columns (like note) are text.
-    payload[col] = `Test ${col}`;
-  }
-}
-
-export async function runSelectTest(table: AnagraficaTable, columnsCsv: string): Promise<PostgrestTestResult> {
-  const columns = parseColumns(columnsCsv);
-  if (columns.length === 0) {
-    return { success: false, error: "Seleziona almeno una colonna da testare (SELECT)." };
+export async function runSelectAllColumns(table: AnagraficaTable, columns: ColumnInfo[]): Promise<PostgrestTestResult> {
+  const names = columns.map((c) => c.column_name);
+  if (names.length === 0) {
+    return { success: false, error: "Nessuna colonna trovata per la tabella selezionata." };
   }
 
   try {
-    const { data, error } = await supabase
-      .from(table)
-      .select(columns.join(","))
-      .limit(1);
-
+    const { data, error } = await supabase.from(table).select(names.join(",")).limit(1);
     if (error) {
-      console.error("[postgrest-diagnostics] select test error", { table, columns, error });
+      console.error("[postgrest-diagnostics] select-all error", { table, error });
       return { success: false, error: error.message };
     }
-
     return { success: true, data };
   } catch (err) {
-    console.error("[postgrest-diagnostics] select test unexpected error", err);
+    console.error("[postgrest-diagnostics] select-all unexpected", err);
     return { success: false, error: (err as Error).message };
   }
 }
 
-export async function runInsertTest(
-  table: AnagraficaTable,
-  insertColumnsCsv: string
-): Promise<PostgrestTestResult> {
-  const extraCols = parseColumns(insertColumnsCsv);
-  if (extraCols.length === 0) {
-    return { success: false, error: "Seleziona almeno una colonna da testare (INSERT)." };
-  }
-
+export async function runInsertAllColumns(table: AnagraficaTable, columns: ColumnInfo[]): Promise<PostgrestTestResult> {
   try {
     const payload = await buildBaseInsertPayload(table);
-    applyExtraColumns(payload, extraCols);
+
+    for (const col of columns) {
+      const name = col.column_name;
+      if (EXCLUDED_INSERT_COLUMNS.has(name)) continue;
+      if (name in payload) continue;
+
+      // We include as many columns as possible just to validate they exist in PostgREST schema.
+      // To keep the test safe, we only set NULL for nullable columns.
+      if (col.is_nullable === "YES") {
+        (payload as any)[name] = null;
+      }
+    }
 
     const { data, error } = await supabase.from(table).insert(payload).select("id").single();
-
     if (error) {
-      console.error("[postgrest-diagnostics] insert test error", { table, payload, error });
+      console.error("[postgrest-diagnostics] insert-all error", { table, error });
       return { success: false, error: error.message };
     }
 
@@ -158,7 +153,7 @@ export async function runInsertTest(
 
     return { success: true, data };
   } catch (err) {
-    console.error("[postgrest-diagnostics] insert test unexpected error", err);
+    console.error("[postgrest-diagnostics] insert-all unexpected", err);
     return { success: false, error: (err as Error).message };
   }
 }
