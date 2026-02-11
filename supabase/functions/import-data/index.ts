@@ -824,50 +824,46 @@ serve(async (req: Request) => {
     errorCount = 0;
     duplicateCount = 0; // Reset counts for actual import
 
-    const importPromise = (async () => {
-      for (const rowReport of report) {
-        if (rowReport.status === 'ERROR' || rowReport.status === 'INVALID_FK') {
-          errorCount++;
-          errors.push(`Riga con errore non importata: ${rowReport.message}`);
-          continue;
-        }
-        if (rowReport.status === 'DUPLICATE' && rowReport.updatedFields.length === 0) {
-          duplicateCount++;
-          errors.push(`Riga duplicata e senza modifiche, saltata: ${rowReport.message}`);
-          continue;
-        }
-
-        const dataToSave = { ...rowReport.processedData };
-        const now = new Date().toISOString();
-
-        try {
-          if (rowReport.status === 'NEW') {
-            const { error: insertError } = await supabaseAdmin
-              .from(anagraficaType)
-              .insert({ ...dataToSave, created_at: now, updated_at: now });
-            if (insertError) throw insertError;
-            successCount++;
-          } else if (rowReport.status === 'UPDATE' || (rowReport.status === 'DUPLICATE' && rowReport.updatedFields.length > 0)) {
-            const { error: updateError } = await supabaseAdmin
-              .from(anagraficaType)
-              .update({ ...dataToSave, updated_at: now })
-              .eq('id', rowReport.id);
-            if (updateError) throw updateError;
-            updateCount++;
-          }
-        } catch (dbError: any) {
-          errorCount++;
-          errors.push(`Errore DB per riga ${JSON.stringify(rowReport.originalRow)}: ${dbError.message}`);
-          console.error(`DB error during import for row:`, dbError);
-        }
+    for (const rowReport of report) {
+      if (rowReport.status === 'ERROR' || rowReport.status === 'INVALID_FK') {
+        errorCount++;
+        errors.push(`Riga con errore non importata: ${rowReport.message}`);
+        continue;
       }
-    })();
+      if (rowReport.status === 'DUPLICATE' && rowReport.updatedFields.length === 0) {
+        duplicateCount++;
+        errors.push(`Riga duplicata e senza modifiche, saltata: ${rowReport.message}`);
+        continue;
+      }
 
-    req.waitUntil(importPromise);
+      const dataToSave = { ...rowReport.processedData };
+      const now = new Date().toISOString();
+
+      try {
+        if (rowReport.status === 'NEW') {
+          const { error: insertError } = await supabaseAdmin
+            .from(anagraficaType)
+            .insert({ ...dataToSave, created_at: now, updated_at: now });
+          if (insertError) throw insertError;
+          successCount++;
+        } else if (rowReport.status === 'UPDATE' || (rowReport.status === 'DUPLICATE' && rowReport.updatedFields.length > 0)) {
+          const { error: updateError } = await supabaseAdmin
+            .from(anagraficaType)
+            .update({ ...dataToSave, updated_at: now })
+            .eq('id', rowReport.id);
+          if (updateError) throw updateError;
+          updateCount++;
+        }
+      } catch (dbError: any) {
+        errorCount++;
+        errors.push(`Errore DB per riga ${JSON.stringify(rowReport.originalRow)}: ${dbError.message}`);
+        console.error(`DB error during import for row:`, dbError);
+      }
+    }
 
     if (errorCount > 0 || duplicateCount > 0) {
       return new Response(JSON.stringify({
-        message: `Importazione avviata. ${successCount} nuovi record, ${updateCount} aggiornamenti, ${duplicateCount} duplicati saltati e ${errorCount} errori. Controlla i log per i dettagli.`,
+        message: `Importazione completata. ${successCount} nuovi record, ${updateCount} aggiornamenti, ${duplicateCount} duplicati saltati e ${errorCount} errori.`,
         successCount,
         updateCount,
         duplicateCount,
@@ -875,17 +871,17 @@ serve(async (req: Request) => {
         errors,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 202,
+        status: 200,
       });
     }
 
     return new Response(JSON.stringify({
-      message: `Importazione avviata con successo. ${successCount} nuovi record e ${updateCount} aggiornamenti.`,
+      message: `Importazione completata con successo. ${successCount} nuovi record e ${updateCount} aggiornamenti.`,
       successCount,
       updateCount,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 202,
+      status: 200,
     });
 
   } catch (error) {
