@@ -45,8 +45,9 @@ export interface NetworkOperator {
   cliente_id: string | null;
   telefono: string | null;
   email: string | null;
-  created_at: string;
-  updated_at: string;
+  note: string | null;
+  created_at?: string;
+  updated_at?: string;
   clienti?: { ragione_sociale: string }[] | null;
 }
 
