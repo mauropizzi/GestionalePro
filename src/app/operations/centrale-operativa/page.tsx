@@ -289,7 +289,11 @@ export default function CentraleOperativaPage() {
   };
 
   const onSearchSubmit = (values: z.infer<typeof historicalSearchSchema>) => {
-    fetchHistoricalAlarms(values);
+    const filters: HistoricalSearchFilters = {
+      ...values,
+      punto_servizio_id: values.punto_servizio_id === "all" ? null : values.punto_servizio_id,
+    };
+    fetchHistoricalAlarms(filters);
   };
 
   if (isSessionLoading) {
