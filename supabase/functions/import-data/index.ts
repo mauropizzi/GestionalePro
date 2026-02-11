@@ -856,8 +856,14 @@ serve(async (req: Request) => {
         }
       } catch (dbError: any) {
         errorCount++;
-        errors.push(`Errore DB per riga ${JSON.stringify(rowReport.originalRow)}: ${dbError.message}`);
-        console.error(`DB error during import for row:`, dbError);
+        const errorMessage = `Errore DB per riga ${rowIndex + 1}: ${dbError.message}`;
+        errors.push(errorMessage);
+        console.error(`[import-data] ${errorMessage}`, {
+          tableName: anagraficaType,
+          rowData: rowReport.originalRow,
+          processedData: rowReport.processedData,
+          dbError: dbError
+        });
       }
     }
 

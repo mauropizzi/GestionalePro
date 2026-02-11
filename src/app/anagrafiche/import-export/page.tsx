@@ -3,13 +3,16 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useSession } from "@/components/session-context-provider";
-import { ShieldAlert, Building2, Truck, Network, UserRound, MapPin, Euro, FileText, Phone } from "lucide-react";
+import { ShieldAlert, Building2, Truck, Network, UserRound, MapPin, Euro, FileText, Phone, Bug } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 // Import dei nuovi componenti modulari
 import { TemplateDownloadSection } from "./components/template-download-section";
 import { ImportSection } from "./components/import-section";
 import { ExportSection } from "./components/export-section";
+import { testOperatoriNetworkNoteColumn, testInsertOperatoriNetworkWithNote } from "@/utils/test-schema-cache";
 
 // Mappatura dei nomi delle colonne per una visualizzazione più leggibile
 const columnHeaderMap: { [key: string]: string } = {
@@ -174,6 +177,77 @@ export default function ImportExportPage() {
     { value: "rubrica_fornitori", label: "Rubrica Fornitori", icon: <Phone className="h-4 w-4 mr-2" /> },
   ];
 
+  const [isRunningDiagnostics, setIsRunningDiagnostics] = useState(false);
+  const [schemaDiagnostics, setSchemaDiagnostics] = useState<any>(null);
+
+  const runSchemaDiagnostics = async () => {
+    setIsRunningDiagnostics(true);
+    setSchemaDiagnostics(null);
+    
+    try {
+      const selectTest = await testOperatoriNetworkNoteColumn();
+      const insertTest = await testInsertOperatoriNetworkWithNote();
+      
+      setSchemaDiagnostics({
+        selectTest,
+        insertTest,
+        timestamp: new Date().toISOString()
+      });
+      
+      if (selectTest.success && insertTest.success) {
+        toast.success("Diagnostica schema completata: tutto OK!");
+      } else {
+        toast.error("Problemi rilevati nello schema della cache. Controlla i risultati.");
+      }
+      
+    } catch (error: any) {
+      toast.error("Errore durante la diagnostica: " + error.message);
+      console.error("[import-export] Diagnostics error:", error);
+    } finally {
+      setIsRunningDiagnostics(false);
+    }
+  };
+
+  const refreshSchemaCache = async () => {
+    setIsRunningDiagnostics(true);
+    
+    try {
+      const response = await fetch(
+        "https://mlkahaedxpwkhheqwsjc.supabase.co/functions/v1/refresh-schema",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2FoYWVkeHB3a2hoZXF3c2pjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNzgyNTU5LCJleHAiOjIwNzY4NTQyNTl9._QR-tTUw-NPhCcv9boDDQAsewgyDzMhwiXNIlxIBCjQ",
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Errore durante l'aggiornamento della cache schema.");
+      }
+
+      if (result.success) {
+        toast.success("Cache schema aggiornata con successo! Esegui nuovamente la diagnostica.");
+      } else {
+        toast.error("Problemi durante l'aggiornamento della cache: " + result.error);
+      }
+      
+      // Wait a moment and then run diagnostics
+      setTimeout(() => {
+        runSchemaDiagnostics();
+      }, 2000);
+      
+    } catch (error: any) {
+      toast.error("Errore durante l'aggiornamento della cache: " + error.message);
+      console.error("[import-export] Schema refresh error:", error);
+    } finally {
+      setIsRunningDiagnostics(false);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="container mx-auto py-6">
@@ -197,6 +271,64 @@ export default function ImportExportPage() {
         />
 
         <Separator className="my-6" />
+
+        {/* Diagnostica Schema */}
+        <div className="mb-6 p-4 border rounded-lg bg-gray-50">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-medium flex items-center">
+              <Bug className="h-4 w-4 mr-2" /> Diagnostica Cache Schema
+            </h3>
+            <div className="flex space-x-2">
+              <Button 
+                onClick={refreshSchemaCache} 
+                disabled={isRunningDiagnostics}
+                variant="outline"
+                size="sm"
+              >
+                {isRunningDiagnostics ? "Aggiornando..." : "Aggiorna Cache Schema"}
+              </Button>
+              <Button 
+                onClick={runSchemaDiagnostics} 
+                disabled={isRunningDiagnostics}
+                variant="outline"
+                size="sm"
+              >
+                {isRunningDiagnostics ? "Eseguendo..." : "Esegui Diagnostica"}
+              </Button>
+            </div>
+          </div>
+          
+          {schemaDiagnostics ? (
+            <div className="space-y-3">
+              <div className="p-3 bg-white rounded border">
+                <h4 className="font-medium text-sm mb-2">Test Select (Ricerca)</h4>
+                <p className="text-xs text-gray-600">
+                  {schemaDiagnostics.selectTest.success ? "✅ Successo" : "❌ Errore"}
+                </p>
+                {schemaDiagnostics.selectTest.message && (
+                  <p className="text-xs text-gray-500 mt-1">{schemaDiagnostics.selectTest.message}</p>
+                )}
+              </div>
+              
+              <div className="p-3 bg-white rounded border">
+                <h4 className="font-medium text-sm mb-2">Test Insert (Inserimento)</h4>
+                <p className="text-xs text-gray-600">
+                  {schemaDiagnostics.insertTest.success ? "✅ Successo" : "❌ Errore"}
+                </p>
+                {schemaDiagnostics.insertTest.message && (
+                  <p className="text-xs text-gray-500 mt-1">{schemaDiagnostics.insertTest.message}</p>
+                )}
+              </div>
+              
+              <p className="text-xs text-gray-600 mt-3">
+                Usa questa diagnostica per verificare se la cache di PostgREST riconosce correttamente la colonna 'note' nella tabella operatori_network.
+                Se vedi errori, clicca su "Aggiorna Cache Schema" per forzare un aggiornamento.
+              </p>
+            </div>
+          ) : (
+            <p className="text-xs text-gray-600">Nessun test eseguito. Clicca su "Esegui Diagnostica" per iniziare.</p>
+          )}
+        </div>
 
         {/* Sezione Scarica Template (spostata alla fine) */}
         <div className="p-6 border rounded-lg shadow-sm">
