@@ -1,32 +1,27 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { ChevronsUpDown, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Search, Loader2, XCircle } from "lucide-react";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { PuntoServizio } from "@/types/richieste-servizio";
-import { useDebounce } from "@/hooks/use-debounce"; // Assuming this hook exists or will be created
 
 interface SearchablePuntoServizioSelectProps {
-  value: string | null | undefined;
+  value?: string | null;
   onChange: (value: string | null) => void;
   disabled?: boolean;
   placeholder?: string;
@@ -35,179 +30,166 @@ interface SearchablePuntoServizioSelectProps {
 export function SearchablePuntoServizioSelect({
   value,
   onChange,
-  disabled,
-  placeholder = "Seleziona un punto servizio",
+  disabled = false,
+  placeholder = "Cerca punto servizio...",
 }: SearchablePuntoServizioSelectProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchResults, setSearchResults] = useState<PuntoServizio[]>([]);
+  const [puntiServizio, setPuntiServizio] = useState<PuntoServizio[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedPuntoServizioName, setSelectedPuntoServizioName] = useState<string | null>(null);
 
-  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  // Debounced search function
+  const debouncedSearch = useMemo(() => {
+    let timeoutId: NodeJS.Timeout;
+    return (query: string) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        performSearch(query);
+      }, 300); // 300ms delay
+    };
+  }, []);
 
-  // Fetch the selected punto servizio name when the component mounts or value changes
-  useEffect(() => {
-    async function fetchSelectedPuntoServizioName() {
-      if (value) {
-        const { data, error } = await supabase
-          .from("punti_servizio")
-          .select("nome_punto_servizio")
-          .eq("id", value)
-          .single();
-
-        if (error) {
-          console.error("Error fetching selected punto servizio name:", error.message);
-          setSelectedPuntoServizioName(null);
-        } else if (data) {
-          setSelectedPuntoServizioName(data.nome_punto_servizio);
-        }
-      } else {
-        setSelectedPuntoServizioName(null);
-      }
+  const performSearch = useCallback(async (query: string) => {
+    if (!query || query.length < 2) {
+      setPuntiServizio([]);
+      return;
     }
-    fetchSelectedPuntoServizioName();
-  }, [value]);
 
-  // Perform search when debouncedSearchTerm changes
-  useEffect(() => {
-    async function performSearch() {
-      if (!debouncedSearchTerm) {
-        setSearchResults([]);
-        return;
-      }
-
-      setLoading(true);
-      const searchColumns = [
-        "nome_punto_servizio",
-        "indirizzo",
-        "citta",
-        "referente",
-        "codice_cliente",
-        "codice_sicep",
-        "codice_fatturazione",
-      ];
-
-      const orConditions = searchColumns
-        .map((col) => `${col}.ilike.%${debouncedSearchTerm}%`)
-        .join(",");
-
+    setLoading(true);
+    try {
       const { data, error } = await supabase
         .from("punti_servizio")
-        .select(`
-          *,
-          clienti!id_cliente( ragione_sociale )
-        `)
-        .or(orConditions)
-        .limit(10); // Limit results for performance
+        .select("*")
+        .or(`nome_punto_servizio.ilike.%${query}%,codice_punto_servizio.ilike.%${query}%`)
+        .order("nome_punto_servizio")
+        .limit(50); // Limit results to improve performance
 
       if (error) {
-        toast.error("Errore durante la ricerca dei punti servizio: " + error.message);
-        setSearchResults([]);
+        console.error("Errore nella ricerca:", error);
+        setPuntiServizio([]);
       } else {
-        setSearchResults(data || []);
+        setPuntiServizio(data || []);
       }
+    } catch (err) {
+      console.error("Errore nella ricerca:", err);
+      setPuntiServizio([]);
+    } finally {
       setLoading(false);
     }
+  }, []);
 
-    performSearch();
-  }, [debouncedSearchTerm]);
+  useEffect(() => {
+    if (open) {
+      // Load initial data when popover opens
+      if (value) {
+        // If there's a selected value, fetch that specific item
+        supabase
+          .from("punti_servizio")
+          .select("*")
+          .eq("id", value)
+          .single()
+          .then(({ data, error }) => {
+            if (!error && data) {
+              setPuntiServizio([data]);
+            }
+          });
+      } else {
+        // Load first 20 items for initial display
+        supabase
+          .from("punti_servizio")
+          .select("*")
+          .order("nome_punto_servizio")
+          .limit(20)
+          .then(({ data, error }) => {
+            if (!error && data) {
+              setPuntiServizio(data);
+            }
+          });
+      }
+    }
+  }, [open, value]);
 
-  const handleSelectPuntoServizio = (punto: PuntoServizio) => {
-    onChange(punto.id);
-    setSelectedPuntoServizioName(punto.nome_punto_servizio);
-    setIsOpen(false);
-    setSearchTerm(""); // Clear search term on selection
-    setSearchResults([]); // Clear search results
-  };
+  useEffect(() => {
+    debouncedSearch(searchTerm);
+    return () => {
+      // Cleanup timeout on unmount
+    };
+  }, [searchTerm, debouncedSearch]);
 
-  const handleClearSelection = () => {
-    onChange(null);
-    setSelectedPuntoServizioName(null);
-  };
+  const selectedPuntoServizio = useMemo(() => {
+    return puntiServizio.find((ps) => ps.id === value);
+  }, [puntiServizio, value]);
+
+  const handleSelect = useCallback((selectedValue: string) => {
+    onChange(selectedValue);
+    setOpen(false);
+    setSearchTerm("");
+  }, [onChange]);
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <div className="flex items-center space-x-2">
-        <Input
-          value={selectedPuntoServizioName || ""}
-          readOnly
-          placeholder={placeholder}
-          className="flex-grow"
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between"
           disabled={disabled}
-        />
-        {selectedPuntoServizioName && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleClearSelection}
-            disabled={disabled}
-            title="Cancella selezione"
-          >
-            <XCircle className="h-4 w-4" />
-          </Button>
-        )}
-        <DialogTrigger asChild>
-          <Button variant="outline" size="icon" disabled={disabled}>
-            <Search className="h-4 w-4" />
-          </Button>
-        </DialogTrigger>
-      </div>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Cerca Punto Servizio</DialogTitle>
-          <DialogDescription>
-            Cerca per nome, indirizzo, città, referente o codici.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex items-center space-x-2 mb-4">
-          <Input
-            placeholder="Cerca punto servizio..."
+        >
+          {selectedPuntoServizio
+            ? selectedPuntoServizio.nome_punto_servizio
+            : placeholder}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-full p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder="Cerca per nome o codice..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-grow"
+            onValueChange={setSearchTerm}
           />
-          {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-        </div>
-        <div className="flex-grow overflow-auto rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Città</TableHead>
-                <TableHead>Referente</TableHead>
-                <TableHead>Codice Cliente PS</TableHead>
-                <TableHead>Codice SICEP</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {searchResults.length === 0 && !loading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                    Nessun risultato trovato.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                searchResults.map((punto) => (
-                  <TableRow
-                    key={punto.id}
-                    onClick={() => handleSelectPuntoServizio(punto)}
-                    className="cursor-pointer hover:bg-accent"
+          <CommandList>
+            {loading && (
+              <div className="py-6 text-center text-sm text-muted-foreground">
+                Caricamento...
+              </div>
+            )}
+            {!loading && puntiServizio.length === 0 && (
+              <CommandEmpty>Nessun punto servizio trovato</CommandEmpty>
+            )}
+            {!loading && (
+              <CommandGroup>
+                {puntiServizio.map((ps) => (
+                  <CommandItem
+                    key={ps.id}
+                    value={ps.id}
+                    onSelect={handleSelect}
                   >
-                    <TableCell className="font-medium">{punto.nome_punto_servizio}</TableCell>
-                    <TableCell>{punto.clienti?.ragione_sociale || "N/A"}</TableCell>
-                    <TableCell>{punto.citta || "N/A"}</TableCell>
-                    <TableCell>{punto.referente || "N/A"}</TableCell>
-                    <TableCell>{punto.codice_cliente || "N/A"}</TableCell>
-                    <TableCell>{punto.codice_sicep || "N/A"}</TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </DialogContent>
-    </Dialog>
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === ps.id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {ps.nome_punto_servizio}
+                    {ps.codice_cliente && (
+                      <span className="ml-2 text-sm text-muted-foreground">
+                        ({ps.codice_cliente})
+                      </span>
+                    )}
+                    {ps.codice_sicep && (
+                      <span className="ml-2 text-sm text-muted-foreground">
+                        (SICEP: {ps.codice_sicep})
+                      </span>
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }

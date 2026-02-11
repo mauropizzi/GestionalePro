@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AlarmEntry, HistoricalSearchFilters } from "@/types/centrale-operativa";
@@ -14,99 +14,114 @@ export function useCentraleOperativaData() {
   const [networkOperatorsOptions, setNetworkOperatorsOptions] = useState<NetworkOperator[]>([]);
   const [puntoServizioOptions, setPuntoServizioOptions] = useState<PuntoServizio[]>([]);
 
-  const fetchDependencies = async () => {
-    // Fetch Personale
-    const { data: personaleData, error: personaleError } = await supabase
-      .from("personale")
-      .select("*")
-      .eq("attivo", true)
-      .order("cognome", { ascending: true });
+  const fetchDependencies = useCallback(async () => {
+    try {
+      // Use Promise.all to fetch in parallel
+      const [personaleResult, networkResult, psResult] = await Promise.all([
+        supabase
+          .from("personale")
+          .select("*")
+          .eq("attivo", true)
+          .order("cognome", { ascending: true }),
+        supabase
+          .from("operatori_network")
+          .select("*")
+          .order("cognome", { ascending: true }),
+        supabase
+          .from("punti_servizio")
+          .select("*")
+          .order("nome_punto_servizio", { ascending: true })
+      ]);
 
-    if (personaleError) {
-      toast.error("Errore nel recupero del personale: " + personaleError.message);
-    } else {
-      setPersonaleOptions(personaleData || []);
+      if (personaleResult.error) {
+        toast.error("Errore nel recupero del personale: " + personaleResult.error.message);
+      } else {
+        setPersonaleOptions(personaleResult.data || []);
+      }
+
+      if (networkResult.error) {
+        toast.error("Errore nel recupero degli operatori network: " + networkResult.error.message);
+      } else {
+        setNetworkOperatorsOptions(networkResult.data || []);
+      }
+
+      if (psResult.error) {
+        toast.error("Errore nel recupero dei punti servizio: " + psResult.error.message);
+      } else {
+        setPuntoServizioOptions(psResult.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching dependencies:", error);
+      toast.error("Errore nel caricamento dei dati di base");
     }
+  }, []);
 
-    // Fetch Operatori Network
-    const { data: networkData, error: networkError } = await supabase
-      .from("operatori_network")
-      .select("*")
-      .order("cognome", { ascending: true });
-
-    if (networkError) {
-      toast.error("Errore nel recupero degli operatori network: " + networkError.message);
-    } else {
-      setNetworkOperatorsOptions(networkData || []);
-    }
-
-    // Fetch Punti Servizio
-    const { data: puntiServizioData, error: psError } = await supabase
-      .from("punti_servizio")
-      .select("*")
-      .order("nome_punto_servizio", { ascending: true });
-
-    if (psError) {
-      toast.error("Errore nel recupero dei punti servizio: " + psError.message);
-    } else {
-      setPuntoServizioOptions(puntiServizioData || []);
-    }
-  };
-
-  const fetchCurrentAlarms = async () => {
+  const fetchCurrentAlarms = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("allarme_entries")
-      .select(`
-        *,
-        punti_servizio(nome_punto_servizio),
-        personale(nome, cognome),
-        operatori_network(nome, cognome)
-      `)
-      .is("service_outcome", null)
-      .order("registration_date", { ascending: false })
-      .limit(10);
+    try {
+      const { data, error } = await supabase
+        .from("allarme_entries")
+        .select(`
+          *,
+          punti_servizio(nome_punto_servizio),
+          personale(nome, cognome),
+          operatori_network(nome, cognome)
+        `)
+        .is("service_outcome", null)
+        .order("registration_date", { ascending: false })
+        .limit(10);
 
-    if (error) {
-      toast.error("Errore nel recupero degli allarmi attivi: " + error.message);
-    } else {
-      setCurrentAlarm(data?.[0] || null);
+      if (error) {
+        toast.error("Errore nel recupero degli allarmi attivi: " + error.message);
+      } else {
+        setCurrentAlarm(data?.[0] || null);
+      }
+    } catch (error) {
+      console.error("Error fetching current alarms:", error);
+      toast.error("Errore nel recupero degli allarmi attivi");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  }, []);
 
-  const fetchHistoricalAlarms = async (filters?: HistoricalSearchFilters) => {
+  const fetchHistoricalAlarms = useCallback(async (filters?: HistoricalSearchFilters) => {
     setLoading(true);
-    let query = supabase
-      .from("allarme_entries")
-      .select(`
-        *,
-        punti_servizio(nome_punto_servizio),
-        personale(nome, cognome),
-        operatori_network(nome, cognome)
-      `)
-      .not("service_outcome", "is", null)
-      .order("registration_date", { ascending: false });
+    try {
+      let query = supabase
+        .from("allarme_entries")
+        .select(`
+          *,
+          punti_servizio(nome_punto_servizio),
+          personale(nome, cognome),
+          operatori_network(nome, cognome)
+        `)
+        .not("service_outcome", "is", null)
+        .order("registration_date", { ascending: false });
 
-    if (filters?.from_date) {
-      query = query.gte("registration_date", format(filters.from_date, "yyyy-MM-dd"));
-    }
-    if (filters?.to_date) {
-      query = query.lte("registration_date", format(filters.to_date, "yyyy-MM-dd"));
-    }
-    if (filters?.punto_servizio_id) {
-      query = query.eq("punto_servizio_id", filters.punto_servizio_id);
-    }
+      if (filters?.from_date) {
+        query = query.gte("registration_date", format(filters.from_date, "yyyy-MM-dd"));
+      }
+      if (filters?.to_date) {
+        query = query.lte("registration_date", format(filters.to_date, "yyyy-MM-dd"));
+      }
+      if (filters?.punto_servizio_id) {
+        query = query.eq("punto_servizio_id", filters.punto_servizio_id);
+      }
 
-    const { data, error } = await query.limit(50);
+      const { data, error } = await query.limit(50);
 
-    if (error) {
-      toast.error("Errore nel recupero dello storico allarmi: " + error.message);
-    } else {
-      setHistoricalAlarms(data || []);
+      if (error) {
+        toast.error("Errore nel recupero dello storico allarmi: " + error.message);
+      } else {
+        setHistoricalAlarms(data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching historical alarms:", error);
+      toast.error("Errore nel recupero dello storico allarmi");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  }, []);
 
   return {
     currentAlarm,

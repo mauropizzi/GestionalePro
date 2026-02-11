@@ -24,6 +24,7 @@ import { it } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { HistoricalSearchSchema } from "@/lib/centrale-operativa-schemas";
 import { PuntoServizio } from "@/types/richieste-servizio";
+import { useMemo } from "react";
 
 interface HistoricalSearchFormProps {
   form: UseFormReturn<HistoricalSearchSchema>;
@@ -38,6 +39,9 @@ export function HistoricalSearchForm({
   onSubmit,
   loading,
 }: HistoricalSearchFormProps) {
+  // Memoize the options to prevent unnecessary re-renders
+  const memoizedOptions = useMemo(() => puntoServizioOptions, [puntoServizioOptions]);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -133,7 +137,7 @@ export function HistoricalSearchForm({
                 </FormControl>
                 <SelectContent>
                   <SelectItem value="all">Tutti</SelectItem>
-                  {puntoServizioOptions.map((ps) => (
+                  {memoizedOptions.map((ps) => (
                     <SelectItem key={ps.id} value={ps.id}>
                       {ps.nome_punto_servizio}
                     </SelectItem>
