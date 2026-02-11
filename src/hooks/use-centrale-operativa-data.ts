@@ -22,6 +22,7 @@ export function useCentraleOperativaData() {
           .from("personale")
           .select("*")
           .eq("attivo", true)
+          .eq("ruolo", "Operatore C.O. Security Service")
           .order("cognome", { ascending: true }),
         supabase
           .from("operatori_network")
