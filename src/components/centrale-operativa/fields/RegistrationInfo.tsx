@@ -163,6 +163,24 @@ export const RegistrationInfo: React.FC<RegistrationInfoProps> = ({ form }) => {
           </FormItem>
         )}
       />
+      <FormField
+        control={form.control}
+        name="service_type_requested"
+        render={({ field }) => (
+          <FormItem className="flex flex-col">
+            <FormLabel>Tipo servizio richiesto</FormLabel>
+            <FormControl>
+              <Input
+                placeholder="Es. Ispezione, Intervento, Pattuglia..."
+                {...field}
+                value={field.value ?? ""}
+                onChange={(e) => field.onChange(e.target.value)}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
     </>
   );
 };
