@@ -126,36 +126,74 @@ export function AlarmRegistrationForm({
           name="registration_date"
           render={({ field }) => (
             <FormItem className="flex flex-col">
-              <FormLabel>Data Registrazione</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground"
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP", { locale: it })
-                      ) : (
-                        <span>Seleziona una data</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value || undefined}
-                    onSelect={field.onChange}
-                    initialFocus
-                    locale={it}
+              <FormLabel className="flex items-center justify-between">
+                <span>Data e Ora di Registrazione</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs"
+                  onClick={() => {
+                    const now = new Date();
+                    field.onChange(now); // imposta la data corrente
+                    // aggiorna anche un campo orario se presente nel form state
+                    // In assenza di un campo dedicato nel DB, mostriamo l'ora come valore separato nel form.
+                    const timeStr = format(now, "HH:mm");
+                    // Usa un campo ausiliario del form, se definito; in alternativa, sfruttiamo una registrazione locale:
+                    form.setValue("request_time_co", timeStr); // opzionale: sincronizza anche l'orario richiesta CO
+                    toast.success("Data e ora di registrazione impostate automaticamente.");
+                  }}
+                >
+                  Registra
+                </Button>
+              </FormLabel>
+              <div className="grid grid-cols-2 gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP", { locale: it })
+                        ) : (
+                          <span>Seleziona una data</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value || undefined}
+                      onSelect={field.onChange}
+                      initialFocus
+                      locale={it}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormControl>
+                  <Input
+                    type="time"
+                    value={field.value ? format(field.value, "HH:mm") : ""}
+                    onChange={(e) => {
+                      const currentDate = field.value || new Date();
+                      const [hours, minutes] = e.target.value.split(":").map(Number);
+                      const updated = new Date(currentDate);
+                      if (!isNaN(hours) && !isNaN(minutes)) {
+                        updated.setHours(hours, minutes, 0, 0);
+                        field.onChange(updated);
+                      }
+                    }}
+                    placeholder="HH:mm"
                   />
-                </PopoverContent>
-              </Popover>
+                </FormControl>
+              </div>
               <FormMessage />
             </FormItem>
           )}
