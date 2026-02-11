@@ -824,7 +824,7 @@ serve(async (req: Request) => {
     errorCount = 0;
     duplicateCount = 0; // Reset counts for actual import
 
-    for (const rowReport of report) {
+    for (const [rowIndex, rowReport] of report.entries()) {
       if (rowReport.status === 'ERROR' || rowReport.status === 'INVALID_FK') {
         errorCount++;
         errors.push(`Riga con errore non importata: ${rowReport.message}`);
