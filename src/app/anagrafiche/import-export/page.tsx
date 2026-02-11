@@ -1,19 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useSession } from "@/components/session-context-provider";
-import { ShieldAlert, Building2, Truck, Network, UserRound, MapPin, Euro, FileText, Phone, Bug } from "lucide-react";
+import { ShieldAlert, Building2, Truck, Network, UserRound, MapPin, Euro, FileText, Phone } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 
-// Import dei nuovi componenti modulari
+// Import dei componenti modulari
 import { TemplateDownloadSection } from "./components/template-download-section";
 import { ImportSection } from "./components/import-section";
 import { ExportSection } from "./components/export-section";
 import { SchemaDiagnostics } from "./components/schema-diagnostics";
-import { testOperatoriNetworkNoteColumn, testInsertOperatoriNetworkWithNote } from "@/utils/test-schema-cache";
 
 // Mappatura dei nomi delle colonne per una visualizzazione più leggibile
 const columnHeaderMap: { [key: string]: string } = {

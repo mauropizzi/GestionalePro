@@ -1,117 +1,124 @@
 // @ts-nocheck
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.0';
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.0";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const ALLOWED_TABLES = new Set([
+  "clienti",
+  "fornitori",
+  "punti_servizio",
+  "personale",
+  "operatori_network",
+  "procedure",
+  "tariffe",
+  "rubrica_clienti",
+  "rubrica_fornitori",
+  "rubrica_punti_servizio",
+]);
 
 serve(async (req: Request) => {
   console.log("[refresh-schema] Function invoked.");
 
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    let tableName = "operatori_network";
+    try {
+      const body = await req.json().catch(() => null);
+      if (body?.tableName && typeof body.tableName === "string") {
+        tableName = body.tableName;
+      }
+    } catch {
+      // ignore
+    }
+
+    if (!ALLOWED_TABLES.has(tableName)) {
+      console.warn("[refresh-schema] Rejected tableName (not allowed)", { tableName });
+      return new Response(
+        JSON.stringify({ success: false, error: "tableName non valido" }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        }
+      );
+    }
+
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    console.log("[refresh-schema] Forcing PostgREST schema cache refresh...");
+    console.log("[refresh-schema] Forcing PostgREST schema cache refresh...", { tableName });
 
-    // Method 1: Using NOTIFY to trigger pgrst reload
-    await supabaseAdmin.rpc('pg_notify', {
-      channel: 'pgrst',
-      payload: 'reload schema'
+    // Method 1: NOTIFY reload schema/config
+    await supabaseAdmin.rpc("pg_notify", {
+      channel: "pgrst",
+      payload: "reload schema",
+    });
+    await supabaseAdmin.rpc("pg_notify", {
+      channel: "pgrst",
+      payload: "reload config",
     });
 
-    // Method 2: Another NOTIFY for config reload
-    await supabaseAdmin.rpc('pg_notify', {
-      channel: 'pgrst',
-      payload: 'reload config'
-    });
-
-    // Method 3: Touch the table with a DDL-like operation via SQL RPC
-    // If the SQL RPC doesn't exist yet, we'll try to create it or skip it
+    // Method 2: (optional) touch table via SQL RPC, if installed.
+    // tableName is allowlisted, so it's safe to interpolate.
     try {
-      await supabaseAdmin.rpc('sql', {
-        query: `COMMENT ON TABLE public.operatori_network IS 'Tabella operatori network - Cache refreshed at ${new Date().toISOString()}';`
+      await supabaseAdmin.rpc("sql", {
+        query: `COMMENT ON TABLE public.${tableName} IS 'PostgREST cache refresh at ${new Date().toISOString()}';`,
       });
-      
-      await supabaseAdmin.rpc('sql', {
-        query: `
-          CREATE OR REPLACE VIEW public.operatori_network_cache_buster AS SELECT 1;
-          DROP VIEW public.operatori_network_cache_buster;
-        `
+      await supabaseAdmin.rpc("sql", {
+        query: `CREATE OR REPLACE VIEW public.${tableName}_cache_buster AS SELECT 1; DROP VIEW public.${tableName}_cache_buster;`,
       });
+      console.log("[refresh-schema] SQL cache-busting executed", { tableName });
     } catch (sqlErr) {
-      console.warn("[refresh-schema] SQL RPC method failed, likely function doesn't exist yet:", sqlErr.message);
-    }
-
-    console.log("[refresh-schema] Cache busting methods executed.");
-
-    // Wait for the cache to actually refresh
-    await new Promise(resolve => setTimeout(resolve, 5000));
-
-    // Diagnostic check: check information_schema directly
-    const { data: dbColumnCheck, error: dbCheckError } = await supabaseAdmin.rpc('sql', {
-      query: "SELECT COUNT(*) as count FROM information_schema.columns WHERE table_name = 'operatori_network' AND column_name = 'note';"
-    });
-
-    const columnActuallyExistsInDB = dbColumnCheck && dbColumnCheck[0] && dbColumnCheck[0].count > 0;
-    console.log("[refresh-schema] DB check for 'note' column:", columnActuallyExistsInDB ? "EXISTS" : "NOT FOUND");
-
-    // Test if the column is visible to the service role client
-    const { error: testError } = await supabaseAdmin
-      .from('operatori_network')
-      .select('note')
-      .limit(1);
-
-    if (testError) {
-      console.error("[refresh-schema] Schema refresh test failed for service role:", testError.message);
-      
-      if (!columnActuallyExistsInDB) {
-        return new Response(JSON.stringify({ 
-          success: false, 
-          error: "Column 'note' does not exist in the database table 'operatori_network'.",
-          message: "The migration to add the column has not been applied to the database. Please check the migrations execution log."
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
-        });
-      }
-
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: testError.message,
-        message: "Column exists in DB but PostgREST still hasn't refreshed its cache. This is a persistent cache issue. Try running the diagnostics again in a few minutes."
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
+      console.warn("[refresh-schema] SQL cache-busting skipped (sql RPC missing?)", {
+        tableName,
+        message: sqlErr?.message,
       });
     }
 
-    console.log("[refresh-schema] Schema refresh test successful for service role.");
-    
-    return new Response(JSON.stringify({ 
-      success: true, 
-      message: "PostgREST schema cache refreshed successfully. The 'note' column is now visible and accessible."
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
+    await new Promise((r) => setTimeout(r, 2000));
 
+    // Lightweight check that PostgREST responds for the table
+    const { error: testError } = await supabaseAdmin.from(tableName).select("id").limit(1);
+    if (testError) {
+      console.error("[refresh-schema] Post-refresh select failed", {
+        tableName,
+        error: testError,
+      });
+      return new Response(
+        JSON.stringify({ success: false, error: testError.message }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: `Cache schema aggiornata (richiesta) per: ${tableName}`,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      }
+    );
   } catch (error) {
     console.error("[refresh-schema] Unhandled error:", error);
-    return new Response(JSON.stringify({ 
-      success: false, 
-      error: (error as Error).message 
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    });
+    return new Response(
+      JSON.stringify({ success: false, error: (error as Error).message }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      }
+    );
   }
 });
