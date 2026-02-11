@@ -1,5 +1,6 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+// @ts-nocheck
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,7 +29,7 @@ type ColumnInfo = {
   column_default: string | null;
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -92,8 +93,6 @@ serve(async (req) => {
       });
     }
 
-    // Query information_schema via SQL RPC if available, otherwise use direct SQL via pg
-    // We rely on a sql(query text) function if it exists; if it doesn't, return a clear error.
     const sqlQuery = `
       SELECT column_name, data_type, is_nullable, column_default
       FROM information_schema.columns
