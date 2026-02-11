@@ -60,7 +60,7 @@ export function SearchablePuntoServizioSelect({
       const { data, error } = await supabase
         .from("punti_servizio")
         .select("*")
-        .or(`nome_punto_servizio.ilike.%${query}%,codice_punto_servizio.ilike.%${query}%`)
+        .or(`nome_punto_servizio.ilike.%${query}%,codice_cliente.ilike.%${query}%,codice_sicep.ilike.%${query}%`)
         .order("nome_punto_servizio")
         .limit(50); // Limit results to improve performance
 
