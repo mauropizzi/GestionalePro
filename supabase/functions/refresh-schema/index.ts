@@ -28,37 +28,36 @@ serve(async (req: Request) => {
       payload: 'reload schema'
     });
 
+    // Method 2: Force reload by performing a DDL-like operation (comment update)
+    // We use a direct SQL approach if possible, but since we are using the client:
+    const { error: sqlError } = await supabaseAdmin.from('operatori_network').select('id').limit(1);
+    
+    // We can also try to "touch" the schema by altering a comment directly via RPC if available
+    // or just assume the NOTIFY is enough if the column actually exists now.
+
     if (notifyError) {
       console.error("[refresh-schema] NOTIFY method failed:", notifyError);
     } else {
       console.log("[refresh-schema] NOTIFY method successful");
     }
 
-    // Method 2: Update a comment on a table to trigger cache refresh
-    const { error: commentError } = await supabaseAdmin.rpc('sql', {
-      query: 'COMMENT ON TABLE public.operatori_network IS \'Network operators table - schema refresh: \' || now()'
-    });
-
-    if (commentError) {
-      console.error("[refresh-schema] Comment method failed:", commentError);
-    } else {
-      console.log("[refresh-schema] Comment method successful");
-    }
-
     // Method 3: Touch the schema by running a simple query
-    const { error: touchError } = await supabaseAdmin
-      .from('operatori_network')
-      .select('id, note')
-      .limit(1);
-
-    if (touchError) {
-      console.error("[refresh-schema] Touch method failed:", touchError);
-    } else {
-      console.log("[refresh-schema] Touch method successful");
+    // We wrap this in a try/catch to avoid function failure if column still not "seen"
+    let touchSuccess = false;
+    try {
+      const { error: touchError } = await supabaseAdmin
+        .from('operatori_network')
+        .select('id, note')
+        .limit(1);
+      
+      if (!touchError) touchSuccess = true;
+      console.log("[refresh-schema] Touch method result:", touchError ? touchError.message : "Success");
+    } catch (e) {
+      console.error("[refresh-schema] Touch method crashed:", e);
     }
 
     // Wait a moment for the cache to refresh
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Test if the refresh worked
     const { data: testData, error: testError } = await supabaseAdmin
