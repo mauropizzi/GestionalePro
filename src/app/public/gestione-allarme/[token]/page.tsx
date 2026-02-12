@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -21,18 +22,16 @@ type PublicAlarm = {
   client_request_barcode: string | null;
 };
 
-export default function PublicGestioneAllarmePage({
-  params,
-}: {
-  params: { token: string };
-}) {
-  const token = params.token;
+export default function PublicGestioneAllarmePage() {
+  const { token } = useParams<{ token: string }>();
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [alarm, setAlarm] = useState<PublicAlarm | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!token) return;
     let cancelled = false;
 
     async function load() {
