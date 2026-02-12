@@ -20,7 +20,10 @@ export function getDefaultAlarmFormValues(): AlarmEntryFormSchema {
     full_site_access: false,
     caveau_access: false,
     network_operator_id: null,
+
+    gpg_personale_id: null,
     gpg_intervention_made: false,
+
     anomalies_found: null,
     delay_minutes: null,
     service_outcome: null,
@@ -40,29 +43,35 @@ export function formatAlarmDataForSubmission(values: AlarmEntryFormSchema) {
       ? new Date(registrationDateTime.getTime() + minutes * 60000).toISOString()
       : null;
 
-  // IMPORTANTE:
-  // Non fare spread di `values` perché contiene campi che NON esistono in tabella (lat/long, timestamp full, ecc.).
-  // PostgREST risponde 400 se inviamo colonne sconosciute.
+  const gpgInterventionMade = Boolean(values.gpg_personale_id);
+
   return {
-    // colonne DB
     registration_date: format(values.registration_date, "yyyy-MM-dd"),
     punto_servizio_id: values.punto_servizio_id,
-    intervention_due_by: deadlineTs, // timestamptz
-    intervention_due_minutes: minutes, // integer (nuova colonna)
-    service_type_requested: "Allarme", // NOT NULL
+    intervention_due_by: deadlineTs,
+    intervention_due_minutes: minutes,
+
+    service_type_requested: "Allarme",
+
     operator_co_id: values.operator_co_id,
     request_time_co: values.request_time_co,
     intervention_start_time: values.intervention_start_time,
     intervention_end_time: values.intervention_end_time,
+
     full_site_access: values.full_site_access,
     caveau_access: values.caveau_access,
+
     network_operator_id: values.network_operator_id,
-    gpg_intervention_made: values.gpg_intervention_made,
+
+    // Nuovi/derivati
+    gpg_personale_id: values.gpg_personale_id,
+    gpg_intervention_made: gpgInterventionMade,
+
     anomalies_found: values.anomalies_found,
     delay_minutes: values.delay_minutes,
     service_outcome: values.service_outcome,
     client_request_barcode: values.client_request_barcode,
-    // timestamps
+
     created_at: now,
     updated_at: now,
   };

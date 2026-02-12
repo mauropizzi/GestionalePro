@@ -16,7 +16,10 @@ import {
   AlarmEntryFormSchema,
   HistoricalSearchSchema,
 } from "@/lib/centrale-operativa-schemas";
-import { getDefaultAlarmFormValues, formatAlarmDataForSubmission } from "@/lib/centrale-operativa-utils";
+import {
+  getDefaultAlarmFormValues,
+  formatAlarmDataForSubmission,
+} from "@/lib/centrale-operativa-utils";
 import { CentraleOperativaLayout } from "@/components/centrale-operativa/centrale-operativa-layout";
 
 export default function CentraleOperativaPage() {
@@ -61,7 +64,13 @@ export default function CentraleOperativaPage() {
       fetchCurrentAlarms();
       fetchHistoricalAlarms();
     }
-  }, [isSessionLoading, hasAccess, fetchDependencies, fetchCurrentAlarms, fetchHistoricalAlarms]);
+  }, [
+    isSessionLoading,
+    hasAccess,
+    fetchDependencies,
+    fetchCurrentAlarms,
+    fetchHistoricalAlarms,
+  ]);
 
   useEffect(() => {
     if (currentAlarm) {
@@ -71,7 +80,6 @@ export default function CentraleOperativaPage() {
       form.reset({
         ...alarmRest,
         registration_date: new Date(alarmRest.registration_date),
-        // Usa i minuti salvati nella nuova colonna, se presenti
         intervention_due_by:
           (alarmRest as any).intervention_due_minutes !== undefined &&
           (alarmRest as any).intervention_due_minutes !== null
@@ -80,16 +88,24 @@ export default function CentraleOperativaPage() {
         request_time_co: alarmRest.request_time_co || "",
         intervention_start_time: alarmRest.intervention_start_time || null,
         intervention_end_time: alarmRest.intervention_end_time || null,
-        intervention_start_lat: alarmRest.intervention_start_lat || null,
-        intervention_start_long: alarmRest.intervention_start_long || null,
-        intervention_start_full_timestamp: alarmRest.intervention_start_full_timestamp ? new Date(alarmRest.intervention_start_full_timestamp) : null,
-        intervention_end_lat: alarmRest.intervention_end_lat || null,
-        intervention_end_long: alarmRest.intervention_end_long || null,
-        intervention_end_full_timestamp: alarmRest.intervention_end_full_timestamp ? new Date(alarmRest.intervention_end_full_timestamp) : null,
+
+        // Campi solo UI (non presenti in DB)
+        intervention_start_lat: null,
+        intervention_start_long: null,
+        intervention_start_full_timestamp: null,
+        intervention_end_lat: null,
+        intervention_end_long: null,
+        intervention_end_full_timestamp: null,
+
         full_site_access: alarmRest.full_site_access || false,
         caveau_access: alarmRest.caveau_access || false,
         network_operator_id: alarmRest.network_operator_id || null,
-        gpg_intervention_made: alarmRest.gpg_intervention_made || false,
+
+        // Nuovo: gpg_personale_id (se presente in DB)
+        gpg_personale_id: (alarmRest as any).gpg_personale_id || null,
+        // coerente con selezione
+        gpg_intervention_made: Boolean((alarmRest as any).gpg_personale_id),
+
         anomalies_found: alarmRest.anomalies_found || null,
         delay_minutes: alarmRest.delay_minutes || null,
         service_outcome: alarmRest.service_outcome || null,
@@ -122,7 +138,6 @@ export default function CentraleOperativaPage() {
 
     setIsSubmitting(true);
     const alarmData = formatAlarmDataForSubmission(values);
-    // Remove created_at for updates
     const { created_at, ...updateData } = alarmData;
 
     const { error } = await supabase
@@ -160,7 +175,9 @@ export default function CentraleOperativaPage() {
         <div className="flex flex-col items-center justify-center h-full text-center">
           <ShieldAlert className="h-16 w-16 text-red-500 mb-4" />
           <h2 className="text-xl font-bold mb-2">Accesso Negato</h2>
-          <p className="text-sm text-muted-foreground">Non hai i permessi necessari per visualizzare questa pagina.</p>
+          <p className="text-sm text-muted-foreground">
+            Non hai i permessi necessari per visualizzare questa pagina.
+          </p>
         </div>
       </DashboardLayout>
     );

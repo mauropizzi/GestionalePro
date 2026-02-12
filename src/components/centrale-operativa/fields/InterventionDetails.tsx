@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { format } from "date-fns";
 import { MapPin } from "lucide-react";
@@ -10,6 +10,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { SearchablePersonaleSelect } from "@/components/anagrafiche/searchable-personale-select";
 
 interface InterventionDetailsProps {
   form: UseFormReturn<AlarmEntryFormSchema>;
@@ -17,6 +18,15 @@ interface InterventionDetailsProps {
 
 export const InterventionDetails: React.FC<InterventionDetailsProps> = ({ form }) => {
   const { recordStart, recordEnd } = useInterventionRecorder(form);
+
+  // Mantieni coerente il booleano DB con la selezione della Pattuglia
+  const gpgPersonaleId = form.watch("gpg_personale_id");
+  useEffect(() => {
+    form.setValue("gpg_intervention_made", Boolean(gpgPersonaleId), {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
+  }, [gpgPersonaleId, form]);
 
   return (
     <>
@@ -55,6 +65,7 @@ export const InterventionDetails: React.FC<InterventionDetailsProps> = ({ form }
           </FormItem>
         )}
       />
+
       <FormField
         control={form.control}
         name="intervention_end_time"
@@ -90,6 +101,7 @@ export const InterventionDetails: React.FC<InterventionDetailsProps> = ({ form }
           </FormItem>
         )}
       />
+
       <FormField
         control={form.control}
         name="full_site_access"
@@ -104,6 +116,7 @@ export const InterventionDetails: React.FC<InterventionDetailsProps> = ({ form }
           </FormItem>
         )}
       />
+
       <FormField
         control={form.control}
         name="caveau_access"
@@ -118,17 +131,22 @@ export const InterventionDetails: React.FC<InterventionDetailsProps> = ({ form }
           </FormItem>
         )}
       />
+
       <FormField
         control={form.control}
-        name="gpg_intervention_made"
+        name="gpg_personale_id"
         render={({ field }) => (
-          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-            <div className="space-y-0.5">
-              <FormLabel className="text-sm">Intervento Effettuato dalla GPG</FormLabel>
-            </div>
+          <FormItem>
+            <FormLabel>Intervento effettuato dalla GPG (Pattuglia)</FormLabel>
             <FormControl>
-              <Switch checked={field.value} onCheckedChange={field.onChange} />
+              <SearchablePersonaleSelect
+                value={field.value}
+                onChange={field.onChange}
+                placeholder="Cerca Pattuglia..."
+                ruolo="Pattuglia"
+              />
             </FormControl>
+            <FormMessage />
           </FormItem>
         )}
       />
