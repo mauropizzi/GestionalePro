@@ -20,6 +20,7 @@ interface CentraleOperativaLayoutProps {
   puntoServizioOptions: PuntoServizio[];
   onSubmit: (data: AlarmEntryFormSchema) => void;
   onSearchSubmit: (data: HistoricalSearchSchema) => void;
+  onHistoricalRefresh: () => void;
 }
 
 export function CentraleOperativaLayout({
@@ -33,6 +34,7 @@ export function CentraleOperativaLayout({
   puntoServizioOptions,
   onSubmit,
   onSearchSubmit,
+  onHistoricalRefresh,
 }: CentraleOperativaLayoutProps) {
   return (
     <div className="container mx-auto py-6">
@@ -78,7 +80,12 @@ export function CentraleOperativaLayout({
             <p className="text-sm">Nessun allarme storico trovato con i filtri selezionati.</p>
           </div>
         ) : (
-          <HistoricalAlarmsTable alarms={historicalAlarms} />
+          <HistoricalAlarmsTable
+            alarms={historicalAlarms}
+            personaleOptions={personaleOptions}
+            networkOperatorsOptions={networkOperatorsOptions}
+            onRefresh={onHistoricalRefresh}
+          />
         )}
       </div>
     </div>

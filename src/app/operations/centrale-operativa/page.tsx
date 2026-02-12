@@ -118,6 +118,7 @@ export default function CentraleOperativaPage() {
         puntoServizioOptions={puntoServizioOptions}
         onSubmit={handleNewAlarmEntry}
         onSearchSubmit={onSearchSubmit}
+        onHistoricalRefresh={() => fetchHistoricalAlarms()}
       />
     </DashboardLayout>
   );
