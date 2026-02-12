@@ -31,7 +31,7 @@ export function useCentraleOperativaData() {
         supabase
           .from("punti_servizio")
           .select("*")
-          .order("nome_punto_servizio", { ascending: true })
+          .order("nome_punto_servizio", { ascending: true }),
       ]);
 
       if (personaleResult.error) {
@@ -41,7 +41,9 @@ export function useCentraleOperativaData() {
       }
 
       if (networkResult.error) {
-        toast.error("Errore nel recupero degli operatori network: " + networkResult.error.message);
+        toast.error(
+          "Errore nel recupero degli operatori network: " + networkResult.error.message
+        );
       } else {
         setNetworkOperatorsOptions(networkResult.data || []);
       }
@@ -60,12 +62,16 @@ export function useCentraleOperativaData() {
   const fetchCurrentAlarms = useCallback(async () => {
     setLoading(true);
     try {
+      // NOTA:
+      // allarme_entries ha più FK verso personale (operator_co_id e gpg_personale_id),
+      // quindi l'embed "personale(...)" è ambiguo.
+      // Disambiguo esplicitando il vincolo FK dell'operatore C.O.
       const { data, error } = await supabase
         .from("allarme_entries")
         .select(`
           *,
           punti_servizio(nome_punto_servizio),
-          personale(nome, cognome),
+          personale!allarme_entries_operator_co_id_fkey(nome, cognome),
           operatori_network(nome, cognome)
         `)
         .is("service_outcome", null)
@@ -93,7 +99,7 @@ export function useCentraleOperativaData() {
         .select(`
           *,
           punti_servizio(nome_punto_servizio),
-          personale(nome, cognome),
+          personale!allarme_entries_operator_co_id_fkey(nome, cognome),
           operatori_network(nome, cognome)
         `)
         .not("service_outcome", "is", null)
