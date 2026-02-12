@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlarmEntry, HistoricalSearchFilters } from "@/types/centrale-operativa";
+import { HistoricalSearchFilters } from "@/types/centrale-operativa";
 import { useCentraleOperativaData } from "@/hooks/use-centrale-operativa-data";
 import {
   alarmEntryFormSchema,
@@ -25,16 +25,14 @@ import { CentraleOperativaLayout } from "@/components/centrale-operativa/central
 export default function CentraleOperativaPage() {
   const { profile: currentUserProfile, isLoading: isSessionLoading } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const {
-    currentAlarm,
     historicalAlarms,
     loading,
     personaleOptions,
     networkOperatorsOptions,
     puntoServizioOptions,
     fetchDependencies,
-    fetchCurrentAlarms,
     fetchHistoricalAlarms,
   } = useCentraleOperativaData();
 
@@ -61,95 +59,21 @@ export default function CentraleOperativaPage() {
   useEffect(() => {
     if (!isSessionLoading && hasAccess) {
       fetchDependencies();
-      fetchCurrentAlarms();
       fetchHistoricalAlarms();
     }
-  }, [
-    isSessionLoading,
-    hasAccess,
-    fetchDependencies,
-    fetchCurrentAlarms,
-    fetchHistoricalAlarms,
-  ]);
-
-  useEffect(() => {
-    if (currentAlarm) {
-      // Populate form with current alarm data for editing
-      const { service_type_requested: _ignored, ...alarmRest } = currentAlarm;
-
-      form.reset({
-        ...alarmRest,
-        registration_date: new Date(alarmRest.registration_date),
-        intervention_due_by:
-          (alarmRest as any).intervention_due_minutes !== undefined &&
-          (alarmRest as any).intervention_due_minutes !== null
-            ? Number((alarmRest as any).intervention_due_minutes)
-            : null,
-        request_time_co: alarmRest.request_time_co || "",
-        intervention_start_time: alarmRest.intervention_start_time || null,
-        intervention_end_time: alarmRest.intervention_end_time || null,
-
-        // Campi solo UI (non presenti in DB)
-        intervention_start_lat: null,
-        intervention_start_long: null,
-        intervention_start_full_timestamp: null,
-        intervention_end_lat: null,
-        intervention_end_long: null,
-        intervention_end_full_timestamp: null,
-
-        full_site_access: alarmRest.full_site_access || false,
-        caveau_access: alarmRest.caveau_access || false,
-        network_operator_id: alarmRest.network_operator_id || null,
-
-        // Nuovo: gpg_personale_id (se presente in DB)
-        gpg_personale_id: (alarmRest as any).gpg_personale_id || null,
-        // coerente con selezione
-        gpg_intervention_made: Boolean((alarmRest as any).gpg_personale_id),
-
-        anomalies_found: alarmRest.anomalies_found || null,
-        delay_minutes: alarmRest.delay_minutes || null,
-        service_outcome: alarmRest.service_outcome || null,
-        client_request_barcode: alarmRest.client_request_barcode || null,
-      });
-    }
-  }, [currentAlarm, form]);
+  }, [isSessionLoading, hasAccess, fetchDependencies, fetchHistoricalAlarms]);
 
   const handleNewAlarmEntry = async (values: AlarmEntryFormSchema) => {
     setIsSubmitting(true);
     const alarmData = formatAlarmDataForSubmission(values);
 
-    const { error } = await supabase
-      .from("allarme_entries")
-      .insert(alarmData);
+    const { error } = await supabase.from("allarme_entries").insert(alarmData);
 
     if (error) {
       toast.error("Errore durante la registrazione dell'allarme: " + error.message);
     } else {
       toast.success("Allarme registrato con successo!");
       form.reset(getDefaultAlarmFormValues());
-      fetchCurrentAlarms();
-      fetchHistoricalAlarms();
-    }
-    setIsSubmitting(false);
-  };
-
-  const handleUpdateAlarmEntry = async (values: AlarmEntryFormSchema) => {
-    if (!currentAlarm) return;
-
-    setIsSubmitting(true);
-    const alarmData = formatAlarmDataForSubmission(values);
-    const { created_at, ...updateData } = alarmData;
-
-    const { error } = await supabase
-      .from("allarme_entries")
-      .update(updateData)
-      .eq("id", currentAlarm.id);
-
-    if (error) {
-      toast.error("Errore durante l'aggiornamento dell'allarme: " + error.message);
-    } else {
-      toast.success("Allarme aggiornato con successo!");
-      fetchCurrentAlarms();
       fetchHistoricalAlarms();
     }
     setIsSubmitting(false);
@@ -162,8 +86,6 @@ export default function CentraleOperativaPage() {
     };
     fetchHistoricalAlarms(filters);
   };
-
-  const handleFormSubmit = currentAlarm ? handleUpdateAlarmEntry : handleNewAlarmEntry;
 
   if (isSessionLoading) {
     return null;
@@ -188,14 +110,13 @@ export default function CentraleOperativaPage() {
       <CentraleOperativaLayout
         form={form}
         searchForm={searchForm}
-        currentAlarm={currentAlarm}
         historicalAlarms={historicalAlarms}
         loading={loading}
         isSubmitting={isSubmitting}
         personaleOptions={personaleOptions}
         networkOperatorsOptions={networkOperatorsOptions}
         puntoServizioOptions={puntoServizioOptions}
-        onSubmit={handleFormSubmit}
+        onSubmit={handleNewAlarmEntry}
         onSearchSubmit={onSearchSubmit}
       />
     </DashboardLayout>

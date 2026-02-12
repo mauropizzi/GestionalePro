@@ -1,7 +1,7 @@
 import React from "react";
 import { BellRing, History } from "lucide-react";
 import { AlarmEntryFormSchema, HistoricalSearchSchema } from "@/lib/centrale-operativa-schemas";
-import { AlarmEntry, HistoricalSearchFilters } from "@/types/centrale-operativa";
+import { AlarmEntry } from "@/types/centrale-operativa";
 import { Personale, NetworkOperator } from "@/types/anagrafiche";
 import { PuntoServizio } from "@/types/richieste-servizio";
 import { AlarmRegistrationForm } from "./alarm-registration-form";
@@ -12,7 +12,6 @@ import { Loader2 } from "lucide-react";
 interface CentraleOperativaLayoutProps {
   form: any; // UseFormReturn<AlarmEntryFormSchema>
   searchForm: any; // UseFormReturn<HistoricalSearchSchema>
-  currentAlarm: AlarmEntry | null;
   historicalAlarms: AlarmEntry[];
   loading: boolean;
   isSubmitting: boolean;
@@ -26,7 +25,6 @@ interface CentraleOperativaLayoutProps {
 export function CentraleOperativaLayout({
   form,
   searchForm,
-  currentAlarm,
   historicalAlarms,
   loading,
   isSubmitting,
@@ -40,10 +38,10 @@ export function CentraleOperativaLayout({
     <div className="container mx-auto py-6">
       <h1 className="text-2xl font-bold mb-4">Centrale Operativa</h1>
       <p className="text-sm text-muted-foreground mb-6">
-        Gestione delle ispezioni e degli allarmi in tempo reale e storico.
+        Registrazione allarmi e consultazione dello storico.
       </p>
 
-      {/* Sezione Registrazione Servizi */}
+      {/* Sezione Registrazione Allarmi */}
       <div className="p-6 border rounded-lg shadow-sm mb-8">
         <h2 className="text-xl font-semibold mb-4 flex items-center">
           <BellRing className="h-5 w-5 mr-2" /> Registrazione Allarmi
@@ -54,14 +52,14 @@ export function CentraleOperativaLayout({
           personaleOptions={personaleOptions}
           networkOperatorsOptions={networkOperatorsOptions}
           onSubmit={onSubmit}
-          submitButtonText={currentAlarm ? "Aggiorna Allarme" : "Registra Allarme"}
+          submitButtonText="Registra Allarme"
         />
       </div>
 
-      {/* Sezione Storico Servizi */}
+      {/* Sezione Storico Allarmi */}
       <div className="p-6 border rounded-lg shadow-sm">
         <h2 className="text-xl font-semibold mb-4 flex items-center">
-          <History className="h-5 w-5 mr-2" /> Storico Servizi
+          <History className="h-5 w-5 mr-2" /> Storico Allarmi
         </h2>
         <HistoricalSearchForm
           form={searchForm}

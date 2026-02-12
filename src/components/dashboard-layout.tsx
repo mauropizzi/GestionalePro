@@ -25,7 +25,8 @@ import {
   FileStack,
   Upload,
   Sparkles,
-  BellRing, // Import BellRing icon for Centrale Operativa
+  BellRing,
+  Siren,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -62,18 +63,23 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo", "pending_approval"],
     },
     {
-      label: "Operazioni", // Nuova sezione principale
+      label: "Operazioni",
       href: "/operations",
       icon: <Briefcase className="h-3.5 w-3.5" />,
       roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
       subLinks: [
         {
-          label: "Centrale Operativa", // Nuova sottosezione
+          label: "Centrale Operativa",
           href: "/operations/centrale-operativa",
           icon: <BellRing className="h-3.5 w-3.5" />,
           roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
         },
-        // Altri link operativi qui
+        {
+          label: "Gestione Allarmi",
+          href: "/operations/gestione-allarmi",
+          icon: <Siren className="h-3.5 w-3.5" />,
+          roles: ["super_admin", "amministrazione", "responsabile_operativo", "operativo"],
+        },
       ],
     },
     {
