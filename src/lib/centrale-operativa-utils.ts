@@ -31,30 +31,38 @@ export function getDefaultAlarmFormValues(): AlarmEntryFormSchema {
 export function formatAlarmDataForSubmission(values: AlarmEntryFormSchema) {
   const now = new Date().toISOString();
 
-  // Calcola il timestamp di scadenza (deadline) sommando i minuti alla data/ora di registrazione
+  // Nel form `intervention_due_by` rappresenta i minuti (numero) richiesti dalla UI.
   const minutes = values.intervention_due_by;
   const registrationDateTime = values.registration_date; // contiene sia data che ora
+
   const deadlineTs =
     minutes != null
       ? new Date(registrationDateTime.getTime() + minutes * 60000).toISOString()
       : null;
 
+  // IMPORTANTE:
+  // Non fare spread di `values` perché contiene campi che NON esistono in tabella (lat/long, timestamp full, ecc.).
+  // PostgREST risponde 400 se inviamo colonne sconosciute.
   return {
-    ...values,
-    // La colonna registration_date nel DB è di tipo date
+    // colonne DB
     registration_date: format(values.registration_date, "yyyy-MM-dd"),
-    // Imposta automaticamente il tipo servizio richiesto
-    service_type_requested: "Allarme",
-    // Salva i minuti nella nuova colonna
-    intervention_due_minutes: minutes,
-    // Salva il timestamp di scadenza nella colonna esistente
-    intervention_due_by: deadlineTs,
-    intervention_start_full_timestamp: values.intervention_start_full_timestamp?.toISOString() || null,
-    intervention_end_full_timestamp: values.intervention_end_full_timestamp?.toISOString() || null,
-    operator_co_id: values.operator_co_id === "" ? null : values.operator_co_id,
-    network_operator_id: values.network_operator_id === "" ? null : values.network_operator_id,
-    anomalies_found: values.anomalies_found === "" ? null : values.anomalies_found,
-    client_request_barcode: values.client_request_barcode === "" ? null : values.client_request_barcode,
+    punto_servizio_id: values.punto_servizio_id,
+    intervention_due_by: deadlineTs, // timestamptz
+    intervention_due_minutes: minutes, // integer (nuova colonna)
+    service_type_requested: "Allarme", // NOT NULL
+    operator_co_id: values.operator_co_id,
+    request_time_co: values.request_time_co,
+    intervention_start_time: values.intervention_start_time,
+    intervention_end_time: values.intervention_end_time,
+    full_site_access: values.full_site_access,
+    caveau_access: values.caveau_access,
+    network_operator_id: values.network_operator_id,
+    gpg_intervention_made: values.gpg_intervention_made,
+    anomalies_found: values.anomalies_found,
+    delay_minutes: values.delay_minutes,
+    service_outcome: values.service_outcome,
+    client_request_barcode: values.client_request_barcode,
+    // timestamps
     created_at: now,
     updated_at: now,
   };
@@ -62,13 +70,13 @@ export function formatAlarmDataForSubmission(values: AlarmEntryFormSchema) {
 
 export function getOutcomeBadgeVariant(outcome: string | null) {
   switch (outcome) {
-    case 'Risolto':
-      return 'bg-green-100 text-green-800';
-    case 'Non Risolto':
-      return 'bg-red-100 text-red-800';
-    case 'Falso Allarme':
-      return 'bg-yellow-100 text-yellow-800';
+    case "Risolto":
+      return "bg-green-100 text-green-800";
+    case "Non Risolto":
+      return "bg-red-100 text-red-800";
+    case "Falso Allarme":
+      return "bg-yellow-100 text-yellow-800";
     default:
-      return 'bg-gray-100 text-gray-800';
+      return "bg-gray-100 text-gray-800";
   }
 }
