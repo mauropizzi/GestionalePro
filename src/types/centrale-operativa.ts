@@ -36,7 +36,11 @@ export interface AlarmEntry {
   updated_at: string;
 
   punti_servizio?: PuntoServizio | null;
-  personale?: Personale | null;
+
+  // embed lato Supabase
+  personale?: Personale | null; // operatore C.O. (nelle query storiche)
+  pattuglia?: Pick<Personale, "id" | "nome" | "cognome" | "telefono"> | null; // usato per WhatsApp in Gestione Allarmi
+
   operatori_network?: NetworkOperator | null;
 }
 

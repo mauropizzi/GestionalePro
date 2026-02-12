@@ -8,10 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  alarmEntryFormSchema,
-  AlarmEntryFormSchema,
-} from "@/lib/centrale-operativa-schemas";
+import { alarmEntryFormSchema, AlarmEntryFormSchema } from "@/lib/centrale-operativa-schemas";
 import {
   formatAlarmDataForSubmission,
   getDefaultAlarmFormValues,
@@ -28,11 +25,7 @@ export default function GestioneAllarmiPage() {
   const [openAlarms, setOpenAlarms] = useState<AlarmEntry[]>([]);
   const [selectedAlarm, setSelectedAlarm] = useState<AlarmEntry | null>(null);
 
-  const {
-    personaleOptions,
-    networkOperatorsOptions,
-    fetchDependencies,
-  } = useCentraleOperativaData();
+  const { personaleOptions, networkOperatorsOptions, fetchDependencies } = useCentraleOperativaData();
 
   const hasAccess =
     currentUserProfile?.role === "super_admin" ||
@@ -52,8 +45,7 @@ export default function GestioneAllarmiPage() {
       .select(`
         *,
         punti_servizio(nome_punto_servizio),
-        personale!allarme_entries_operator_co_id_fkey(nome, cognome),
-        operatori_network(nome, cognome)
+        pattuglia:personale!gpg_personale_id(nome, cognome, telefono)
       `)
       .is("service_outcome", null)
       .order("registration_date", { ascending: false })
@@ -63,7 +55,7 @@ export default function GestioneAllarmiPage() {
       toast.error("Errore nel recupero degli allarmi aperti: " + error.message);
       setOpenAlarms([]);
     } else {
-      setOpenAlarms(data || []);
+      setOpenAlarms((data || []) as any);
     }
     setLoading(false);
   }, []);
