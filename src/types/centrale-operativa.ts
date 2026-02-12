@@ -8,7 +8,10 @@ export interface AlarmEntry {
   id: string;
   registration_date: string;
   punto_servizio_id: string | null;
-  intervention_due_by: number | null;
+  // intervention_due_by è il timestamp di scadenza in DB
+  intervention_due_by: string | null;
+  // nuova colonna: minuti entro i quali effettuare l'intervento
+  intervention_due_minutes: number | null;
   service_type_requested: string;
   operator_co_id: string | null;
   request_time_co: string;
@@ -31,8 +34,8 @@ export interface AlarmEntry {
   created_at: string;
   updated_at: string;
   punti_servizio?: PuntoServizio | null;
-  personale?: Personale | null; // For operator_co_id
-  operatori_network?: NetworkOperator | null; // For network_operator_id
+  personale?: Personale | null;
+  operatori_network?: NetworkOperator | null;
 }
 
 export interface HistoricalSearchFilters {

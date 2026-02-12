@@ -30,13 +30,25 @@ export function getDefaultAlarmFormValues(): AlarmEntryFormSchema {
 
 export function formatAlarmDataForSubmission(values: AlarmEntryFormSchema) {
   const now = new Date().toISOString();
+
+  // Calcola il timestamp di scadenza (deadline) sommando i minuti alla data/ora di registrazione
+  const minutes = values.intervention_due_by;
+  const registrationDateTime = values.registration_date; // contiene sia data che ora
+  const deadlineTs =
+    minutes != null
+      ? new Date(registrationDateTime.getTime() + minutes * 60000).toISOString()
+      : null;
+
   return {
     ...values,
+    // La colonna registration_date nel DB è di tipo date
     registration_date: format(values.registration_date, "yyyy-MM-dd"),
-    // Imposta automaticamente il tipo servizio richiesto per la tabella (NOT NULL)
+    // Imposta automaticamente il tipo servizio richiesto
     service_type_requested: "Allarme",
-    // intervention_due_by è un numero di minuti (o null)
-    intervention_due_by: values.intervention_due_by === null ? null : values.intervention_due_by,
+    // Salva i minuti nella nuova colonna
+    intervention_due_minutes: minutes,
+    // Salva il timestamp di scadenza nella colonna esistente
+    intervention_due_by: deadlineTs,
     intervention_start_full_timestamp: values.intervention_start_full_timestamp?.toISOString() || null,
     intervention_end_full_timestamp: values.intervention_end_full_timestamp?.toISOString() || null,
     operator_co_id: values.operator_co_id === "" ? null : values.operator_co_id,

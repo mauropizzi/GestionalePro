@@ -71,12 +71,11 @@ export default function CentraleOperativaPage() {
       form.reset({
         ...alarmRest,
         registration_date: new Date(alarmRest.registration_date),
-        // intervention_due_by viene memorizzato come minuti (numero) nel DB
+        // Usa i minuti salvati nella nuova colonna, se presenti
         intervention_due_by:
-          alarmRest.intervention_due_by !== undefined && alarmRest.intervention_due_by !== null
-            ? (typeof alarmRest.intervention_due_by === "number"
-                ? alarmRest.intervention_due_by
-                : Number(alarmRest.intervention_due_by))
+          (alarmRest as any).intervention_due_minutes !== undefined &&
+          (alarmRest as any).intervention_due_minutes !== null
+            ? Number((alarmRest as any).intervention_due_minutes)
             : null,
         request_time_co: alarmRest.request_time_co || "",
         intervention_start_time: alarmRest.intervention_start_time || null,
