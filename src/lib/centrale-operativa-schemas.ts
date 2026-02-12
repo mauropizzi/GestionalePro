@@ -1,12 +1,10 @@
 import * as z from "zod";
 
-const timeString = z.preprocess(
-  (v) => (typeof v === "string" ? v.trim() : v),
-  z
-    .string()
-    // accetta HH:mm oppure HH:mm:ss (Supabase TIME spesso ritorna con i secondi)
-    .regex(/^([01]\d|2[0-3]):([0-5]\d)(:([0-5]\d))?$/, "Formato orario non valido (HH:mm)")
-);
+const timeString = z
+  .string()
+  .trim()
+  // accetta HH:mm oppure HH:mm:ss (Supabase TIME spesso ritorna con i secondi)
+  .regex(/^([01]\d|2[0-3]):([0-5]\d)(:([0-5]\d))?$/, "Formato orario non valido (HH:mm)");
 
 export const alarmEntryFormSchema = z.object({
   registration_date: z.date({ required_error: "La data di registrazione è richiesta." }),
