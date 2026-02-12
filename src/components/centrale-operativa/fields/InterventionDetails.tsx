@@ -16,6 +16,11 @@ interface InterventionDetailsProps {
   form: UseFormReturn<AlarmEntryFormSchema>;
 }
 
+function toHHmm(value: string | null | undefined) {
+  if (!value) return "";
+  return value.trim().slice(0, 5);
+}
+
 export const InterventionDetails: React.FC<InterventionDetailsProps> = ({ form }) => {
   const { recordStart, recordEnd } = useInterventionRecorder(form);
 
@@ -48,7 +53,11 @@ export const InterventionDetails: React.FC<InterventionDetailsProps> = ({ form }
               </Button>
             </FormLabel>
             <FormControl>
-              <Input type="time" {...field} value={field.value ?? ""} />
+              <Input
+                type="time"
+                value={toHHmm(field.value)}
+                onChange={(e) => field.onChange(e.target.value)}
+              />
             </FormControl>
             {form.watch("intervention_start_lat") && (
               <p className="text-[10px] text-muted-foreground mt-1">
@@ -84,7 +93,11 @@ export const InterventionDetails: React.FC<InterventionDetailsProps> = ({ form }
               </Button>
             </FormLabel>
             <FormControl>
-              <Input type="time" {...field} value={field.value ?? ""} />
+              <Input
+                type="time"
+                value={toHHmm(field.value)}
+                onChange={(e) => field.onChange(e.target.value)}
+              />
             </FormControl>
             {form.watch("intervention_end_lat") && (
               <p className="text-[10px] text-muted-foreground mt-1">
@@ -94,7 +107,8 @@ export const InterventionDetails: React.FC<InterventionDetailsProps> = ({ form }
                   ` - ${format(
                     form.watch("intervention_end_full_timestamp")!,
                     "dd/MM HH:mm"
-                  )}`}
+                  )}`
+                }
               </p>
             )}
             <FormMessage />

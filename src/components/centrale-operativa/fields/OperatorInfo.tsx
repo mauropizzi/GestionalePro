@@ -14,6 +14,11 @@ interface OperatorInfoProps {
   networkOperatorsOptions: NetworkOperator[];
 }
 
+function toHHmm(value: string | null | undefined) {
+  if (!value) return "";
+  return value.trim().slice(0, 5);
+}
+
 export const OperatorInfo: React.FC<OperatorInfoProps> = ({
   form,
   personaleOptions,
@@ -45,6 +50,7 @@ export const OperatorInfo: React.FC<OperatorInfoProps> = ({
           </FormItem>
         )}
       />
+
       <FormField
         control={form.control}
         name="request_time_co"
@@ -52,12 +58,17 @@ export const OperatorInfo: React.FC<OperatorInfoProps> = ({
           <FormItem>
             <FormLabel>Orario Richiesta C.O. Security Service</FormLabel>
             <FormControl>
-              <Input type="time" {...field} />
+              <Input
+                type="time"
+                value={toHHmm(field.value)}
+                onChange={(e) => field.onChange(e.target.value)}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
+
       <FormField
         control={form.control}
         name="network_operator_id"

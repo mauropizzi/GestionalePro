@@ -1,5 +1,13 @@
 import * as z from "zod";
 
+const timeString = z.preprocess(
+  (v) => (typeof v === "string" ? v.trim() : v),
+  z
+    .string()
+    // accetta HH:mm oppure HH:mm:ss (Supabase TIME spesso ritorna con i secondi)
+    .regex(/^([01]\d|2[0-3]):([0-5]\d)(:([0-5]\d))?$/, "Formato orario non valido (HH:mm)")
+);
+
 export const alarmEntryFormSchema = z.object({
   registration_date: z.date({ required_error: "La data di registrazione è richiesta." }),
   punto_servizio_id: z.string().uuid("Seleziona un punto servizio valido.").nullable(),
@@ -10,17 +18,9 @@ export const alarmEntryFormSchema = z.object({
     .min(0, "Il tempo di intervento deve essere un numero di minuti positivo.")
     .nullable(),
   operator_co_id: z.string().uuid("Seleziona un operatore valido.").nullable(),
-  request_time_co: z
-    .string()
-    .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Formato orario non valido (HH:mm)"),
-  intervention_start_time: z
-    .string()
-    .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Formato orario non valido (HH:mm)")
-    .nullable(),
-  intervention_end_time: z
-    .string()
-    .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Formato orario non valido (HH:mm)")
-    .nullable(),
+  request_time_co: timeString,
+  intervention_start_time: timeString.nullable(),
+  intervention_end_time: timeString.nullable(),
   intervention_start_lat: z.number().nullable(),
   intervention_start_long: z.number().nullable(),
   intervention_start_full_timestamp: z.date().nullable(),
