@@ -14,6 +14,7 @@ import {
   getDefaultAlarmFormValues,
 } from "@/lib/centrale-operativa-utils";
 import { AlarmRegistrationForm } from "@/components/centrale-operativa/alarm-registration-form";
+import { AlarmDetailForm } from "@/components/gestione-allarmi/alarm-detail-form";
 import { OpenAlarmsTable } from "@/components/gestione-allarmi/open-alarms-table";
 import { useCentraleOperativaData } from "@/hooks/use-centrale-operativa-data";
 import { AlarmEntry } from "@/types/centrale-operativa";
@@ -78,30 +79,46 @@ export default function GestioneAllarmiPage() {
 
   const fetchOpenAlarms = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("allarme_entries")
-      .select(`
-        *,
-        punti_servizio(nome_punto_servizio),
-        pattuglia:personale!gpg_personale_id(nome, cognome, telefono)
-      `)
-      .is("service_outcome", null)
-      .order("registration_date", { ascending: false })
-      .limit(100);
+    try {
+      const { data, error } = await supabase
+        .from("allarme_entries")
+        .select(`
+          *,
+          punti_servizio(nome_punto_servizio),
+          pattuglia:personale!gpg_personale_id(nome, cognome, telefono)
+        `)
+        .is("service_outcome", null)
+        .order("registration_date", { ascending: false })
+        .limit(100);
 
-    if (error) {
-      toast.error("Errore nel recupero degli allarmi aperti: " + error.message);
+      if (error) {
+        console.error('[gestione-allarmi] fetchOpenAlarms error', error);
+        toast.error("Errore nel recupero degli allarmi aperti: " + error.message);
+        setOpenAlarms([]);
+      } else {
+        console.debug('[gestione-allarmi] fetchOpenAlarms result', { count: (data || []).length });
+        setOpenAlarms((data || []) as any);
+      }
+    } catch (err) {
+      console.error('[gestione-allarmi] fetchOpenAlarms unexpected', err);
+      toast.error("Errore nel recupero degli allarmi aperti");
       setOpenAlarms([]);
-    } else {
-      setOpenAlarms((data || []) as any);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
     if (!isSessionLoading && hasAccess) {
       fetchDependencies();
       fetchOpenAlarms();
+
+      // Re-fetch when window/tab regains focus (helps after navigation)
+      const onFocus = () => {
+        if (hasAccess) fetchOpenAlarms();
+      };
+      window.addEventListener('focus', onFocus);
+      return () => window.removeEventListener('focus', onFocus);
     }
   }, [isSessionLoading, hasAccess, fetchDependencies, fetchOpenAlarms]);
 
@@ -182,14 +199,12 @@ export default function GestioneAllarmiPage() {
             <h2 className="text-lg font-semibold">Dettaglio / aggiornamento</h2>
             <div className="rounded-md border p-4">
               {selectedAlarm ? (
-                <AlarmRegistrationForm
-                  key={selectedAlarm.id}
-                  form={form}
+                <AlarmDetailForm
+                  selectedAlarm={selectedAlarm}
                   isSubmitting={isSubmitting}
                   personaleOptions={personaleOptions}
                   networkOperatorsOptions={networkOperatorsOptions}
                   onSubmit={handleUpdateAlarm}
-                  submitButtonText="Aggiorna Allarme"
                 />
               ) : (
                 <div className="text-sm text-muted-foreground">
