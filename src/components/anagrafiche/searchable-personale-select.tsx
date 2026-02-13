@@ -83,6 +83,36 @@ export function SearchablePersonaleSelect({
     [ruolo]
   );
 
+  // FIX: sincronizza subito la label quando value cambia (anche se il popover è chiuso)
+  useEffect(() => {
+    if (!value) {
+      setSelectedItem(null);
+      return;
+    }
+
+    if (selectedItem?.id === value) return;
+
+    let cancelled = false;
+
+    let q = supabase.from("personale").select("*").eq("id", value);
+    if (ruolo) q = q.eq("ruolo", ruolo);
+
+    q.single().then(({ data, error }) => {
+      if (cancelled) return;
+      if (!error && data) {
+        setSelectedItem(data);
+        setResults((prev) => {
+          const exists = prev.some((p) => p.id === data.id);
+          return exists ? prev : [data, ...prev];
+        });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [value, ruolo, selectedItem?.id]);
+
   // quando apro il popover, carico dati iniziali o l'elemento selezionato
   useEffect(() => {
     if (!open) return;

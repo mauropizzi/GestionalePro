@@ -79,6 +79,37 @@ export function SearchablePuntoServizioSelect({
     }
   }, []);
 
+  // FIX: sincronizza subito la label quando value cambia (anche se il popover è chiuso)
+  useEffect(() => {
+    if (!value) {
+      setSelectedItem(null);
+      return;
+    }
+
+    if (selectedItem?.id === value) return;
+
+    let cancelled = false;
+    supabase
+      .from("punti_servizio")
+      .select("*")
+      .eq("id", value)
+      .single()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (!error && data) {
+          setSelectedItem(data);
+          setPuntiServizio((prev) => {
+            const exists = prev.some((ps) => ps.id === data.id);
+            return exists ? prev : [data, ...prev];
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [value, selectedItem?.id]);
+
   useEffect(() => {
     if (open) {
       // Load initial data when popover opens
@@ -110,13 +141,6 @@ export function SearchablePuntoServizioSelect({
       }
     }
   }, [open, value, selectedItem]);
-
-  useEffect(() => {
-    // Reset selected item when value changes to null
-    if (!value) {
-      setSelectedItem(null);
-    }
-  }, [value]);
 
   useEffect(() => {
     debouncedSearch(searchTerm);
