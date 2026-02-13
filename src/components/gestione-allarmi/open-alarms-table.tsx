@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { AlarmEntry } from "@/types/centrale-operativa";
 import {
   Table,
@@ -16,6 +16,15 @@ import { format, parseISO } from "date-fns";
 import { it } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 interface OpenAlarmsTableProps {
   alarms: AlarmEntry[];
@@ -31,14 +40,40 @@ function normalizeWhatsappNumber(input: string) {
   return n.replace(/\D/g, "");
 }
 
+type ShareState =
+  | {
+      open: true;
+      alarmId: string;
+      phone: string;
+      waUrl: string;
+      manageUrl: string;
+      message: string;
+    }
+  | { open: false };
+
 export function OpenAlarmsTable({ alarms, selectedId, onSelect }: OpenAlarmsTableProps) {
   const [generatingId, setGeneratingId] = useState<string | null>(null);
-  const [lastTokenPrefix, setLastTokenPrefix] = useState<string | null>(null);
-  const [lastWaUrl, setLastWaUrl] = useState<string | null>(null);
-  const [lastError, setLastError] = useState<string | null>(null);
+  const [share, setShare] = useState<ShareState>({ open: false });
+
+  const canClipboard = useMemo(() => {
+    return typeof navigator !== "undefined" && !!navigator.clipboard?.writeText;
+  }, []);
+
+  const copyText = async (label: string, text: string) => {
+    try {
+      if (!navigator.clipboard?.writeText) {
+        toast.error("Copia non supportata in questo browser");
+        return;
+      }
+      await navigator.clipboard.writeText(text);
+      toast.success(`${label} copiato`);
+    } catch {
+      toast.error("Impossibile copiare negli appunti");
+    }
+  };
 
   return (
-    <div>
+    <>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -85,33 +120,50 @@ export function OpenAlarmsTable({ alarms, selectedId, onSelect }: OpenAlarmsTabl
                           }
                           onClick={async () => {
                             if (!phone) return;
-
-                            // prevent duplicate concurrent generations
                             if (generatingId) return;
+
                             setGeneratingId(alarm.id);
-                            setLastError(null);
-
-                            console.debug("[open-alarms] preparing to create public link", { alarmId: alarm.id, phone });
-
-                            // Use a unique window name so each click opens a fresh tab/window.
-                            const windowName = `wa_${alarm.id}_${Date.now()}`;
-                            // Open a redirecting helper route synchronously to avoid popup blockers.
-                            // This route will call the function server-side and then redirect the window to wa.me.
-                            const helperUrl = `${window.location.origin}/public/wa-redirect/${alarm.id}?phone=${phone}`;
-                            const newWin = window.open(helperUrl, windowName);
 
                             try {
-                              // Now that we opened the helper route, we don't need to wait here; the helper will
-                              // create the token server-side and redirect this window to wa.me. We just surface success.
-                              console.debug("[open-alarms] helper route opened, delegating token creation to it", { helperUrl });
-                              setLastTokenPrefix("delegated");
-                              setLastWaUrl(helperUrl);
-                              toast.success("Aperta finestra di invio WhatsApp...");
-                            } catch (err: any) {
-                              try { newWin?.close(); } catch (e) { /* ignore */ }
-                              console.error("Errore nell'apertura della route di redirect:", err);
-                              setLastError(String(err));
-                              toast.error("Errore nell'apertura della finestra di invio.");
+                              const { data, error } = await supabase.functions.invoke(
+                                "create-alarm-public-link",
+                                { body: { alarm_id: alarm.id } }
+                              );
+
+                              if (error) {
+                                toast.error("Impossibile generare il link: " + error.message);
+                                return;
+                              }
+
+                              const token = (data as any)?.token as string | undefined;
+                              if (!token) {
+                                toast.error("Link non valido");
+                                return;
+                              }
+
+                              const origin = window.location.origin;
+                              const manageUrl = `${origin}/public/gestione-allarme/${token}`;
+
+                              const ps = alarm.punti_servizio?.nome_punto_servizio || "N/A";
+                              const dateStr = format(parseISO(alarm.registration_date), "dd/MM/yyyy", {
+                                locale: it,
+                              });
+                              const timeStr = alarm.request_time_co || "";
+
+                              const message = `ALLARME\nPunto servizio: ${ps}\nData: ${dateStr}${timeStr ? ` ${timeStr}` : ""}\nGestione allarme: ${manageUrl}`;
+                              const text = encodeURIComponent(message);
+                              const waUrl = `https://wa.me/${phone}?text=${text}`;
+
+                              // Nuova strategia: mostro una finestra con i pulsanti.
+                              // Così l'utente apre WhatsApp con un click diretto e non si blocca al 2° tentativo.
+                              setShare({
+                                open: true,
+                                alarmId: alarm.id,
+                                phone,
+                                waUrl,
+                                manageUrl,
+                                message,
+                              });
                             } finally {
                               setGeneratingId(null);
                             }
@@ -133,14 +185,62 @@ export function OpenAlarmsTable({ alarms, selectedId, onSelect }: OpenAlarmsTabl
         </Table>
       </div>
 
-      {/* Diagnostic panel for debugging send flow */}
-      <div className="mt-2 text-xs text-muted-foreground">
-        <div>debug: alarms={alarms.length} selected={selectedId}</div>
-        <div>generatingId: {generatingId ?? "-"}</div>
-        <div>lastTokenPrefix: {lastTokenPrefix ?? "-"}</div>
-        <div className="break-words">lastWaUrl: {lastWaUrl ?? "-"}</div>
-        <div className="text-destructive">lastError: {lastError ?? "-"}</div>
-      </div>
-    </div>
+      <Dialog open={share.open} onOpenChange={(o) => setShare(o ? share : { open: false })}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Invio WhatsApp</DialogTitle>
+            <DialogDescription>
+              Premi "Apri WhatsApp". Se il browser blocca l'apertura, puoi copiare il testo o il link.
+            </DialogDescription>
+          </DialogHeader>
+
+          {share.open && (
+            <div className="space-y-3">
+              <Textarea value={share.message} readOnly className="min-h-[140px]" />
+              <div className="text-xs text-muted-foreground break-words">
+                Link gestione: {share.manageUrl}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            {share.open && (
+              <>
+                <Button asChild>
+                  <a href={share.waUrl} target="_blank" rel="noopener noreferrer">
+                    Apri WhatsApp
+                  </a>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (share.open) window.open(share.manageUrl, "_blank", "noopener,noreferrer");
+                  }}
+                >
+                  Apri Gestione
+                </Button>
+
+                <Button
+                  variant="outline"
+                  disabled={!canClipboard}
+                  onClick={() => share.open && copyText("Testo", share.message)}
+                >
+                  Copia testo
+                </Button>
+
+                <Button
+                  variant="outline"
+                  disabled={!canClipboard}
+                  onClick={() => share.open && copyText("Link", share.manageUrl)}
+                >
+                  Copia link
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
