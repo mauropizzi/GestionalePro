@@ -38,6 +38,44 @@ export default function GestioneAllarmiPage() {
     defaultValues: getDefaultAlarmFormValues(),
   });
 
+  // FIX: reset del form DOPO che il dettaglio è montato (evita campi che si aggiornano solo al focus)
+  useEffect(() => {
+    if (!selectedAlarm) return;
+
+    const alarm = selectedAlarm;
+
+    form.reset({
+      registration_date: new Date(alarm.registration_date),
+      punto_servizio_id: alarm.punto_servizio_id,
+      // UI minutes stored in intervention_due_minutes
+      intervention_due_by: (alarm as any).intervention_due_minutes ?? null,
+      operator_co_id: alarm.operator_co_id,
+      request_time_co: alarm.request_time_co,
+      intervention_start_time: alarm.intervention_start_time,
+      intervention_end_time: alarm.intervention_end_time,
+
+      // UI-only fields
+      intervention_start_lat: null,
+      intervention_start_long: null,
+      intervention_start_full_timestamp: null,
+      intervention_end_lat: null,
+      intervention_end_long: null,
+      intervention_end_full_timestamp: null,
+
+      full_site_access: alarm.full_site_access,
+      caveau_access: alarm.caveau_access,
+      network_operator_id: alarm.network_operator_id,
+
+      gpg_personale_id: (alarm as any).gpg_personale_id ?? null,
+      gpg_intervention_made: Boolean((alarm as any).gpg_personale_id),
+
+      anomalies_found: alarm.anomalies_found,
+      delay_minutes: alarm.delay_minutes,
+      service_outcome: alarm.service_outcome,
+      client_request_barcode: alarm.client_request_barcode,
+    });
+  }, [selectedAlarm?.id, form]);
+
   const fetchOpenAlarms = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -67,43 +105,10 @@ export default function GestioneAllarmiPage() {
     }
   }, [isSessionLoading, hasAccess, fetchDependencies, fetchOpenAlarms]);
 
-  const selectAlarm = useCallback(
-    (alarm: AlarmEntry) => {
-      setSelectedAlarm(alarm);
-
-      form.reset({
-        registration_date: new Date(alarm.registration_date),
-        punto_servizio_id: alarm.punto_servizio_id,
-        // UI minutes stored in intervention_due_minutes
-        intervention_due_by: (alarm as any).intervention_due_minutes ?? null,
-        operator_co_id: alarm.operator_co_id,
-        request_time_co: alarm.request_time_co,
-        intervention_start_time: alarm.intervention_start_time,
-        intervention_end_time: alarm.intervention_end_time,
-
-        // UI-only fields
-        intervention_start_lat: null,
-        intervention_start_long: null,
-        intervention_start_full_timestamp: null,
-        intervention_end_lat: null,
-        intervention_end_long: null,
-        intervention_end_full_timestamp: null,
-
-        full_site_access: alarm.full_site_access,
-        caveau_access: alarm.caveau_access,
-        network_operator_id: alarm.network_operator_id,
-
-        gpg_personale_id: (alarm as any).gpg_personale_id ?? null,
-        gpg_intervention_made: Boolean((alarm as any).gpg_personale_id),
-
-        anomalies_found: alarm.anomalies_found,
-        delay_minutes: alarm.delay_minutes,
-        service_outcome: alarm.service_outcome,
-        client_request_barcode: alarm.client_request_barcode,
-      });
-    },
-    [form]
-  );
+  const selectAlarm = useCallback((alarm: AlarmEntry) => {
+    // FIX: niente reset qui (prima il dettaglio non è montato)
+    setSelectedAlarm(alarm);
+  }, []);
 
   const handleUpdateAlarm = async (values: AlarmEntryFormSchema) => {
     if (!selectedAlarm) {
