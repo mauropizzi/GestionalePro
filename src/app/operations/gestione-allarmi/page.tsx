@@ -183,6 +183,7 @@ export default function GestioneAllarmiPage() {
             <div className="rounded-md border p-4">
               {selectedAlarm ? (
                 <AlarmRegistrationForm
+                  key={selectedAlarm.id}
                   form={form}
                   isSubmitting={isSubmitting}
                   personaleOptions={personaleOptions}
