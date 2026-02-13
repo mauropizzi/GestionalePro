@@ -95,78 +95,23 @@ export function OpenAlarmsTable({ alarms, selectedId, onSelect }: OpenAlarmsTabl
 
                             // Use a unique window name so each click opens a fresh tab/window.
                             const windowName = `wa_${alarm.id}_${Date.now()}`;
-                            // Open a blank window synchronously to avoid popup blockers.
-                            const newWin = window.open("about:blank", windowName);
+                            // Open a redirecting helper route synchronously to avoid popup blockers.
+                            // This route will call the function server-side and then redirect the window to wa.me.
+                            const helperUrl = `${window.location.origin}/public/wa-redirect/${alarm.id}?phone=${phone}`;
+                            const newWin = window.open(helperUrl, windowName);
 
                             try {
-                              const { data, error } = await supabase.functions.invoke(
-                                "create-alarm-public-link",
-                                {
-                                  body: { alarm_id: alarm.id },
-                                }
-                              );
-
-                              if (error) {
-                                // Close the opened window on error to avoid leaving a blank tab.
-                                newWin?.close();
-                                console.error("[open-alarms] create-alarm-public-link error", error);
-                                setLastError(error.message || String(error));
-                                toast.error("Impossibile generare il link: " + error.message);
-                                setGeneratingId(null);
-                                return;
-                              }
-
-                              const token = (data as any)?.token as string | undefined;
-                              if (!token) {
-                                newWin?.close();
-                                console.error("[open-alarms] no token returned", data);
-                                setLastError("no token returned");
-                                toast.error("Link non valido");
-                                setGeneratingId(null);
-                                return;
-                              }
-
-                              const origin = window.location.origin;
-                              const manageUrl = `${origin}/public/gestione-allarme/${token}`;
-
-                              const ps = alarm.punti_servizio?.nome_punto_servizio || "N/A";
-                              const dateStr = format(parseISO(alarm.registration_date), "dd/MM/yyyy", {
-                                locale: it,
-                              });
-                              const timeStr = alarm.request_time_co || "";
-
-                              const msg = `ALLARME\nPunto servizio: ${ps}\nData: ${dateStr}${timeStr ? ` ${timeStr}` : ""}\nGestione allarme: ${manageUrl}`;
-                              const text = encodeURIComponent(msg);
-
-                              const waUrl = `https://wa.me/${phone}?text=${text}`;
-
-                              console.debug("[open-alarms] token and waUrl ready", { token: token?.slice(0, 8) + "...", waUrl });
-
-                              setLastTokenPrefix(token.slice(0, 8));
-                              setLastWaUrl(waUrl);
-
-                              // Navigate the previously opened window to the WhatsApp URL.
-                              try {
-                                if (newWin) {
-                                  newWin.location.href = waUrl;
-                                  try { newWin.focus(); } catch (focusErr) { /* ignore */ }
-                                } else {
-                                  window.open(waUrl, "_blank", "noopener,noreferrer");
-                                }
-                              } catch (navErr) {
-                                console.error("[open-alarms] navigation to waUrl failed", navErr);
-                                // fallback top-level open
-                                window.open(waUrl, "_blank", "noopener,noreferrer");
-                              }
-
-                              // Optional: surface the manageUrl in a non-sensitive way for debugging
-                              toast.success("Link generato e pronto per l'invio");
+                              // Now that we opened the helper route, we don't need to wait here; the helper will
+                              // create the token server-side and redirect this window to wa.me. We just surface success.
+                              console.debug("[open-alarms] helper route opened, delegating token creation to it", { helperUrl });
+                              setLastTokenPrefix("delegated");
+                              setLastWaUrl(helperUrl);
+                              toast.success("Aperta finestra di invio WhatsApp...");
                             } catch (err: any) {
-                              // Ensure the window is closed on unexpected errors
                               try { newWin?.close(); } catch (e) { /* ignore */ }
-                              console.error("Errore nella generazione link pubblico:", err);
+                              console.error("Errore nell'apertura della route di redirect:", err);
                               setLastError(String(err));
-                              toast.error("Errore nella generazione del link pubblico.");
+                              toast.error("Errore nell'apertura della finestra di invio.");
                             } finally {
                               setGeneratingId(null);
                             }
