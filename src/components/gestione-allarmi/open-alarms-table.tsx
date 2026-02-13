@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { AlarmEntry } from "@/types/centrale-operativa";
 import {
   Table,
@@ -32,6 +32,8 @@ function normalizeWhatsappNumber(input: string) {
 }
 
 export function OpenAlarmsTable({ alarms, selectedId, onSelect }: OpenAlarmsTableProps) {
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+
   return (
     <div className="rounded-md border">
       <Table>
@@ -69,47 +71,93 @@ export function OpenAlarmsTable({ alarms, selectedId, onSelect }: OpenAlarmsTabl
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={!canSend}
+                        disabled={!canSend || generatingId !== null}
                         title={
-                          canSend
+                          generatingId === alarm.id
+                            ? "Generazione link in corso..."
+                            : canSend
                             ? "Invia allarme via WhatsApp"
                             : "Seleziona una Pattuglia (GPG) nell'allarme per inviare via WhatsApp"
                         }
                         onClick={async () => {
                           if (!phone) return;
 
-                          const { data, error } = await supabase.functions.invoke(
-                            "create-alarm-public-link",
-                            {
-                              body: { alarm_id: alarm.id },
+                          // prevent duplicate concurrent generations
+                          if (generatingId) return;
+                          setGeneratingId(alarm.id);
+
+                          console.debug("[open-alarms] preparing to create public link", { alarmId: alarm.id, phone });
+
+                          // Use a unique window name so each click opens a fresh tab/window.
+                          const windowName = `wa_${alarm.id}_${Date.now()}`;
+                          // Open a blank window synchronously to avoid popup blockers.
+                          const newWin = window.open("about:blank", windowName);
+
+                          try {
+                            const { data, error } = await supabase.functions.invoke(
+                              "create-alarm-public-link",
+                              {
+                                body: { alarm_id: alarm.id },
+                              }
+                            );
+
+                            if (error) {
+                              // Close the opened window on error to avoid leaving a blank tab.
+                              newWin?.close();
+                              console.error("[open-alarms] create-alarm-public-link error", error);
+                              toast.error("Impossibile generare il link: " + error.message);
+                              setGeneratingId(null);
+                              return;
                             }
-                          );
 
-                          if (error) {
-                            toast.error("Impossibile generare il link: " + error.message);
-                            return;
+                            const token = (data as any)?.token as string | undefined;
+                            if (!token) {
+                              newWin?.close();
+                              console.error("[open-alarms] no token returned", data);
+                              toast.error("Link non valido");
+                              setGeneratingId(null);
+                              return;
+                            }
+
+                            const origin = window.location.origin;
+                            const manageUrl = `${origin}/public/gestione-allarme/${token}`;
+
+                            const ps = alarm.punti_servizio?.nome_punto_servizio || "N/A";
+                            const dateStr = format(parseISO(alarm.registration_date), "dd/MM/yyyy", {
+                              locale: it,
+                            });
+                            const timeStr = alarm.request_time_co || "";
+
+                            const msg = `ALLARME\nPunto servizio: ${ps}\nData: ${dateStr}${timeStr ? ` ${timeStr}` : ""}\nGestione allarme: ${manageUrl}`;
+                            const text = encodeURIComponent(msg);
+
+                            const waUrl = `https://wa.me/${phone}?text=${text}`;
+
+                            console.debug("[open-alarms] token and waUrl ready", { token: token?.slice(0, 8) + "...", waUrl });
+
+                            // Navigate the previously opened window to the WhatsApp URL.
+                            try {
+                              if (newWin) {
+                                newWin.location.href = waUrl;
+                                try { newWin.focus(); } catch (focusErr) { /* ignore */ }
+                              } else {
+                                window.open(waUrl, "_blank", "noopener,noreferrer");
+                              }
+                            } catch (navErr) {
+                              console.error("[open-alarms] navigation to waUrl failed", navErr);
+                              window.open(waUrl, "_blank", "noopener,noreferrer");
+                            }
+
+                            // Optional: surface the manageUrl in a non-sensitive way for debugging
+                            toast.success("Link generato e pronto per l'invio");
+                          } catch (err: any) {
+                            // Ensure the window is closed on unexpected errors
+                            newWin?.close();
+                            console.error("Errore nella generazione link pubblico:", err);
+                            toast.error("Errore nella generazione del link pubblico.");
+                          } finally {
+                            setGeneratingId(null);
                           }
-
-                          const token = (data as any)?.token as string | undefined;
-                          if (!token) {
-                            toast.error("Link non valido");
-                            return;
-                          }
-
-                          const origin = window.location.origin;
-                          const manageUrl = `${origin}/public/gestione-allarme/${token}`;
-
-                          const ps = alarm.punti_servizio?.nome_punto_servizio || "N/A";
-                          const dateStr = format(parseISO(alarm.registration_date), "dd/MM/yyyy", {
-                            locale: it,
-                          });
-                          const timeStr = alarm.request_time_co || "";
-
-                          const msg = `ALLARME\nPunto servizio: ${ps}\nData: ${dateStr}${timeStr ? ` ${timeStr}` : ""}\nGestione allarme: ${manageUrl}`;
-                          const text = encodeURIComponent(msg);
-
-                          const waUrl = `https://wa.me/${phone}?text=${text}`;
-                          window.open(waUrl, "_blank", "noopener,noreferrer");
                         }}
                       >
                         <MessageCircle className="h-4 w-4" />
