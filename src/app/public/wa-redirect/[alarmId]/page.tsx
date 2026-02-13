@@ -1,26 +1,51 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 
-export default function WaRedirectPage({ params }: { params: { alarmId: string } }) {
-  const { alarmId } = params;
+type ParamsPromise = Promise<{ alarmId: string }>;
+
+export default function WaRedirectPage({ params }: { params: ParamsPromise }) {
   const search = useSearchParams();
   const phone = search.get("phone");
 
+  const [alarmId, setAlarmId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [manageUrl, setManageUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+    params
+      .then((p) => {
+        if (!cancelled) setAlarmId(p.alarmId);
+      })
+      .catch((e) => {
+        console.error("[wa-redirect] params error", e);
+        if (!cancelled) setError("Parametri non validi");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [params]);
+
+  const normalizedPhone = useMemo(() => {
+    if (!phone) return null;
+    return phone.replace(/[^0-9]/g, "");
+  }, [phone]);
+
+  useEffect(() => {
+    if (!alarmId) return;
+
     let cancelled = false;
     async function run() {
       setLoading(true);
       setError(null);
+
       try {
-        // Create public link for the alarm
         const { data, error } = await supabase.functions.invoke("create-alarm-public-link", {
           body: { alarm_id: alarmId },
         });
@@ -38,21 +63,19 @@ export default function WaRedirectPage({ params }: { params: { alarmId: string }
           return;
         }
 
-        if (!phone) {
-          // If phone not provided, just open the management link
-          const origin = window.location.origin;
-          const manageUrl = `${origin}/public/gestione-allarme/${token}`;
-          window.location.href = manageUrl;
+        const origin = window.location.origin;
+        const mUrl = `${origin}/public/gestione-allarme/${token}`;
+        if (!cancelled) setManageUrl(mUrl);
+
+        // If no phone provided, just open management link
+        if (!normalizedPhone) {
+          window.location.href = mUrl;
           return;
         }
 
-        const origin = window.location.origin;
-        const manageUrl = `${origin}/public/gestione-allarme/${token}`;
-
-        const msg = `ALLARME\nGestione allarme: ${manageUrl}`;
+        const msg = `ALLARME\nGestione allarme: ${mUrl}`;
         const text = encodeURIComponent(msg);
-        const normalized = phone.replace(/[^0-9]/g, "");
-        const waUrl = `https://wa.me/${normalized}?text=${text}`;
+        const waUrl = `https://wa.me/${normalizedPhone}?text=${text}`;
 
         // Redirect to WhatsApp
         window.location.href = waUrl;
@@ -68,7 +91,7 @@ export default function WaRedirectPage({ params }: { params: { alarmId: string }
     return () => {
       cancelled = true;
     };
-  }, [alarmId, phone]);
+  }, [alarmId, normalizedPhone]);
 
   if (loading) {
     return (
@@ -82,25 +105,16 @@ export default function WaRedirectPage({ params }: { params: { alarmId: string }
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="max-w-md w-full space-y-4">
-          <div className="p-4 rounded-md bg-destructive/10 text-destructive">Si è verificato un errore: {error}</div>
+          <div className="p-4 rounded-md bg-destructive/10 text-destructive">
+            Si è verificato un errore: {error}
+          </div>
           <div className="flex gap-2">
-            <Button
-              onClick={() => {
-                // try again
-                window.location.reload();
-              }}
-            >
-              Riprova
-            </Button>
-            <Button
-              onClick={() => {
-                // open management link without redirection
-                const origin = window.location.origin;
-                window.open(`${origin}/public/gestione-allarme/${alarmId}`, "_blank");
-              }}
-            >
-              Apri Gestione (fallback)
-            </Button>
+            <Button onClick={() => window.location.reload()}>Riprova</Button>
+            {manageUrl && (
+              <Button variant="outline" onClick={() => window.location.assign(manageUrl)}>
+                Apri Gestione (fallback)
+              </Button>
+            )}
           </div>
         </div>
       </div>
