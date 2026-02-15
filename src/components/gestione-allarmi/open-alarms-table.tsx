@@ -154,8 +154,7 @@ export function OpenAlarmsTable({ alarms, selectedId, onSelect }: OpenAlarmsTabl
                               const text = encodeURIComponent(message);
                               const waUrl = `https://wa.me/${phone}?text=${text}`;
 
-                              // Nuova strategia: mostro una finestra con i pulsanti.
-                              // Così l'utente apre WhatsApp con un click diretto e non si blocca al 2° tentativo.
+                              // Mostro un dialog con link/copia.
                               setShare({
                                 open: true,
                                 alarmId: alarm.id,
@@ -185,7 +184,12 @@ export function OpenAlarmsTable({ alarms, selectedId, onSelect }: OpenAlarmsTabl
         </Table>
       </div>
 
-      <Dialog open={share.open} onOpenChange={(o) => setShare(o ? share : { open: false })}>
+      <Dialog
+        open={share.open}
+        onOpenChange={(o) => {
+          if (!o) setShare({ open: false });
+        }}
+      >
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Invio WhatsApp</DialogTitle>
@@ -203,11 +207,28 @@ export function OpenAlarmsTable({ alarms, selectedId, onSelect }: OpenAlarmsTabl
             </div>
           )}
 
-          <DialogFooter className="gap-2 sm:gap-2">
+          <DialogFooter className="gap-2 sm:gap-2 sm:justify-between">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShare({ open: false });
+              }}
+            >
+              Chiudi
+            </Button>
+
             {share.open && (
-              <>
+              <div className="flex flex-wrap gap-2 justify-end">
                 <Button asChild>
-                  <a href={share.waUrl} target="_blank" rel="noopener noreferrer">
+                  <a
+                    href={share.waUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      // Chiudo subito il dialog così al rientro posso inviare un secondo WhatsApp senza overlay
+                      setShare({ open: false });
+                    }}
+                  >
                     Apri WhatsApp
                   </a>
                 </Button>
@@ -215,7 +236,9 @@ export function OpenAlarmsTable({ alarms, selectedId, onSelect }: OpenAlarmsTabl
                 <Button
                   variant="outline"
                   onClick={() => {
-                    if (share.open) window.open(share.manageUrl, "_blank", "noopener,noreferrer");
+                    if (!share.open) return;
+                    setShare({ open: false });
+                    window.open(share.manageUrl, "_blank", "noopener,noreferrer");
                   }}
                 >
                   Apri Gestione
@@ -236,7 +259,7 @@ export function OpenAlarmsTable({ alarms, selectedId, onSelect }: OpenAlarmsTabl
                 >
                   Copia link
                 </Button>
-              </>
+              </div>
             )}
           </DialogFooter>
         </DialogContent>
