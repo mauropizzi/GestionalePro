@@ -18,15 +18,6 @@ import { OpenAlarmsTable } from "@/components/gestione-allarmi/open-alarms-table
 import { useCentraleOperativaData } from "@/hooks/use-centrale-operativa-data";
 import { AlarmEntry } from "@/types/centrale-operativa";
 
-function withTimeout<T>(promise: PromiseLike<T>, ms: number): Promise<T> {
-  return Promise.race([
-    Promise.resolve(promise),
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`timeout_${ms}ms`)), ms)
-    ),
-  ]);
-}
-
 export default function GestioneAllarmiPage() {
   const { profile: currentUserProfile, isLoading: isSessionLoading } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -105,8 +96,11 @@ export default function GestioneAllarmiPage() {
     if (shouldBlockUi) setLoading(true);
     else setRefreshing(true);
 
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 12000);
+
     try {
-      const query = supabase
+      const { data, error } = await supabase
         .from("allarme_entries")
         .select(`
           *,
@@ -115,11 +109,9 @@ export default function GestioneAllarmiPage() {
         `)
         .is("service_outcome", null)
         .order("registration_date", { ascending: false })
-        .limit(100);
-
-      // Evita spinner infinito: se la fetch rimane appesa (capita dopo aperture esterne tipo WhatsApp)
-      const result = (await withTimeout(query as any, 12000)) as any;
-      const { data, error } = result;
+        .limit(100)
+        // evita che la richiesta resti appesa in background (causa spinner infinito)
+        .abortSignal(controller.signal);
 
       if (error) {
         console.error("[gestione-allarmi] fetchOpenAlarms error", error);
@@ -130,14 +122,15 @@ export default function GestioneAllarmiPage() {
         if (fetchSeq.current === seq) setOpenAlarms((data || []) as any);
       }
     } catch (err: any) {
-      const msg = String(err?.message || err);
-      if (msg.startsWith("timeout_")) {
+      const aborted = controller.signal.aborted || err?.name === "AbortError";
+      if (aborted) {
         toast.error("Caricamento allarmi troppo lento. Riprova tra qualche secondo.");
       } else {
         console.error("[gestione-allarmi] fetchOpenAlarms unexpected", err);
         toast.error("Errore nel recupero degli allarmi aperti");
       }
     } finally {
+      window.clearTimeout(timeoutId);
       if (fetchSeq.current === seq) {
         setLoading(false);
         setRefreshing(false);
