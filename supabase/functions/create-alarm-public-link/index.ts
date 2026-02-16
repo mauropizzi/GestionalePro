@@ -18,6 +18,7 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
+      console.error('[create-alarm-public-link] missing auth header')
       return new Response('Unauthorized', { status: 401, headers: corsHeaders })
     }
 
@@ -33,9 +34,13 @@ serve(async (req) => {
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-    // Validate the user/session (verify_jwt is false, so we do it manually)
+    // Create auth client for user verification
     const supabaseAuth = createClient(url, anonKey, {
       global: { headers: { Authorization: authHeader } },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
     })
 
     const { data: userData, error: userError } = await supabaseAuth.auth.getUser()
@@ -44,9 +49,18 @@ serve(async (req) => {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders })
     }
 
-    const supabaseAdmin = createClient(url, serviceKey)
+    // Create admin client for operations with service role
+    const supabaseAdmin = createClient(url, serviceKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+      db: {
+        schema: 'public',
+      },
+    })
 
-    // Role check
+    // Role check using RPC
     const { data: role, error: roleError } = await supabaseAdmin.rpc('get_user_role', {
       user_id: userData.user.id,
     })
@@ -61,10 +75,11 @@ serve(async (req) => {
       return new Response('Forbidden', { status: 403, headers: corsHeaders })
     }
 
+    // Generate unique token
     const token = crypto.randomUUID()
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
 
-    // Create link (always new token; simple and safe)
+    // Create public link
     const { error: insertError } = await supabaseAdmin
       .from('alarm_public_links')
       .insert({
@@ -81,6 +96,12 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
+
+    console.log('[create-alarm-public-link] link created successfully', { 
+      alarm_id, 
+      user_id: userData.user.id,
+      token: token.substring(0, 8) + '...' 
+    })
 
     return new Response(JSON.stringify({ token, expires_at: expiresAt }), {
       status: 200,

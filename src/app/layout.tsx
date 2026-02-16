@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { SessionContextProvider } from "@/components/session-context-provider";
+import { ReactQueryProvider } from "@/lib/react-query-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { ThemeProvider } from "next-themes"; // Import ThemeProvider
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Gestione Accessi App",
-  description: "Applicazione per la gestione degli accessi con ruoli.",
+  title: "LUMAFIN - Gestionale",
+  description: "Software gestionale per servizi di sicurezza",
 };
 
 export default function RootLayout({
@@ -15,21 +18,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="it" suppressHydrationWarning>
-      <body
-        className={`font-sans antialiased`}
-      >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+    <html lang="it">
+      <body className={inter.className}>
+        <ReactQueryProvider>
           <SessionContextProvider>
             {children}
+            <Toaster richColors position="top-center" />
           </SessionContextProvider>
-        </ThemeProvider>
-        <Toaster richColors position="top-right" />
+        </ReactQueryProvider>
       </body>
     </html>
   );

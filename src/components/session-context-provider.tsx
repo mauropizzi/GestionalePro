@@ -6,12 +6,14 @@ import React, {
   useEffect,
   useState,
   ReactNode,
+  useCallback,
 } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useProfile } from "./react-query-hooks";
 
 interface Profile {
   id: string;
@@ -34,67 +36,60 @@ const SessionContext = createContext<SessionContextType | undefined>(undefined);
 export function SessionContextProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
 
+  // Use React Query for profile fetching with caching
+  const { data: profile } = useProfile(user?.id);
+
+  // Optimize auth state management - single source of truth
   useEffect(() => {
+    let mounted = true;
+
+    // Get initial session once
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      if (!mounted) return;
+
+      setSession(initialSession);
+      setUser(initialSession?.user || null);
+      setIsLoading(false);
+    });
+
+    // Listen for auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (_event, currentSession) => {
+      (event, currentSession) => {
+        if (!mounted) return;
+
+        console.debug("[SessionContext] Auth state changed", { event, hasSession: !!currentSession });
+        
         setSession(currentSession);
         setUser(currentSession?.user || null);
 
-        if (currentSession?.user) {
-          const { data, error } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", currentSession.user.id)
-            .single();
-
-          if (error) {
-            console.error("Errore nel recupero del profilo:", error.message);
-            toast.error("Errore nel recupero del profilo utente: " + error.message);
-            setProfile(null);
-          } else {
-            setProfile(data as Profile);
-          }
-        } else {
-          setProfile(null);
+        // Handle specific events
+        if (event === "SIGNED_IN" && currentSession) {
+          toast.success("Accesso effettuato con successo!");
+        } else if (event === "SIGNED_OUT") {
+          toast.info("Disconnessione avvenuta.");
+          setUser(null);
+          setSession(null);
+        } else if (event === "USER_UPDATED") {
+          toast.success("Profilo aggiornato con successo!");
+        } else if (event === "PASSWORD_RECOVERY") {
+          toast.info("Controlla la tua email per reimpostare la password.");
+        } else if (event === "MFA_CHALLENGE_VERIFIED") {
+          toast.success("Verifica MFA completata.");
         }
-        setIsLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      setSession(initialSession);
-      setUser(initialSession?.user || null);
-      if (initialSession?.user) {
-        supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", initialSession.user.id)
-          .single()
-          .then(({ data, error }) => {
-            if (error) {
-              console.error("Errore nel recupero del profilo iniziale:", error.message);
-              toast.error("Errore nel recupero del profilo utente: " + error.message);
-              setProfile(null);
-            } else {
-              setProfile(data as Profile);
-            }
-            setIsLoading(false);
-          });
-      } else {
-        setIsLoading(false);
-      }
-    });
-
     return () => {
+      mounted = false;
       authListener.subscription.unsubscribe();
     };
   }, []);
 
+  // Route protection
   useEffect(() => {
     if (!isLoading) {
       const isLoginPage = pathname === "/login";
@@ -117,7 +112,7 @@ export function SessionContextProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <SessionContext.Provider value={{ session, user, profile, isLoading }}>
+    <SessionContext.Provider value={{ session, user, profile: profile || null, isLoading }}>
       {children}
     </SessionContext.Provider>
   );

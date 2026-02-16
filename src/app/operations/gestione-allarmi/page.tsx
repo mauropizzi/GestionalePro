@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useSession } from "@/components/session-context-provider";
 import { ShieldAlert, Siren } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,26 +15,23 @@ import {
 import { AlarmDetailForm } from "@/components/gestione-allarmi/alarm-detail-form";
 import { OpenAlarmsTable } from "@/components/gestione-allarmi/open-alarms-table";
 import { useCentraleOperativaData } from "@/hooks/use-centrale-operativa-data";
+import { useOpenAlarms, useUpdateAlarm } from "@/components/react-query-hooks";
 import { AlarmEntry } from "@/types/centrale-operativa";
 
 export default function GestioneAllarmiPage() {
   const { profile: currentUserProfile, isLoading: isSessionLoading } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // loading = solo per il primo caricamento (schermata vuota)
-  const [loading, setLoading] = useState(true);
-  // refreshing = refetch non bloccante (la tabella resta visibile)
-  const [refreshing, setRefreshing] = useState(false);
-
-  const [openAlarms, setOpenAlarms] = useState<AlarmEntry[]>([]);
   const [selectedAlarm, setSelectedAlarm] = useState<AlarmEntry | null>(null);
 
-  const openAlarmsRef = useRef<AlarmEntry[]>([]);
-  useEffect(() => {
-    openAlarmsRef.current = openAlarms;
-  }, [openAlarms]);
+  // Use React Query for optimized data fetching with caching
+  const { 
+    data: openAlarms = [], 
+    isLoading: alarmsLoading, 
+    isError: alarmsError,
+    refetch: refetchAlarms 
+  } = useOpenAlarms();
 
-  const fetchSeq = useRef(0);
+  const updateAlarmMutation = useUpdateAlarm();
 
   const { personaleOptions, networkOperatorsOptions, fetchDependencies } = useCentraleOperativaData();
 
@@ -50,7 +46,7 @@ export default function GestioneAllarmiPage() {
     defaultValues: getDefaultAlarmFormValues(),
   });
 
-  // FIX: reset del form DOPO che il dettaglio è montato (evita campi che si aggiornano solo al focus)
+  // Reset form when alarm is selected
   useEffect(() => {
     if (!selectedAlarm) return;
 
@@ -88,72 +84,21 @@ export default function GestioneAllarmiPage() {
     });
   }, [selectedAlarm?.id, form]);
 
-  const fetchOpenAlarms = useCallback(async () => {
-    const seq = ++fetchSeq.current;
-
-    // Non bloccare la tabella durante i refetch (es. dopo ritorno da WhatsApp)
-    const shouldBlockUi = openAlarmsRef.current.length === 0;
-    if (shouldBlockUi) setLoading(true);
-    else setRefreshing(true);
-
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 12000);
-
-    try {
-      const { data, error } = await supabase
-        .from("allarme_entries")
-        .select(`
-          *,
-          punti_servizio(nome_punto_servizio),
-          pattuglia:personale!gpg_personale_id(nome, cognome, telefono)
-        `)
-        .is("service_outcome", null)
-        .order("registration_date", { ascending: false })
-        .limit(100)
-        // evita che la richiesta resti appesa in background (causa spinner infinito)
-        .abortSignal(controller.signal);
-
-      if (error) {
-        console.error("[gestione-allarmi] fetchOpenAlarms error", error);
-        toast.error("Errore nel recupero degli allarmi aperti: " + error.message);
-        // Mantieni i dati già presenti (non svuotare la tabella)
-      } else {
-        console.debug("[gestione-allarmi] fetchOpenAlarms result", { count: (data || []).length });
-        if (fetchSeq.current === seq) setOpenAlarms((data || []) as any);
-      }
-    } catch (err: any) {
-      const aborted = controller.signal.aborted || err?.name === "AbortError";
-      if (aborted) {
-        toast.error("Caricamento allarmi troppo lento. Riprova tra qualche secondo.");
-      } else {
-        console.error("[gestione-allarmi] fetchOpenAlarms unexpected", err);
-        toast.error("Errore nel recupero degli allarmi aperti");
-      }
-    } finally {
-      window.clearTimeout(timeoutId);
-      if (fetchSeq.current === seq) {
-        setLoading(false);
-        setRefreshing(false);
-      }
+  // Handle errors from React Query
+  useEffect(() => {
+    if (alarmsError) {
+      toast.error("Errore nel caricamento degli allarmi aperti");
     }
-  }, []);
+  }, [alarmsError]);
 
+  // Fetch dependencies when page loads
   useEffect(() => {
     if (!isSessionLoading && hasAccess) {
       fetchDependencies();
-      fetchOpenAlarms();
-
-      // Re-fetch when window/tab regains focus (helps after navigation)
-      const onFocus = () => {
-        if (hasAccess) fetchOpenAlarms();
-      };
-      window.addEventListener("focus", onFocus);
-      return () => window.removeEventListener("focus", onFocus);
     }
-  }, [isSessionLoading, hasAccess, fetchDependencies, fetchOpenAlarms]);
+  }, [isSessionLoading, hasAccess, fetchDependencies]);
 
   const selectAlarm = useCallback((alarm: AlarmEntry) => {
-    // FIX: niente reset qui (prima il dettaglio non è montato)
     setSelectedAlarm(alarm);
   }, []);
 
@@ -169,22 +114,20 @@ export default function GestioneAllarmiPage() {
     // In aggiornamento non vogliamo sovrascrivere created_at
     const { created_at, ...updateData } = alarmData as any;
 
-    const { error } = await supabase
-      .from("allarme_entries")
-      .update(updateData)
-      .eq("id", selectedAlarm.id);
-
-    if (error) {
-      toast.error("Errore durante l'aggiornamento dell'allarme: " + error.message);
-    } else {
+    try {
+      await updateAlarmMutation.mutateAsync({
+        id: selectedAlarm.id,
+        data: updateData,
+      });
+      
       toast.success("Allarme aggiornato!");
-      // Se è stato impostato un esito, l'allarme esce dalla lista degli aperti
-      await fetchOpenAlarms();
       setSelectedAlarm(null);
       form.reset(getDefaultAlarmFormValues());
+    } catch (error: any) {
+      toast.error("Errore durante l'aggiornamento dell'allarme: " + error.message);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsSubmitting(false);
   };
 
   const selectedId = selectedAlarm?.id ?? null;
@@ -219,13 +162,19 @@ export default function GestioneAllarmiPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Allarmi aperti</h2>
-              {refreshing && (
-                <div className="text-xs text-muted-foreground">Aggiornamento…</div>
-              )}
+              <button
+                onClick={() => refetchAlarms()}
+                className="text-xs text-primary hover:underline"
+                disabled={alarmsLoading}
+              >
+                {alarmsLoading ? "Aggiornamento..." : "Aggiorna"}
+              </button>
             </div>
 
-            {loading ? (
-              <div className="rounded-md border p-6 text-sm text-muted-foreground">Caricamento...</div>
+            {alarmsLoading && openAlarms.length === 0 ? (
+              <div className="rounded-md border p-6 text-sm text-muted-foreground">
+                Caricamento allarmi aperti...
+              </div>
             ) : (
               <OpenAlarmsTable alarms={openAlarms} selectedId={selectedId} onSelect={selectAlarm} />
             )}
