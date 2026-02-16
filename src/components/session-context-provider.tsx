@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProfile } from "./react-query-hooks";
 
-interface Profile {
+export interface Profile {
   id: string;
   first_name: string | null;
   last_name: string | null;
